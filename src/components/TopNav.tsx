@@ -6,11 +6,11 @@ export function TopNav() {
   const { lang, setLang, t } = useI18n();
   const loc = useLocation();
 
-  const tabs = [
+  const tabs: { to: "/" | "/experiencias" | "/arquivo"; label: string; match: string; badge?: boolean }[] = [
     { to: "/", label: t("tab_collection"), match: "/" },
     { to: "/experiencias", label: t("tab_experiences"), match: "/experiencias", badge: true },
     { to: "/arquivo", label: t("tab_archive"), match: "/arquivo" },
-  ] as const;
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
