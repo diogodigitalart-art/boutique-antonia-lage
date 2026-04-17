@@ -4,20 +4,20 @@ import { useWishlist } from "@/lib/wishlist";
 import type { Product } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 
-export function ProductCard({ product, width }: { product: Product; width?: string }) {
+export function ProductCard({ product }: { product: Product; width?: string }) {
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
 
   return (
-    <div className={`group relative ${width ?? ""}`}>
+    <div className="group relative flex w-full flex-col">
       <Link
         to="/produto/$id"
         params={{ id: product.id }}
         className="block overflow-hidden rounded-2xl bg-muted"
       >
-        <div className="relative aspect-[4/5] overflow-hidden">
+        <div className="relative aspect-[4/5] w-full overflow-hidden">
           <img
             src={product.image}
             alt={`${product.brand} ${product.name}`}
@@ -40,23 +40,25 @@ export function ProductCard({ product, width }: { product: Product; width?: stri
           strokeWidth={1.5}
         />
       </button>
-      <Link to="/produto/$id" params={{ id: product.id }} className="mt-3 block">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{product.brand}</p>
-        <h3 className="mt-0.5 font-display text-lg italic leading-tight text-foreground">
+      <Link to="/produto/$id" params={{ id: product.id }} className="mt-4 block">
+        <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
+          {product.brand}
+        </p>
+        <h3 className="mt-1.5 font-display text-lg font-light italic leading-tight text-foreground md:text-xl">
           {product.name}
         </h3>
         {isArchive ? (
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-sm text-muted-foreground line-through">
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-sm font-light text-muted-foreground line-through">
               €{product.originalPrice}
             </span>
-            <span className="text-sm font-medium text-primary">€{product.price}</span>
-            <span className="ml-auto text-[10px] uppercase tracking-wider text-primary">
+            <span className="text-sm font-light text-primary">€{product.price}</span>
+            <span className="ml-auto text-[10px] font-light uppercase tracking-[0.15em] text-primary">
               {t("archive_price")}
             </span>
           </div>
         ) : (
-          <p className="mt-1 text-sm text-foreground">€{product.price}</p>
+          <p className="mt-1.5 text-sm font-light text-foreground">€{product.price}</p>
         )}
       </Link>
     </div>
