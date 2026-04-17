@@ -22,6 +22,7 @@ export type Experience = {
   location: string;
   price: number;
   image: string;
+  tag: string;
 };
 
 export const BRANDS = [
@@ -151,24 +152,28 @@ export const PRODUCTS: Product[] = [
 
 export const EXPERIENCES: Experience[] = [
   {
-    id: "e1",
+    id: "exp1",
     title: "Boutique Privada",
-    description: "A boutique fechada só para ti.",
+    description:
+      "A boutique fechada só para ti. Duas horas com a atenção total da equipa — escolhas sem pressa, sem o mundo lá fora.",
     duration: "2 horas",
     capacity: "Até 3 pessoas",
-    location: "Boutique, Braga",
+    location: "Braga",
     price: 150,
     image: img("1490481651871-ab68de25d43d", 1200, 800),
+    tag: "Experiência exclusiva",
   },
   {
-    id: "e2",
+    id: "exp2",
     title: "Personal Styling",
-    description: "Sessão de styling personalizada com a Antónia.",
+    description:
+      "Sessão de styling personalizada com a Antónia. Um olho clínico com 40 anos de experiência dedicado só a ti.",
     duration: "1 hora",
     capacity: "Individual",
-    location: "Boutique, Braga",
+    location: "Braga",
     price: 80,
     image: img("1515886657613-9f3515b0c78f", 1200, 800),
+    tag: "Curadoria pessoal",
   },
 ];
 
