@@ -38,13 +38,19 @@ export const Route = createRootRoute({
           "Boutique de moda feminina premium em Braga. Zadig & Voltaire, Self-Portrait, BA&SH, Alberta Ferretti e mais. Fundada em 1984.",
       },
       { name: "author", content: "Boutique Antónia Lage" },
-      { property: "og:title", content: "Boutique Antónia Lage" },
+      { property: "og:title", content: "Boutique Antónia Lage — Moda feminina premium em Braga desde 1984" },
       {
         property: "og:description",
         content: "Moda feminina premium curada em Braga desde 1984.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Boutique Antónia Lage — Moda feminina premium em Braga desde 1984" },
+      { name: "description", content: "A premium fashion boutique web app for high-end women's apparel." },
+      { property: "og:description", content: "A premium fashion boutique web app for high-end women's apparel." },
+      { name: "twitter:description", content: "A premium fashion boutique web app for high-end women's apparel." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/127a5d87-bc29-4a83-9fe4-5ce697d1dd4d/id-preview-9bd153d2--c4d11a83-3f33-44e1-a66d-25dcc8c8e9a1.lovable.app-1776446065828.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/127a5d87-bc29-4a83-9fe4-5ce697d1dd4d/id-preview-9bd153d2--c4d11a83-3f33-44e1-a66d-25dcc8c8e9a1.lovable.app-1776446065828.png" },
     ],
     links: [
       {
