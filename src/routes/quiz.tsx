@@ -60,35 +60,41 @@ function QuizPage() {
   };
 
   if (done) {
+    const styleChoice = answers["style"] ?? "";
     return (
       <Layout>
         <section className="mx-auto max-w-2xl px-4 py-20 text-center md:px-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
             <Check size={28} className="text-primary" />
           </div>
-          <h1 className="mt-6 font-display text-4xl italic text-foreground md:text-5xl">
-            O teu perfil está pronto
+          <h1 className="mt-6 font-display text-4xl font-light italic text-foreground md:text-5xl">
+            O teu perfil de estilo
           </h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 font-light text-muted-foreground">
             A Antónia já está a curar peças especialmente para ti.
           </p>
-          <div className="mt-8 space-y-3 text-left">
+          <div className="mt-10 space-y-3 text-left">
             {questions.map((q) => (
               <div
                 key={q.key}
                 className="flex items-center justify-between rounded-2xl border border-border bg-card px-5 py-4"
               >
-                <span className="text-sm text-muted-foreground">{t(q.q)}</span>
+                <span className="text-sm font-light text-muted-foreground">{t(q.q)}</span>
                 <span className="font-display text-lg italic text-primary">{answers[q.key]}</span>
               </div>
             ))}
           </div>
           <Link
-            to="/perfil"
-            className="mt-10 inline-block rounded-full bg-primary px-8 py-4 text-sm uppercase tracking-wider text-primary-foreground"
+            to="/"
+            className="mt-10 inline-block rounded-full bg-primary px-8 py-4 text-sm font-light uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
           >
-            Ver o meu perfil
+            Ver selecção para mim
           </Link>
+          {styleChoice && (
+            <p className="mt-4 text-xs font-light uppercase tracking-[0.2em] text-muted-foreground">
+              Estilo: {styleChoice}
+            </p>
+          )}
         </section>
       </Layout>
     );

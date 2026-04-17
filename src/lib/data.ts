@@ -152,36 +152,23 @@ export const PRODUCTS: Product[] = [
 export const EXPERIENCES: Experience[] = [
   {
     id: "e1",
-    title: "Personal Styling Privado",
-    description:
-      "Sessão privada com a Antónia para criar um guarda-roupa cápsula adaptado ao seu estilo de vida.",
+    title: "Boutique Privada",
+    description: "A boutique fechada só para ti.",
     duration: "2 horas",
-    capacity: "1 pessoa",
+    capacity: "Até 3 pessoas",
     location: "Boutique, Braga",
-    price: 0,
+    price: 150,
     image: img("1490481651871-ab68de25d43d", 1200, 800),
   },
   {
     id: "e2",
-    title: "Tarde de Champagne & Coleção",
-    description:
-      "Apresentação exclusiva da nova coleção com champagne e canapés num ambiente intimista.",
-    duration: "3 horas",
-    capacity: "8 pessoas",
+    title: "Personal Styling",
+    description: "Sessão de styling personalizada com a Antónia.",
+    duration: "1 hora",
+    capacity: "Individual",
     location: "Boutique, Braga",
-    price: 45,
+    price: 80,
     image: img("1515886657613-9f3515b0c78f", 1200, 800),
-  },
-  {
-    id: "e3",
-    title: "Atelier de Costura Italiana",
-    description:
-      "Workshop com mestre alfaiate italiano sobre ajustes, caimento e tecidos premium.",
-    duration: "4 horas",
-    capacity: "6 pessoas",
-    location: "Boutique, Braga",
-    price: 85,
-    image: img("1594633312681-425c7b97ccd1", 1200, 800),
   },
 ];
 

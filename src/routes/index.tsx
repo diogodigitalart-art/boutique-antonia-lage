@@ -119,7 +119,7 @@ function HomePage() {
           </div>
 
           {/* Uniform grid: 2 cols mobile, 4 cols desktop */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
+          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
             {newArrivals.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -173,7 +173,7 @@ function HomePage() {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute right-3 top-3 rounded-full bg-card/95 px-3 py-1 text-xs font-light text-foreground backdrop-blur">
-                    {e.price === 0 ? t("free") : `€${e.price}`}
+                    {e.price === 0 ? t("free") : `a partir de €${e.price}`}
                   </div>
                 </div>
                 <div className="p-6 md:p-7">
@@ -215,7 +215,7 @@ function HomePage() {
               Ver tudo <ChevronRight size={16} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
+          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
             {archive.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

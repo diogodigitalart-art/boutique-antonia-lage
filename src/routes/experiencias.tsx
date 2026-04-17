@@ -50,7 +50,7 @@ function ExperiencesPage() {
               <div className="flex flex-col justify-between p-6 md:p-10">
                 <div>
                   <div className="mb-3 inline-block rounded-full bg-primary-soft px-3 py-1 text-xs text-primary">
-                    {e.price === 0 ? t("free") : `€${e.price}`}
+                    {e.price === 0 ? t("free") : `a partir de €${e.price}`}
                   </div>
                   <h2 className="font-display text-3xl italic text-foreground md:text-4xl">
                     {e.title}
