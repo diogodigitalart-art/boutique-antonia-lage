@@ -11,7 +11,7 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
   const isArchive = product.category === "archive" && product.originalPrice;
 
   return (
-    <div className="group relative flex w-full flex-col">
+    <div className="group relative flex h-full w-full flex-col">
       <Link
         to="/produto/$id"
         params={{ id: product.id }}
