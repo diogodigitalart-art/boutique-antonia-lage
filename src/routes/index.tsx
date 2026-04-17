@@ -35,23 +35,23 @@ function HomePage() {
 
   return (
     <Layout>
-      {/* Mobile-first search bar */}
-      <section className="px-4 pt-4 md:px-8 md:pt-8">
-        <div className="mx-auto max-w-7xl">
+      {/* Prominent centered search bar */}
+      <section className="px-4 pt-8 md:px-8 md:pt-16">
+        <div className="mx-auto max-w-3xl">
           <h1 className="sr-only">Boutique Antónia Lage — Braga</h1>
-          <div className="flex items-center gap-3 rounded-full border border-border bg-card px-5 py-4 shadow-sm md:py-5">
-            <Search size={18} className="text-muted-foreground" strokeWidth={1.5} />
+          <div className="flex items-center gap-4 rounded-full border border-border bg-card px-7 py-5 shadow-sm md:py-7">
+            <Search size={20} className="text-muted-foreground" strokeWidth={1.5} />
             <input
               type="search"
               placeholder={t("search_placeholder")}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground md:text-base"
+              className="flex-1 bg-transparent text-base font-light outline-none placeholder:text-muted-foreground md:text-lg"
             />
           </div>
         </div>
       </section>
 
       {/* Mobile horizontal tabs */}
-      <section className="mt-5 md:hidden">
+      <section className="mt-8 md:hidden">
         <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
           {[
             { label: t("tab_collection"), to: "/" as const },
@@ -62,7 +62,7 @@ function HomePage() {
             <Link
               key={tab.label}
               to={tab.to}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-light transition ${
                 i === 0
                   ? "border-foreground bg-foreground text-background"
                   : "border-border bg-card text-foreground"
@@ -79,20 +79,20 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Brand filter pills */}
-      <section className="mt-4 md:mt-10">
+      {/* Brand filter pills — smaller, more elegant */}
+      <section className="mt-10 md:mt-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+          <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:justify-center md:px-0">
             {BRANDS.map((b) => {
               const active = activeBrand === b;
               return (
                 <button
                   key={b}
                   onClick={() => setActiveBrand(b)}
-                  className={`shrink-0 rounded-full border px-4 py-2 text-xs uppercase tracking-wider transition ${
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-light uppercase tracking-[0.15em] transition ${
                     active
-                      ? "border-primary bg-primary-soft text-primary"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                      ? "border-primary/40 bg-primary-soft text-primary"
+                      : "border-border/60 bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                   }`}
                 >
                   {b}
@@ -103,30 +103,23 @@ function HomePage() {
         </div>
       </section>
 
-      {/* New arrivals */}
-      <section className="mt-10">
+      {/* New arrivals — uniform grid */}
+      <section className="mt-20 md:mt-28">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="mb-5 flex items-end justify-between">
-            <h2 className="font-display text-3xl italic text-foreground md:text-4xl">
+          <div className="mb-10 flex items-end justify-between md:mb-14">
+            <h2 className="font-display text-4xl font-light italic text-foreground md:text-5xl">
               {t("new_arrivals")}
             </h2>
             <Link
               to="/arquivo"
-              className="hidden items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:flex"
+              className="hidden items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground md:flex"
             >
               Ver tudo <ChevronRight size={16} />
             </Link>
           </div>
 
-          {/* Mobile: horizontal scroll. Desktop: grid */}
-          <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 md:hidden">
-            {newArrivals.map((p) => (
-              <div key={p.id} className="w-[68vw] max-w-[280px] shrink-0">
-                <ProductCard product={p} />
-              </div>
-            ))}
-          </div>
-          <div className="hidden grid-cols-2 gap-x-6 gap-y-10 md:grid lg:grid-cols-4">
+          {/* Uniform grid: 2 cols mobile, 4 cols desktop */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
             {newArrivals.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -134,23 +127,23 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Curated card with azulejo */}
-      <section className="mt-12 px-4 md:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="azulejo-on-blue relative overflow-hidden rounded-3xl">
-            <div className="bg-primary/40 px-7 py-12 text-primary-foreground md:px-16 md:py-20">
-              <p className="text-xs uppercase tracking-[0.25em] text-primary-foreground/80">
+      {/* Curated card with azulejo — full width, more vertical padding */}
+      <section className="mt-24 md:mt-36">
+        <div className="azulejo-on-blue relative w-full overflow-hidden">
+          <div className="bg-primary/40">
+            <div className="mx-auto max-w-4xl px-6 py-24 text-center text-primary-foreground md:px-8 md:py-40">
+              <p className="text-xs font-light uppercase tracking-[0.3em] text-primary-foreground/80">
                 Curadoria pessoal
               </p>
-              <h2 className="mt-3 font-display text-4xl italic md:text-5xl">
+              <h2 className="mt-6 font-display text-5xl font-light italic md:text-7xl">
                 {t("curated_title")}
               </h2>
-              <p className="mt-3 max-w-md text-sm text-primary-foreground/85 md:text-base">
+              <p className="mx-auto mt-6 max-w-xl text-base font-light text-primary-foreground/85 md:text-lg">
                 {t("curated_subtitle")}
               </p>
               <Link
                 to="/quiz"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-card px-6 py-3 text-sm text-foreground transition hover:bg-card/90"
+                className="mt-10 inline-flex items-center gap-2 rounded-full bg-card px-8 py-4 text-sm font-light text-foreground transition hover:bg-card/90"
               >
                 {t("curated_cta")} <ChevronRight size={16} />
               </Link>
@@ -160,12 +153,12 @@ function HomePage() {
       </section>
 
       {/* Experiences */}
-      <section className="mt-14">
+      <section className="mt-24 md:mt-36">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <h2 className="mb-5 font-display text-3xl italic text-foreground md:text-4xl">
+          <h2 className="mb-10 font-display text-4xl font-light italic text-foreground md:mb-14 md:text-5xl">
             {t("exclusive_experiences")}
           </h2>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
             {EXPERIENCES.map((e) => (
               <Link
                 key={e.id}
@@ -179,16 +172,18 @@ function HomePage() {
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute right-3 top-3 rounded-full bg-card/95 px-3 py-1 text-xs font-medium text-foreground backdrop-blur">
+                  <div className="absolute right-3 top-3 rounded-full bg-card/95 px-3 py-1 text-xs font-light text-foreground backdrop-blur">
                     {e.price === 0 ? t("free") : `€${e.price}`}
                   </div>
                 </div>
-                <div className="p-5">
-                  <h3 className="font-display text-xl italic text-foreground">{e.title}</h3>
-                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
+                <div className="p-6 md:p-7">
+                  <h3 className="font-display text-2xl font-light italic text-foreground">
+                    {e.title}
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm font-light text-muted-foreground">
                     {e.description}
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                  <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-light text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Clock size={13} strokeWidth={1.5} /> {e.duration}
                     </span>
@@ -206,28 +201,21 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Archive */}
-      <section className="mt-14">
+      {/* Archive — uniform grid */}
+      <section className="mt-24 md:mt-36">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="mb-5 flex items-end justify-between">
-            <h2 className="font-display text-3xl italic text-foreground md:text-4xl">
+          <div className="mb-10 flex items-end justify-between md:mb-14">
+            <h2 className="font-display text-4xl font-light italic text-foreground md:text-5xl">
               {t("archive_pieces")}
             </h2>
             <Link
               to="/arquivo"
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground"
             >
               Ver tudo <ChevronRight size={16} />
             </Link>
           </div>
-          <div className="no-scrollbar -mx-4 flex gap-4 overflow-x-auto px-4 md:hidden">
-            {archive.map((p) => (
-              <div key={p.id} className="w-[68vw] max-w-[280px] shrink-0">
-                <ProductCard product={p} />
-              </div>
-            ))}
-          </div>
-          <div className="hidden grid-cols-2 gap-x-6 gap-y-10 md:grid lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
             {archive.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -235,7 +223,7 @@ function HomePage() {
         </div>
       </section>
 
-      <footer className="mt-20 border-t border-border py-10 text-center text-xs uppercase tracking-[0.3em] text-muted-foreground">
+      <footer className="mt-32 border-t border-border py-12 text-center text-xs font-light uppercase tracking-[0.3em] text-muted-foreground md:mt-40">
         {t("founded")}
       </footer>
     </Layout>
