@@ -86,11 +86,15 @@ function QuizPage() {
           </div>
           <Link
             to="/"
-            search={{ style: styleChoice }}
             className="mt-10 inline-block rounded-full bg-primary px-8 py-4 text-sm font-light uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
           >
             Ver selecção para mim
           </Link>
+          {styleChoice && (
+            <p className="mt-4 text-xs font-light uppercase tracking-[0.2em] text-muted-foreground">
+              Estilo: {styleChoice}
+            </p>
+          )}
         </section>
       </Layout>
     );
