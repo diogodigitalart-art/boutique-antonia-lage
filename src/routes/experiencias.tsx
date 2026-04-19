@@ -91,6 +91,8 @@ function ExperiencesPage() {
         onClose={() => setSelected(null)}
         title={selected ? `Reservar — ${selected.title}` : undefined}
         contextLabel="Experiência"
+        itemName={selected?.title ?? ""}
+        itemType="experiencia"
       />
     </Layout>
   );
