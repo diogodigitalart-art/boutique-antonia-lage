@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, Users, MapPin, Calendar } from "lucide-react";
+import { Clock, Users, MapPin } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { EXPERIENCES } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";

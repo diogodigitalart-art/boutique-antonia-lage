@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, ChevronLeft, Check, Info } from "lucide-react";
+import { Heart, ChevronLeft, Check } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { getProduct, PRODUCTS } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
