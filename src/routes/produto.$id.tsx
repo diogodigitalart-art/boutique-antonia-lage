@@ -1,11 +1,13 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, ChevronLeft, Check } from "lucide-react";
+import { Heart, ChevronLeft, Check, Info } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { getProduct, PRODUCTS } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/ProductCard";
+
+const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
 export const Route = createFileRoute("/produto/$id")({
   loader: ({ params }) => {
@@ -43,6 +45,7 @@ export const Route = createFileRoute("/produto/$id")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
+  const router = useRouter();
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const [size, setSize] = useState<string | null>(null);
@@ -55,19 +58,28 @@ function ProductPage() {
     4,
   );
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+    } else {
+      router.navigate({ to: "/" });
+    }
+  };
+
   return (
     <Layout>
       <div className="mx-auto max-w-7xl px-4 pt-4 md:px-8">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        <button
+          onClick={handleBack}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ChevronLeft size={16} /> Voltar
-        </Link>
+        </button>
       </div>
 
-      <div className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-2 md:px-8 md:py-6">
-        <div className="overflow-hidden rounded-3xl bg-muted">
+      {/* 60/40 grid on desktop, stacked on mobile */}
+      <div className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-5 md:px-8 md:py-6">
+        <div className="overflow-hidden rounded-3xl bg-muted md:col-span-3">
           <img
             src={product.image}
             alt={`${product.brand} ${product.name}`}
@@ -75,7 +87,7 @@ function ProductPage() {
           />
         </div>
 
-        <div className="md:py-8">
+        <div className="md:col-span-2 md:py-4">
           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
             {product.brand}
           </p>
@@ -99,7 +111,7 @@ function ProductPage() {
             )}
           </div>
 
-          {/* Sizes */}
+          {/* Sizes — always show XS–XL, disable unavailable */}
           <div className="mt-8">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm uppercase tracking-wider text-muted-foreground">
@@ -107,61 +119,74 @@ function ProductPage() {
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((s: string) => (
-                <button
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full border text-sm transition ${
-                    size === s
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-card text-foreground hover:border-foreground"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {ALL_SIZES.map((s) => {
+                const available = product.sizes.includes(s);
+                const selected = size === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => available && setSize(s)}
+                    disabled={!available}
+                    className={`flex h-11 w-11 items-center justify-center rounded-md border text-sm transition ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : available
+                          ? "border-border bg-card text-foreground hover:border-primary"
+                          : "cursor-not-allowed border-border bg-muted text-muted-foreground/50 line-through"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Description */}
+          <p className="mt-8 leading-relaxed text-muted-foreground">
+            {product.description} Uma peça pensada para durar — tecidos nobres, acabamentos
+            cuidados e um caimento que valoriza a silhueta. Ideal para compor um guarda-roupa
+            elegante e intemporal.
+          </p>
+
+          {/* Actions — stacked full-width */}
           <div className="mt-8 flex flex-col gap-3">
             <button
               onClick={() => setReserved(true)}
-              className="flex h-14 items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
+              className="flex h-14 w-full items-center justify-center rounded-full border border-primary text-sm uppercase tracking-wider text-primary transition hover:bg-primary-soft"
             >
               {reserved ? (
                 <span className="inline-flex items-center gap-2">
                   <Check size={16} /> {t("reserve_confirm")}
                 </span>
               ) : (
-                t("reserve")
+                "Reservar para experimentar"
               )}
             </button>
-            <div className="flex gap-3">
-              <button className="flex h-14 flex-1 items-center justify-center rounded-full border border-foreground text-sm uppercase tracking-wider text-foreground transition hover:bg-foreground hover:text-background">
-                {t("buy")}
-              </button>
-              <button
-                onClick={() => toggle(product.id)}
-                aria-label="Wishlist"
-                className="flex h-14 w-14 items-center justify-center rounded-full border border-border hover:bg-muted"
-              >
-                <Heart
-                  size={18}
-                  strokeWidth={1.5}
-                  className={liked ? "fill-primary text-primary" : "text-foreground"}
-                />
-              </button>
-            </div>
+            <button className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
+              Comprar
+            </button>
           </div>
 
-          {/* Description */}
-          <div className="mt-10 border-t border-border pt-6">
-            <h2 className="text-sm uppercase tracking-wider text-muted-foreground">
-              {t("description")}
-            </h2>
-            <p className="mt-3 leading-relaxed text-foreground">{product.description}</p>
+          {/* Reassurance line */}
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Info size={13} strokeWidth={1.5} />
+            <span>Reserva gratuita · Peça guardada 48h · Sem compromisso</span>
           </div>
+
+          {/* Wishlist as subtle action */}
+          <button
+            onClick={() => toggle(product.id)}
+            aria-label="Wishlist"
+            className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
+          >
+            <Heart
+              size={15}
+              strokeWidth={1.5}
+              className={liked ? "fill-primary text-primary" : ""}
+            />
+            {liked ? "Na tua wishlist" : "Adicionar à wishlist"}
+          </button>
         </div>
       </div>
 
