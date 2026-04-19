@@ -204,6 +204,8 @@ function ProductPage() {
         onClose={() => setReserveOpen(false)}
         title={`Reservar — ${product.name}`}
         contextLabel={product.brand}
+        itemName={`${product.brand} — ${product.name}`}
+        itemType="produto"
       />
     </Layout>
   );
