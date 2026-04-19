@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Clock, Users, MapPin } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { EXPERIENCES } from "@/lib/data";
+import { EXPERIENCES, type Experience } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
+import { ReservationModal } from "@/components/ReservationModal";
 
 export const Route = createFileRoute("/experiencias")({
   head: () => ({
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/experiencias")({
 
 function ExperiencesPage() {
   const { t } = useI18n();
+  const [selected, setSelected] = useState<Experience | null>(null);
   return (
     <Layout>
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-8 md:pt-14">
@@ -71,7 +74,10 @@ function ExperiencesPage() {
                     </span>
                   </div>
                 </div>
-                <button className="mt-8 h-12 rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
+                <button
+                  onClick={() => setSelected(e)}
+                  className="mt-8 h-12 rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
+                >
                   {t("book")}
                 </button>
               </div>
@@ -79,6 +85,13 @@ function ExperiencesPage() {
           ))}
         </div>
       </section>
+
+      <ReservationModal
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected ? `Reservar — ${selected.title}` : undefined}
+        contextLabel="Experiência"
+      />
     </Layout>
   );
 }
