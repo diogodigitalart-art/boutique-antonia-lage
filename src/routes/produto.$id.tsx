@@ -1,11 +1,12 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Heart, ChevronLeft, Check } from "lucide-react";
+import { Heart, ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { getProduct, PRODUCTS } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/ProductCard";
+import { ReservationModal } from "@/components/ReservationModal";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
@@ -49,7 +50,7 @@ function ProductPage() {
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const [size, setSize] = useState<string | null>(null);
-  const [reserved, setReserved] = useState(false);
+  const [reserveOpen, setReserveOpen] = useState(false);
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
 
@@ -155,16 +156,10 @@ function ProductPage() {
               Comprar
             </button>
             <button
-              onClick={() => setReserved(true)}
+              onClick={() => setReserveOpen(true)}
               className="flex h-14 w-full items-center justify-center rounded-full border border-primary text-sm uppercase tracking-wider text-primary transition hover:bg-primary-soft"
             >
-              {reserved ? (
-                <span className="inline-flex items-center gap-2">
-                  <Check size={16} /> {t("reserve_confirm")}
-                </span>
-              ) : (
-                "Reservar para experimentar"
-              )}
+              Reservar para experimentar
             </button>
           </div>
 
@@ -203,6 +198,13 @@ function ProductPage() {
           </div>
         </section>
       )}
+
+      <ReservationModal
+        open={reserveOpen}
+        onClose={() => setReserveOpen(false)}
+        title={`Reservar — ${product.name}`}
+        contextLabel={product.brand}
+      />
     </Layout>
   );
 }
