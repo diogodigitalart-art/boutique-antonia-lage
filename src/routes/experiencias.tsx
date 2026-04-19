@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, Users, MapPin, Calendar } from "lucide-react";
+import { Clock, Users, MapPin } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { EXPERIENCES } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
@@ -68,10 +68,6 @@ function ExperiencesPage() {
                     <span className="inline-flex items-center gap-2">
                       <MapPin size={15} strokeWidth={1.5} className="text-primary" />
                       {e.location}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <Calendar size={15} strokeWidth={1.5} className="text-primary" />
-                      Quinzenal
                     </span>
                   </div>
                 </div>
