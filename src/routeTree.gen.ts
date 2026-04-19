@@ -16,6 +16,7 @@ import { Route as ExperienciasRouteImport } from './routes/experiencias'
 import { Route as ArquivoRouteImport } from './routes/arquivo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
+import { Route as ApiReservationRouteImport } from './routes/api/reservation'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -52,6 +53,11 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
   path: '/produto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReservationRoute = ApiReservationRouteImport.update({
+  id: '/api/reservation',
+  path: '/api/reservation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/quiz': typeof QuizRoute
   '/wishlist': typeof WishlistRoute
+  '/api/reservation': typeof ApiReservationRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/quiz': typeof QuizRoute
   '/wishlist': typeof WishlistRoute
+  '/api/reservation': typeof ApiReservationRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/quiz': typeof QuizRoute
   '/wishlist': typeof WishlistRoute
+  '/api/reservation': typeof ApiReservationRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/quiz'
     | '/wishlist'
+    | '/api/reservation'
     | '/produto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/quiz'
     | '/wishlist'
+    | '/api/reservation'
     | '/produto/$id'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/quiz'
     | '/wishlist'
+    | '/api/reservation'
     | '/produto/$id'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   QuizRoute: typeof QuizRoute
   WishlistRoute: typeof WishlistRoute
+  ApiReservationRoute: typeof ApiReservationRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
 }
 
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reservation': {
+      id: '/api/reservation'
+      path: '/api/reservation'
+      fullPath: '/api/reservation'
+      preLoaderRoute: typeof ApiReservationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,8 +202,18 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   QuizRoute: QuizRoute,
   WishlistRoute: WishlistRoute,
+  ApiReservationRoute: ApiReservationRoute,
   ProdutoIdRoute: ProdutoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
