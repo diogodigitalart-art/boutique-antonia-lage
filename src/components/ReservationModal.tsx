@@ -1,28 +1,57 @@
 import { useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { sendReservationEmail } from "@/server/reservation";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   title?: string;
   contextLabel?: string;
+  itemName: string;
+  itemType: "produto" | "experiencia";
 };
 
-export function ReservationModal({ open, onClose, title, contextLabel }: Props) {
+export function ReservationModal({
+  open,
+  onClose,
+  title,
+  contextLabel,
+  itemName,
+  itemType,
+}: Props) {
   const [submitting, setSubmitting] = useState(false);
+  const send = useServerFn(sendReservationEmail);
   const today = new Date().toISOString().split("T")[0];
 
   if (!open) return null;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const payload = {
+      itemName,
+      itemType,
+      name: String(formData.get("name") ?? "").trim(),
+      email: String(formData.get("email") ?? "").trim(),
+      phone: String(formData.get("phone") ?? "").trim(),
+      date: String(formData.get("date") ?? "").trim(),
+      message: String(formData.get("message") ?? "").trim() || undefined,
+    };
+
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await send({ data: payload });
       onClose();
       toast.success("Reserva confirmada! Entraremos em contacto em breve.");
-    }, 400);
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível enviar a reserva. Tenta novamente.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -66,6 +95,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
             </label>
             <input
               id="name"
+              name="name"
               required
               type="text"
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
@@ -78,6 +108,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
             </label>
             <input
               id="email"
+              name="email"
               required
               type="email"
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
@@ -90,6 +121,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
             </label>
             <input
               id="phone"
+              name="phone"
               required
               type="tel"
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
@@ -102,6 +134,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
             </label>
             <input
               id="date"
+              name="date"
               required
               type="date"
               min={today}
@@ -115,6 +148,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
             </label>
             <textarea
               id="message"
+              name="message"
               rows={3}
               className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
             />
@@ -126,7 +160,7 @@ export function ReservationModal({ open, onClose, title, contextLabel }: Props) 
               disabled={submitting}
               className="flex h-12 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
             >
-              {submitting ? "A confirmar..." : "Confirmar reserva"}
+              {submitting ? "A enviar..." : "Confirmar reserva"}
             </button>
             <button
               type="button"
