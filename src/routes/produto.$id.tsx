@@ -149,8 +149,11 @@ function ProductPage() {
             elegante e intemporal.
           </p>
 
-          {/* Actions — stacked full-width */}
+          {/* Actions — stacked full-width, Comprar primary first */}
           <div className="mt-8 flex flex-col gap-3">
+            <button className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
+              Comprar
+            </button>
             <button
               onClick={() => setReserved(true)}
               className="flex h-14 w-full items-center justify-center rounded-full border border-primary text-sm uppercase tracking-wider text-primary transition hover:bg-primary-soft"
@@ -163,16 +166,12 @@ function ProductPage() {
                 "Reservar para experimentar"
               )}
             </button>
-            <button className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
-              Comprar
-            </button>
           </div>
 
           {/* Reassurance line */}
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Info size={13} strokeWidth={1.5} />
-            <span>Reserva gratuita · Peça guardada 48h · Sem compromisso</span>
-          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Reserva gratuita · Peça guardada 48h · Sem compromisso
+          </p>
 
           {/* Wishlist as subtle action */}
           <button

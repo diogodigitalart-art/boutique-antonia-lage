@@ -69,10 +69,6 @@ function ExperiencesPage() {
                       <MapPin size={15} strokeWidth={1.5} className="text-primary" />
                       {e.location}
                     </span>
-                    <span className="inline-flex items-center gap-2">
-                      <Calendar size={15} strokeWidth={1.5} className="text-primary" />
-                      Quinzenal
-                    </span>
                   </div>
                 </div>
                 <button className="mt-8 h-12 rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
