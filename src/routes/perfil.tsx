@@ -49,13 +49,13 @@ function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
   const { user, profile, signOut } = useAuth();
-  const [profile, setProfile] = useState<Record<string, string> | null>(null);
+  const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
   useEffect(() => {
     try {
       const rawProfile = localStorage.getItem("al-style-profile");
-      if (rawProfile) setProfile(JSON.parse(rawProfile));
+      if (rawProfile) setStyleProfile(JSON.parse(rawProfile));
     } catch {}
     try {
       const rawRes = localStorage.getItem("al-reservations");
@@ -83,12 +83,27 @@ function ProfileContent() {
       {/* Hero */}
       <section className="azulejo-on-blue">
         <div className="bg-primary/30 px-4 py-12 md:px-8 md:py-20">
-          <div className="mx-auto max-w-7xl text-primary-foreground">
-            <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/80">
-              Cliente desde 2023
-            </p>
-            <h1 className="mt-3 font-display text-5xl italic md:text-6xl">Maria Silva</h1>
-            <p className="mt-2 text-primary-foreground/85">maria.silva@email.pt · Braga</p>
+          <div className="mx-auto flex max-w-7xl items-start justify-between gap-4 text-primary-foreground">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/80">
+                A minha conta
+              </p>
+              <h1 className="mt-3 truncate font-display text-5xl italic md:text-6xl">
+                {profile?.full_name || "Bem-vinda"}
+              </h1>
+              <p className="mt-2 truncate text-primary-foreground/85">
+                {profile?.email || user?.email}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                await signOut();
+                toast.success("Sessão terminada");
+              }}
+              className="hidden shrink-0 items-center gap-2 rounded-full border border-primary-foreground/40 bg-primary-foreground/10 px-4 py-2 text-xs uppercase tracking-wider text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/20 md:inline-flex"
+            >
+              <LogOut size={14} /> Terminar sessão
+            </button>
           </div>
         </div>
       </section>
@@ -100,10 +115,10 @@ function ProfileContent() {
             eyebrow={t("your_profile")}
             title="O teu perfil de estilo"
           />
-          {profile && Object.keys(profile).length > 0 ? (
+          {styleProfile && Object.keys(styleProfile).length > 0 ? (
             <div className="overflow-hidden rounded-3xl border border-border bg-card">
               <div className="grid gap-px bg-border md:grid-cols-2">
-                {Object.entries(profile).map(([k, v]) => {
+                {Object.entries(styleProfile).map(([k, v]) => {
                   const meta = QUIZ_META[k] ?? { label: k, icon: Sparkles };
                   const Icon = meta.icon;
                   return (
