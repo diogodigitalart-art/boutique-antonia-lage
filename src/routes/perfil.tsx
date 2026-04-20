@@ -4,7 +4,10 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { PRODUCTS } from "@/lib/data";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut } from "lucide-react";
+import { AuthGuard } from "@/components/AuthGuard";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -35,8 +38,17 @@ const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
 };
 
 function ProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfileContent />
+    </AuthGuard>
+  );
+}
+
+function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
+  const { user, profile, signOut } = useAuth();
   const [profile, setProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
