@@ -3,6 +3,8 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendReservationEmail } from "@/server/reservation";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 type Props = {
   open: boolean;
@@ -23,6 +25,7 @@ export function ReservationModal({
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const send = useServerFn(sendReservationEmail);
+  const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
 
   if (!open) return null;
@@ -44,15 +47,20 @@ export function ReservationModal({
     setSubmitting(true);
     try {
       await send({ data: payload });
-      try {
-        const raw = localStorage.getItem("al-reservations");
-        const list = raw ? JSON.parse(raw) : [];
-        list.unshift({
-          ...payload,
-          createdAt: new Date().toISOString(),
+      if (user) {
+        const { error } = await supabase.from("reservations").insert({
+          user_id: user.id,
+          item_name: payload.itemName,
+          item_type: payload.itemType,
+          customer_name: payload.name,
+          customer_email: payload.email,
+          customer_phone: payload.phone,
+          reservation_date: payload.date,
+          message: payload.message ?? null,
+          status: "Confirmada",
         });
-        localStorage.setItem("al-reservations", JSON.stringify(list.slice(0, 20)));
-      } catch {}
+        if (error) console.error("Failed to save reservation", error);
+      }
       onClose();
       toast.success("Reserva confirmada! Entraremos em contacto em breve.");
     } catch (err) {

@@ -8,6 +8,7 @@ import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, Lo
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -28,6 +29,7 @@ type Reservation = {
   date: string;
   message?: string;
   createdAt: string;
+  status?: string;
 };
 
 const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
@@ -57,11 +59,32 @@ function ProfileContent() {
       const rawProfile = localStorage.getItem("al-style-profile");
       if (rawProfile) setStyleProfile(JSON.parse(rawProfile));
     } catch {}
-    try {
-      const rawRes = localStorage.getItem("al-reservations");
-      if (rawRes) setReservations(JSON.parse(rawRes));
-    } catch {}
-  }, []);
+    if (!user) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("reservations")
+        .select("item_name, item_type, customer_name, customer_email, customer_phone, reservation_date, message, status, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error(error);
+        return;
+      }
+      setReservations(
+        (data ?? []).map((r) => ({
+          itemName: r.item_name,
+          itemType: r.item_type as "produto" | "experiencia",
+          name: r.customer_name,
+          email: r.customer_email,
+          phone: r.customer_phone,
+          date: r.reservation_date,
+          message: r.message ?? undefined,
+          status: r.status ?? "Confirmada",
+          createdAt: r.created_at,
+        })),
+      );
+    })();
+  }, [user]);
 
   const wishItems = PRODUCTS.filter((p) => ids.includes(p.id)).slice(0, 4);
 

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Layout } from "@/components/Layout";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/contactos")({
   head: () => ({
@@ -19,11 +20,23 @@ function ContactPage() {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const payload = {
+      name: String(fd.get("name") ?? "").trim(),
+      email: String(fd.get("email") ?? "").trim(),
+      subject: String(fd.get("subject") ?? "").trim(),
+      message: String(fd.get("message") ?? "").trim(),
+    };
     setSubmitting(true);
-    // Placeholder — wire to backend later
-    await new Promise((r) => setTimeout(r, 600));
+    const { error } = await supabase.from("contact_messages").insert(payload);
     setSubmitting(false);
-    (e.target as HTMLFormElement).reset();
+    if (error) {
+      console.error(error);
+      toast.error("Não foi possível enviar a mensagem. Tenta novamente.");
+      return;
+    }
+    form.reset();
     toast.success("Mensagem enviada. Respondemos em breve.");
   };
 
