@@ -7,6 +7,8 @@ import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/ProductCard";
 import { ReservationModal } from "@/components/ReservationModal";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
@@ -49,10 +51,20 @@ function ProductPage() {
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
+  const { session } = useAuth();
   const [size, setSize] = useState<string | null>(null);
   const [reserveOpen, setReserveOpen] = useState(false);
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
+
+  const requireAuth = (next: () => void) => {
+    if (!session) {
+      toast.error("Inicia sessão para continuar com a tua reserva.");
+      router.navigate({ to: "/login", search: { redirect: `/produto/${product.id}` } });
+      return;
+    }
+    next();
+  };
 
   const related = PRODUCTS.filter((p) => p.id !== product.id && p.brand === product.brand).slice(
     0,
@@ -152,11 +164,14 @@ function ProductPage() {
 
           {/* Actions — stacked full-width, Comprar primary first */}
           <div className="mt-8 flex flex-col gap-3">
-            <button className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90">
+            <button
+              onClick={() => requireAuth(() => setReserveOpen(true))}
+              className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
+            >
               Comprar
             </button>
             <button
-              onClick={() => setReserveOpen(true)}
+              onClick={() => requireAuth(() => setReserveOpen(true))}
               className="flex h-14 w-full items-center justify-center rounded-full border border-primary text-sm uppercase tracking-wider text-primary transition hover:bg-primary-soft"
             >
               Reservar para experimentar
