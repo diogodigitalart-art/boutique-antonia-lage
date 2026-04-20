@@ -84,14 +84,14 @@ function ProfileContent() {
       <section className="azulejo-on-blue">
         <div className="bg-primary/30 px-4 py-12 md:px-8 md:py-20">
           <div className="mx-auto flex max-w-7xl items-start justify-between gap-4 text-primary-foreground">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/80">
                 A minha conta
               </p>
-              <h1 className="mt-3 truncate font-display text-5xl italic md:text-6xl">
+              <h1 className="mt-3 break-words font-display text-4xl italic leading-tight md:text-6xl">
                 {profile?.full_name || "Bem-vinda"}
               </h1>
-              <p className="mt-2 truncate text-primary-foreground/85">
+              <p className="mt-2 break-words text-primary-foreground/85">
                 {profile?.email || user?.email}
               </p>
             </div>

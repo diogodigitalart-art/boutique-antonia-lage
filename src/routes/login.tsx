@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import logoUrl from "@/assets/logo.svg";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -26,7 +27,7 @@ function LoginPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateAuthError(error.message));
     toast.success("Bem-vinda de volta");
     navigate({ to: redirect });
   };
@@ -35,7 +36,7 @@ function LoginPage() {
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}${redirect}`,
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error(translateAuthError(error.message));
   };
 
   const handleReset = async (e: FormEvent) => {
@@ -44,7 +45,7 @@ function LoginPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateAuthError(error.message));
     toast.success("Verifica o teu email para redefinir a password");
     setShowReset(false);
   };

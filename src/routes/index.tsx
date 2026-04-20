@@ -223,9 +223,6 @@ function HomePage() {
         </div>
       </section>
 
-      <footer className="mt-32 border-t border-border py-12 text-center text-xs font-light uppercase tracking-[0.3em] text-muted-foreground md:mt-40">
-        {t("founded")}
-      </footer>
     </Layout>
   );
 }

@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Clock, Users, MapPin } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { EXPERIENCES, type Experience } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { ReservationModal } from "@/components/ReservationModal";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/experiencias")({
   head: () => ({
@@ -27,7 +29,18 @@ export const Route = createFileRoute("/experiencias")({
 
 function ExperiencesPage() {
   const { t } = useI18n();
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<Experience | null>(null);
+
+  const handleBook = (e: Experience) => {
+    if (!session) {
+      toast.error("Inicia sessão para continuar com a tua reserva.");
+      navigate({ to: "/login", search: { redirect: "/experiencias" } });
+      return;
+    }
+    setSelected(e);
+  };
   return (
     <Layout>
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-8 md:pt-14">
@@ -75,7 +88,7 @@ function ExperiencesPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelected(e)}
+                  onClick={() => handleBook(e)}
                   className="mt-8 h-12 rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
                 >
                   {t("book")}
