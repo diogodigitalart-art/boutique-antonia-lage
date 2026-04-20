@@ -4,7 +4,10 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { PRODUCTS } from "@/lib/data";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut } from "lucide-react";
+import { AuthGuard } from "@/components/AuthGuard";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -35,15 +38,24 @@ const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
 };
 
 function ProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfileContent />
+    </AuthGuard>
+  );
+}
+
+function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
-  const [profile, setProfile] = useState<Record<string, string> | null>(null);
+  const { user, profile, signOut } = useAuth();
+  const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
   useEffect(() => {
     try {
       const rawProfile = localStorage.getItem("al-style-profile");
-      if (rawProfile) setProfile(JSON.parse(rawProfile));
+      if (rawProfile) setStyleProfile(JSON.parse(rawProfile));
     } catch {}
     try {
       const rawRes = localStorage.getItem("al-reservations");
@@ -71,12 +83,27 @@ function ProfilePage() {
       {/* Hero */}
       <section className="azulejo-on-blue">
         <div className="bg-primary/30 px-4 py-12 md:px-8 md:py-20">
-          <div className="mx-auto max-w-7xl text-primary-foreground">
-            <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/80">
-              Cliente desde 2023
-            </p>
-            <h1 className="mt-3 font-display text-5xl italic md:text-6xl">Maria Silva</h1>
-            <p className="mt-2 text-primary-foreground/85">maria.silva@email.pt · Braga</p>
+          <div className="mx-auto flex max-w-7xl items-start justify-between gap-4 text-primary-foreground">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/80">
+                A minha conta
+              </p>
+              <h1 className="mt-3 truncate font-display text-5xl italic md:text-6xl">
+                {profile?.full_name || "Bem-vinda"}
+              </h1>
+              <p className="mt-2 truncate text-primary-foreground/85">
+                {profile?.email || user?.email}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                await signOut();
+                toast.success("Sessão terminada");
+              }}
+              className="hidden shrink-0 items-center gap-2 rounded-full border border-primary-foreground/40 bg-primary-foreground/10 px-4 py-2 text-xs uppercase tracking-wider text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/20 md:inline-flex"
+            >
+              <LogOut size={14} /> Terminar sessão
+            </button>
           </div>
         </div>
       </section>
@@ -88,10 +115,10 @@ function ProfilePage() {
             eyebrow={t("your_profile")}
             title="O teu perfil de estilo"
           />
-          {profile && Object.keys(profile).length > 0 ? (
+          {styleProfile && Object.keys(styleProfile).length > 0 ? (
             <div className="overflow-hidden rounded-3xl border border-border bg-card">
               <div className="grid gap-px bg-border md:grid-cols-2">
-                {Object.entries(profile).map(([k, v]) => {
+                {Object.entries(styleProfile).map(([k, v]) => {
                   const meta = QUIZ_META[k] ?? { label: k, icon: Sparkles };
                   const Icon = meta.icon;
                   return (
@@ -159,7 +186,7 @@ function ProfilePage() {
                       </p>
                     </div>
                   </div>
-                  <span className="self-start rounded-full bg-emerald-100 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-emerald-700 md:self-auto dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <span className="self-start rounded-full bg-success-soft px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-success md:self-auto">
                     Confirmada
                   </span>
                 </div>
@@ -249,6 +276,17 @@ function ProfilePage() {
             ))}
           </div>
         </div>
+
+        {/* Mobile logout */}
+        <button
+          onClick={async () => {
+            await signOut();
+            toast.success("Sessão terminada");
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm uppercase tracking-wider text-foreground transition hover:bg-muted md:hidden"
+        >
+          <LogOut size={14} /> Terminar sessão
+        </button>
       </section>
     </Layout>
   );

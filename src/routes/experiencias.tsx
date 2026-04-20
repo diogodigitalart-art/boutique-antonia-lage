@@ -13,7 +13,7 @@ export const Route = createFileRoute("/experiencias")({
       {
         name: "description",
         content:
-          "Boutique Privada e Personal Styling com a Antónia, na boutique em Braga.",
+          "Boutique Privada e Personal Styling com a nossa equipa, na boutique em Braga.",
       },
       { property: "og:title", content: "Experiências exclusivas — Antónia Lage" },
       {
@@ -36,7 +36,7 @@ function ExperiencesPage() {
           {t("exclusive_experiences")}
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Momentos íntimos curados pela Antónia. Reserva o teu lugar na boutique.
+          Momentos íntimos curados pela Boutique Antónia Lage. Reserva o teu lugar.
         </p>
       </section>
 

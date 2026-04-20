@@ -5,6 +5,7 @@ import { PRODUCTS } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { Heart } from "lucide-react";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({
@@ -17,6 +18,14 @@ export const Route = createFileRoute("/wishlist")({
 });
 
 function WishlistPage() {
+  return (
+    <AuthGuard>
+      <WishlistContent />
+    </AuthGuard>
+  );
+}
+
+function WishlistContent() {
   const { ids } = useWishlist();
   const { t } = useI18n();
   const items = PRODUCTS.filter((p) => ids.includes(p.id));
