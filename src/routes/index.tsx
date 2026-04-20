@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Descobre as novas chegadas de Zadig & Voltaire, Self-Portrait, BA&SH e mais marcas de luxo curadas pela Antónia.",
+          "Descobre as novas chegadas de Zadig & Voltaire, Self-Portrait, BA&SH e mais marcas de luxo curadas pela Boutique Antónia Lage.",
       },
       { property: "og:title", content: "Boutique Antónia Lage — Coleção" },
       {

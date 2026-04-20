@@ -3,6 +3,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { I18nProvider } from "@/lib/i18n";
 import { WishlistProvider } from "@/lib/wishlist";
+import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -82,10 +83,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <I18nProvider>
-      <WishlistProvider>
-        <Outlet />
-        <Toaster position="top-center" />
-      </WishlistProvider>
+      <AuthProvider>
+        <WishlistProvider>
+          <Outlet />
+          <Toaster position="top-center" />
+        </WishlistProvider>
+      </AuthProvider>
     </I18nProvider>
   );
 }
