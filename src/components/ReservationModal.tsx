@@ -44,6 +44,15 @@ export function ReservationModal({
     setSubmitting(true);
     try {
       await send({ data: payload });
+      try {
+        const raw = localStorage.getItem("al-reservations");
+        const list = raw ? JSON.parse(raw) : [];
+        list.unshift({
+          ...payload,
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem("al-reservations", JSON.stringify(list.slice(0, 20)));
+      } catch {}
       onClose();
       toast.success("Reserva confirmada! Entraremos em contacto em breve.");
     } catch (err) {
