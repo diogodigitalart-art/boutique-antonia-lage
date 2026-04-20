@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import logoUrl from "@/assets/logo.svg";
+import { translateAuthError, validatePassword, PASSWORD_HINT } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/registo")({
   head: () => ({ meta: [{ title: "Criar conta | Boutique Antónia Lage" }] }),
@@ -19,7 +21,8 @@ function RegisterPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) return toast.error("A password deve ter pelo menos 6 caracteres");
+    const pwError = validatePassword(password);
+    if (pwError) return toast.error(pwError);
     if (password !== confirm) return toast.error("As passwords não coincidem");
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -31,9 +34,16 @@ function RegisterPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateAuthError(error.message));
     toast.success("Conta criada. Bem-vinda à boutique.");
     navigate({ to: "/perfil" });
+  };
+
+  const handleGoogle = async () => {
+    const { error } = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/perfil`,
+    });
+    if (error) toast.error(translateAuthError(error.message));
   };
 
   return (

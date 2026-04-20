@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logoUrl from "@/assets/logo.svg";
+import { translateAuthError, validatePassword, PASSWORD_HINT } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Nova password | Boutique Antónia Lage" }] }),
@@ -17,12 +18,13 @@ function ResetPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) return toast.error("Mínimo 6 caracteres");
+    const pwError = validatePassword(password);
+    if (pwError) return toast.error(pwError);
     if (password !== confirm) return toast.error("As passwords não coincidem");
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(translateAuthError(error.message));
     toast.success("Password actualizada");
     navigate({ to: "/perfil" });
   };
