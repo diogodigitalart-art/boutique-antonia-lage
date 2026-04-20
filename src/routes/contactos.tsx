@@ -58,8 +58,9 @@ function ContactPage() {
             <div className="overflow-hidden rounded-3xl border border-border">
               <iframe
                 title="Mapa da Boutique Antónia Lage"
-                src="https://www.google.com/maps?q=R.+Dom+Afonso+Henriques+111,+Braga,+Portugal&output=embed"
-                className="h-72 w-full"
+                src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d186.61973420418636!2d-8.425739345423356!3d41.549421447278085!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd24febbf00ed9ed%3A0x41250303f208cce6!2sAnt%C3%B3nia%20Lage%20Boutique!5e0!3m2!1spt-PT!2sus!4v1776706693749!5m2!1spt-PT!2sus"
+                className="h-[450px] w-full border-0"
+                allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
