@@ -210,7 +210,7 @@ function ProfileContent() {
                     </div>
                   </div>
                   <span className="self-start rounded-full bg-success-soft px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-success md:self-auto">
-                    Confirmada
+                    {r.status ?? "Confirmada"}
                   </span>
                 </div>
               ))}
