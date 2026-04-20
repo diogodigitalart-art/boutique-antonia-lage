@@ -1,10 +1,14 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Search, User } from "lucide-react";
+import { Search, User, Heart } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useWishlist } from "@/lib/wishlist";
+import { Logo } from "./Logo";
 
 export function TopNav() {
   const { lang, setLang, t } = useI18n();
+  const { ids } = useWishlist();
   const loc = useLocation();
+  const hasWish = ids.length > 0;
 
   const tabs: { to: "/" | "/experiencias" | "/arquivo"; label: string; match: string; badge?: boolean }[] = [
     { to: "/", label: t("tab_collection"), match: "/" },
@@ -15,9 +19,7 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
-        <Link to="/" className="font-display text-2xl italic tracking-tight text-foreground">
-          Antónia Lage
-        </Link>
+        <Logo />
 
         {/* Desktop tabs */}
         <nav className="hidden items-center gap-8 md:flex">
@@ -58,6 +60,16 @@ export function TopNav() {
           >
             <Search size={19} strokeWidth={1.5} />
           </button>
+          <Link
+            to="/wishlist"
+            aria-label="Wishlist"
+            className="relative hidden h-10 w-10 items-center justify-center rounded-full hover:bg-muted md:flex"
+          >
+            <Heart size={19} strokeWidth={1.5} />
+            {hasWish && (
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+            )}
+          </Link>
           <Link
             to="/perfil"
             aria-label="Profile"
