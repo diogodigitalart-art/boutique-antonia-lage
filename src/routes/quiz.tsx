@@ -43,7 +43,7 @@ function buildProfileDescription(a: Record<string, string>) {
   const style = a.style ?? "";
   const piece = a.piece?.toLowerCase() ?? "";
   const budget = a.budget ?? "";
-  return `O teu perfil revela uma mulher com sensibilidade ${style.toLowerCase()}, que valoriza ${piece} para momentos de ${occasion}. A Antónia vai curar peças que combinam elegância intemporal com o teu orçamento de ${budget} — selecções pensadas para durar e para te fazerem sentir verdadeiramente tu.`;
+  return `O teu perfil revela uma mulher com sensibilidade ${style.toLowerCase()}, que valoriza ${piece} para momentos de ${occasion}. A Boutique Antónia Lage vai curar peças que combinam elegância intemporal com o teu orçamento de ${budget} — selecções pensadas para durar e para te fazerem sentir verdadeiramente tu.`;
 }
 
 function QuizPage() {

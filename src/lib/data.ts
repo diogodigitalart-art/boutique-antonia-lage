@@ -167,7 +167,7 @@ export const EXPERIENCES: Experience[] = [
     id: "exp2",
     title: "Personal Styling",
     description:
-      "Sessão de styling personalizada com a Antónia. Um olho clínico com 40 anos de experiência dedicado só a ti.",
+      "Sessão de styling personalizada com a nossa equipa. Um olho clínico com 40 anos de experiência dedicado só a ti.",
     duration: "1 hora",
     capacity: "Individual",
     location: "Braga",
