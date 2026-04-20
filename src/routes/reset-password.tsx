@@ -46,6 +46,7 @@ function ResetPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-full border border-border bg-card px-5 py-3 text-sm outline-none focus:border-primary"
             />
+            <p className="mt-1.5 px-2 text-[11px] text-muted-foreground">{PASSWORD_HINT}</p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs uppercase tracking-wider text-muted-foreground">
