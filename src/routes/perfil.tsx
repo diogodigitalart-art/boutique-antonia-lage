@@ -159,7 +159,7 @@ function ProfilePage() {
                       </p>
                     </div>
                   </div>
-                  <span className="self-start rounded-full bg-primary-soft px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-primary md:self-auto">
+                  <span className="self-start rounded-full bg-emerald-100 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-emerald-700 md:self-auto dark:bg-emerald-900/40 dark:text-emerald-300">
                     Confirmada
                   </span>
                 </div>
