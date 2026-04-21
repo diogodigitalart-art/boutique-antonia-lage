@@ -52,10 +52,12 @@ export function ReservationModal({
           user_id: user.id,
           item_name: payload.itemName,
           item_type: payload.itemType,
+          product_name: payload.itemName,
           customer_name: payload.name,
           customer_email: payload.email,
           customer_phone: payload.phone,
           reservation_date: payload.date,
+          preferred_date: payload.date,
           message: payload.message ?? null,
           status: "Confirmada",
         });
