@@ -102,7 +102,7 @@ function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Já tens conta?{" "}
-          <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+          <Link to="/login" search={{ redirect: "/perfil" }} className="text-primary underline-offset-4 hover:underline">
             Entrar
           </Link>
         </p>

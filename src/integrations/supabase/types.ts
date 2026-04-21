@@ -75,6 +75,8 @@ export type Database = {
           item_name: string
           item_type: string
           message: string | null
+          preferred_date: string
+          product_name: string
           reservation_date: string
           status: string
           updated_at: string
@@ -89,6 +91,8 @@ export type Database = {
           item_name: string
           item_type: string
           message?: string | null
+          preferred_date: string
+          product_name: string
           reservation_date: string
           status?: string
           updated_at?: string
@@ -103,6 +107,8 @@ export type Database = {
           item_name?: string
           item_type?: string
           message?: string | null
+          preferred_date?: string
+          product_name?: string
           reservation_date?: string
           status?: string
           updated_at?: string
