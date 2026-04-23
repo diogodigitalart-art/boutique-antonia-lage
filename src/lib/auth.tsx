@@ -59,6 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    // Clear any per-user data that might have been cached in localStorage
+    // by older versions of the app, so it doesn't leak to the next user.
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("al-style-profile");
+      localStorage.removeItem("al-wishlist");
+      localStorage.removeItem("al-wishlist-guest");
+    }
   };
 
   return (

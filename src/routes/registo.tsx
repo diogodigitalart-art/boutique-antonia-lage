@@ -41,7 +41,7 @@ function RegisterPage() {
 
   const handleGoogle = async () => {
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/perfil`,
+      redirect_uri: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent("/perfil")}`,
     });
     if (error) toast.error(translateAuthError(error.message));
   };
