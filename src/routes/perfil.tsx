@@ -57,14 +57,14 @@ function ProfileContent() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      // Style profile from Supabase (per user)
       const { data: sp } = await supabase
-        .from("style_profiles")
+        .from("quiz_results" as never)
         .select("answers")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (sp?.answers && typeof sp.answers === "object") {
-        setStyleProfile(sp.answers as Record<string, string>);
+      const quiz = sp as { answers?: Record<string, string> } | null;
+      if (quiz?.answers && typeof quiz.answers === "object") {
+        setStyleProfile(quiz.answers);
       } else {
         setStyleProfile(null);
       }

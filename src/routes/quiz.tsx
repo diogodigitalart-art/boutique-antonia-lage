@@ -58,17 +58,17 @@ function QuizPage() {
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Load any previously-saved profile for this user.
   useEffect(() => {
     if (loading || !user) return;
     (async () => {
       const { data } = await supabase
-        .from("style_profiles")
-        .select("answers")
+        .from("quiz_results" as never)
+        .select("answers, profile_description")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (data?.answers && typeof data.answers === "object") {
-        setAnswers(data.answers as Record<string, string>);
+      const record = data as { answers?: Record<string, string> } | null;
+      if (record?.answers && typeof record.answers === "object") {
+        setAnswers(record.answers);
         setDone(true);
       }
     })();
@@ -91,17 +91,16 @@ function QuizPage() {
       navigate({ to: "/login", search: { redirect: "/quiz" } });
       return;
     }
+    const profileDescription = buildProfileDescription(answers);
     setSaving(true);
     const { error } = await supabase
-      .from("style_profiles")
-      .upsert({ user_id: user.id, answers }, { onConflict: "user_id" });
+      .from("quiz_results" as never)
+      .upsert({ user_id: user.id, answers, profile_description: profileDescription } as never, { onConflict: "user_id" });
     setSaving(false);
     if (error) {
       toast.error("Não conseguimos guardar. Tenta novamente.");
       return;
     }
-    // Clear any legacy shared key from older versions.
-    try { localStorage.removeItem("al-style-profile"); } catch {}
     setDone(true);
   };
 
@@ -116,7 +115,7 @@ function QuizPage() {
             O teu perfil de estilo
           </h1>
           <p className="mt-4 mx-auto max-w-lg font-light leading-relaxed text-muted-foreground">
-            {buildProfileDescription(answers)}
+              {buildProfileDescription(answers)}
           </p>
 
           <div className="mt-10 overflow-hidden rounded-3xl border border-border bg-card text-left">
