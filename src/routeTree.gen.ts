@@ -20,6 +20,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ArquivoRouteImport } from './routes/arquivo'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -79,6 +80,11 @@ const ArquivoRoute = ArquivoRouteImport.update({
   path: '/arquivo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -97,6 +103,7 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/arquivo'
     | '/contactos'
     | '/experiencias'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/arquivo'
     | '/contactos'
     | '/experiencias'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/arquivo'
     | '/contactos'
     | '/experiencias'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ArquivoRoute: typeof ArquivoRoute
   ContactosRoute: typeof ContactosRoute
   ExperienciasRoute: typeof ExperienciasRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArquivoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -317,6 +337,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ArquivoRoute: ArquivoRoute,
   ContactosRoute: ContactosRoute,
   ExperienciasRoute: ExperienciasRoute,

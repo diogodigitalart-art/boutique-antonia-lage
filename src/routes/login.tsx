@@ -34,7 +34,7 @@ function LoginPage() {
 
   const handleGoogle = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
+      redirect_uri: `${window.location.origin}${redirect || "/"}`,
     });
     if (result.error) {
       toast.error(translateAuthError(result.error.message));
