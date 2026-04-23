@@ -1,88 +1,108 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 type WishlistCtx = {
   ids: string[];
-  toggle: (id: string) => void;
+  toggle: (id: string) => Promise<{ ok: boolean; requiresAuth?: boolean }>;
   has: (id: string) => boolean;
 };
 
-const Ctx = createContext<WishlistCtx>({ ids: [], toggle: () => {}, has: () => false });
-
-const GUEST_KEY = "al-wishlist-guest";
+const Ctx = createContext<WishlistCtx>({
+  ids: [],
+  toggle: async () => ({ ok: false }),
+  has: () => false,
+});
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const [ids, setIds] = useState<string[]>([]);
-  const hydratedForUser = useRef<string | null>(null);
+  const activeUserId = useRef<string | null>(null);
+  const idsRef = useRef<string[]>([]);
 
-  // Load wishlist whenever auth state changes.
+  useEffect(() => {
+    idsRef.current = ids;
+  }, [ids]);
+
   useEffect(() => {
     if (loading) return;
-    if (typeof window === "undefined") return;
 
     if (!user) {
-      // Guest: load from a guest-only localStorage key.
-      hydratedForUser.current = "guest";
-      try {
-        const raw = localStorage.getItem(GUEST_KEY);
-        setIds(raw ? JSON.parse(raw) : []);
-      } catch {
-        setIds([]);
-      }
+      activeUserId.current = null;
+      idsRef.current = [];
+      setIds([]);
       return;
     }
 
-    // Authenticated: load from Supabase, then merge any guest items.
     const userId = user.id;
-    hydratedForUser.current = userId;
-    (async () => {
-      const { data } = await supabase
-        .from("wishlist_items")
-        .select("product_id")
-        .eq("user_id", userId);
-      const remoteIds = (data ?? []).map((r) => r.product_id as string);
+    activeUserId.current = userId;
+    let cancelled = false;
 
-      // Merge guest wishlist (if any) into the user's account, then clear it.
-      let guestIds: string[] = [];
-      try {
-        const raw = localStorage.getItem(GUEST_KEY);
-        if (raw) guestIds = JSON.parse(raw);
-      } catch {}
-      const toAdd = guestIds.filter((id) => !remoteIds.includes(id));
-      if (toAdd.length > 0) {
-        await supabase
-          .from("wishlist_items")
-          .insert(toAdd.map((product_id) => ({ user_id: userId, product_id })));
-        localStorage.removeItem(GUEST_KEY);
+    (async () => {
+      const { data, error } = await supabase
+        .from("wishlists" as never)
+        .select("product_id")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (cancelled || activeUserId.current !== userId) return;
+      if (error) {
+        idsRef.current = [];
+        setIds([]);
+        return;
       }
-      // Also clear any legacy shared key from older versions.
-      localStorage.removeItem("al-wishlist");
-      setIds(Array.from(new Set([...remoteIds, ...toAdd])));
+
+      const nextIds = (data ?? []).map((row) => (row as { product_id: string }).product_id);
+      idsRef.current = nextIds;
+      setIds(nextIds);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
-  const toggle = (id: string) => {
-    setIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      const adding = !prev.includes(id);
-      if (user) {
-        const userId = user.id;
-        if (adding) {
-          void supabase.from("wishlist_items").insert({ user_id: userId, product_id: id });
-        } else {
-          void supabase
-            .from("wishlist_items")
-            .delete()
-            .eq("user_id", userId)
-            .eq("product_id", id);
-        }
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem(GUEST_KEY, JSON.stringify(next));
+  const toggle = async (id: string) => {
+    if (!user) return { ok: false, requiresAuth: true };
+
+    const userId = user.id;
+    const previousIds = idsRef.current;
+    const adding = !previousIds.includes(id);
+    const nextIds = adding ? [...previousIds, id] : previousIds.filter((value) => value !== id);
+
+    idsRef.current = nextIds;
+    setIds(nextIds);
+
+    if (adding) {
+      const { error } = await supabase
+        .from("wishlists" as never)
+        .insert({ user_id: userId, product_id: id } as never);
+
+      if (error && error.code !== "23505") {
+        idsRef.current = previousIds;
+        setIds(previousIds);
+        toast.error("Não conseguimos guardar a peça na tua wishlist.");
+        return { ok: false };
       }
-      return next;
-    });
+
+      return { ok: true };
+    }
+
+    const { error } = await supabase
+      .from("wishlists" as never)
+      .delete()
+      .eq("user_id", userId)
+      .eq("product_id", id);
+
+    if (error) {
+      idsRef.current = previousIds;
+      setIds(previousIds);
+      toast.error("Não conseguimos atualizar a tua wishlist.");
+      return { ok: false };
+    }
+
+    return { ok: true };
   };
 
   const has = (id: string) => ids.includes(id);
