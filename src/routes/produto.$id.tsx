@@ -185,7 +185,9 @@ function ProductPage() {
 
           {/* Wishlist as subtle action */}
           <button
-            onClick={() => toggle(product.id)}
+            onClick={() => requireAuth(() => {
+              void toggle(product.id);
+            })}
             aria-label="Wishlist"
             className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
           >

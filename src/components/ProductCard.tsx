@@ -1,12 +1,16 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { useWishlist } from "@/lib/wishlist";
 import type { Product } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product; width?: string }) {
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
 
@@ -29,6 +33,11 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
       <button
         onClick={async (e) => {
           e.preventDefault();
+          if (!session) {
+            toast.error("Inicia sessão para guardar peças na tua wishlist.");
+            navigate({ to: "/login", search: { redirect: `/produto/${product.id}` } });
+            return;
+          }
           await toggle(product.id);
         }}
         aria-label="Wishlist"
