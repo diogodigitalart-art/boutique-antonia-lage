@@ -17,6 +17,8 @@ function isStr(v: unknown): v is string {
   return typeof v === "string" && v.length > 0 && v.length < 4096;
 }
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+
 export type AdminUser = {
   id: string;
   full_name: string | null;
@@ -37,7 +39,7 @@ export type AdminUser = {
     created_at: string;
   }>;
   wishlist: Array<{ id: string; product_id: string; created_at: string }>;
-  quiz: { answers: Record<string, unknown>; profile_description: string; created_at: string } | null;
+  quiz: { answers: JsonValue; profile_description: string; created_at: string } | null;
   contactMessages: Array<{
     id: string;
     name: string;
@@ -127,7 +129,7 @@ export const getAdminData = createServerFn({ method: "POST" })
         wishlist: userWishlist,
         quiz: userQuiz
           ? {
-              answers: (userQuiz.answers as Record<string, unknown>) || {},
+              answers: (userQuiz.answers as JsonValue) ?? {},
               profile_description: userQuiz.profile_description || "",
               created_at: userQuiz.created_at,
             }
