@@ -55,12 +55,20 @@ function ProfileContent() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
   useEffect(() => {
-    try {
-      const rawProfile = localStorage.getItem("al-style-profile");
-      if (rawProfile) setStyleProfile(JSON.parse(rawProfile));
-    } catch {}
     if (!user) return;
     (async () => {
+      // Style profile from Supabase (per user)
+      const { data: sp } = await supabase
+        .from("style_profiles")
+        .select("answers")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (sp?.answers && typeof sp.answers === "object") {
+        setStyleProfile(sp.answers as Record<string, string>);
+      } else {
+        setStyleProfile(null);
+      }
+
       const { data, error } = await supabase
         .from("reservations")
         .select("item_name, item_type, customer_name, customer_email, customer_phone, reservation_date, message, status, created_at")

@@ -1,7 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Check, Calendar, Sparkles, Shirt, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/quiz")({
@@ -48,9 +51,28 @@ function buildProfileDescription(a: Record<string, string>) {
 
 function QuizPage() {
   const { t } = useI18n();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load any previously-saved profile for this user.
+  useEffect(() => {
+    if (loading || !user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("style_profiles")
+        .select("answers")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data?.answers && typeof data.answers === "object") {
+        setAnswers(data.answers as Record<string, string>);
+        setDone(true);
+      }
+    })();
+  }, [user, loading]);
 
   const current = questions[step];
   const total = questions.length;
@@ -59,14 +81,28 @@ function QuizPage() {
     setAnswers((a) => ({ ...a, [current.key]: opt }));
   };
 
-  const next = () => {
-    if (step < total - 1) setStep(step + 1);
-    else {
-      try {
-        localStorage.setItem("al-style-profile", JSON.stringify(answers));
-      } catch {}
-      setDone(true);
+  const next = async () => {
+    if (step < total - 1) {
+      setStep(step + 1);
+      return;
     }
+    if (!user) {
+      toast.error("Inicia sessão para guardar o teu perfil de estilo");
+      navigate({ to: "/login", search: { redirect: "/quiz" } });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("style_profiles")
+      .upsert({ user_id: user.id, answers }, { onConflict: "user_id" });
+    setSaving(false);
+    if (error) {
+      toast.error("Não conseguimos guardar. Tenta novamente.");
+      return;
+    }
+    // Clear any legacy shared key from older versions.
+    try { localStorage.removeItem("al-style-profile"); } catch {}
+    setDone(true);
   };
 
   if (done) {
@@ -172,10 +208,10 @@ function QuizPage() {
 
         <button
           onClick={next}
-          disabled={!answers[current.key]}
+          disabled={!answers[current.key] || saving}
           className="mt-8 h-14 w-full rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {step === total - 1 ? t("finish") : t("next")}
+          {step === total - 1 ? (saving ? "A guardar…" : t("finish")) : t("next")}
         </button>
       </section>
     </Layout>
