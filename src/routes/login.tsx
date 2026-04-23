@@ -33,10 +33,14 @@ function LoginPage() {
   };
 
   const handleGoogle = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
+    const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
     });
-    if (error) toast.error(translateAuthError(error.message));
+    if (result.error) {
+      toast.error(translateAuthError(result.error.message));
+      return;
+    }
+    if (!result.redirected) navigate({ to: redirect || "/" });
   };
 
   const handleReset = async (e: FormEvent) => {

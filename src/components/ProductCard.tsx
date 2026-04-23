@@ -27,9 +27,9 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
         </div>
       </Link>
       <button
-        onClick={(e) => {
+        onClick={async (e) => {
           e.preventDefault();
-          toggle(product.id);
+          await toggle(product.id);
         }}
         aria-label="Wishlist"
         className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-card/90 backdrop-blur transition hover:scale-110"

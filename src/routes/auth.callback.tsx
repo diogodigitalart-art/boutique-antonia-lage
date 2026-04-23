@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : "/perfil",
+    redirect: typeof search.redirect === "string" ? search.redirect : "/",
   }),
   head: () => ({ meta: [{ title: "A entrar… | Boutique Antónia Lage" }] }),
   component: AuthCallback,
@@ -24,16 +24,16 @@ function AuthCallback() {
 
     // If a session is already restored, go straight in.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) finish(redirect || "/perfil");
+      if (session) finish(redirect || "/");
     });
 
     // Otherwise wait for the auth state listener to fire after token exchange.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) finish(redirect || "/perfil");
+      if (session) finish(redirect || "/");
     });
 
     // Safety net: if nothing happens within 8s, send back to login.
-    const timeout = window.setTimeout(() => finish("/login"), 8000);
+    const timeout = window.setTimeout(() => finish(`/login?redirect=${encodeURIComponent(redirect || "/")}`), 8000);
 
     return () => {
       sub.subscription.unsubscribe();
