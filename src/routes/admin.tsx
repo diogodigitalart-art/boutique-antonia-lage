@@ -542,6 +542,11 @@ function ProfileDetailsView({
 }
 
 function BlockedSlotsSection({
+
+
+
+
+
   slots,
   onAdd,
   onRemove,
