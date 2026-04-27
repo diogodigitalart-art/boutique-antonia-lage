@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { WishlistNotifyToast } from "@/components/WishlistNotifyToast";
 
 type WishlistCtx = {
   ids: string[];
@@ -16,10 +17,11 @@ const Ctx = createContext<WishlistCtx>({
 });
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const [ids, setIds] = useState<string[]>([]);
   const activeUserId = useRef<string | null>(null);
   const idsRef = useRef<string[]>([]);
+  const promptShownForUser = useRef<string | null>(null);
 
   useEffect(() => {
     idsRef.current = ids;
@@ -32,6 +34,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       activeUserId.current = null;
       idsRef.current = [];
       setIds([]);
+      promptShownForUser.current = null;
       return;
     }
 
@@ -84,6 +87,36 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         setIds(previousIds);
         toast.error("Não conseguimos guardar a peça na tua wishlist.");
         return { ok: false };
+      }
+
+      // Checkpoint 6: when crossing to 3 saved items, prompt for notifications
+      const alreadyPrefSet = Boolean(
+        profile?.profile_details?.notification_preference,
+      );
+      if (
+        previousIds.length === 2 &&
+        nextIds.length === 3 &&
+        !alreadyPrefSet &&
+        promptShownForUser.current !== userId
+      ) {
+        promptShownForUser.current = userId;
+        const currentDetails = (profile?.profile_details ?? {}) as Record<
+          string,
+          unknown
+        >;
+        toast.custom(
+          (t) => (
+            <WishlistNotifyToast
+              toastId={t}
+              userId={userId}
+              currentDetails={currentDetails}
+              onSaved={() => {
+                void refreshProfile();
+              }}
+            />
+          ),
+          { duration: 30000, position: "bottom-center" },
+        );
       }
 
       return { ok: true };

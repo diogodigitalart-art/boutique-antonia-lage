@@ -23,7 +23,9 @@ import { Route as ArquivoRouteImport } from './routes/arquivo'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
+import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -95,11 +97,22 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
   path: '/produto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeedbackIdRoute = FeedbackIdRouteImport.update({
+  id: '/feedback/$id',
+  path: '/feedback/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSendFollowupsRoute =
+  ApiPublicHooksSendFollowupsRouteImport.update({
+    id: '/api/public/hooks/send-followups',
+    path: '/api/public/hooks/send-followups',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,7 +129,9 @@ export interface FileRoutesByFullPath {
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +148,9 @@ export interface FileRoutesByTo {
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,7 +168,9 @@ export interface FileRoutesById {
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,7 +189,9 @@ export interface FileRouteTypes {
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/auth/callback'
+    | '/feedback/$id'
     | '/produto/$id'
+    | '/api/public/hooks/send-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -187,7 +208,9 @@ export interface FileRouteTypes {
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/auth/callback'
+    | '/feedback/$id'
     | '/produto/$id'
+    | '/api/public/hooks/send-followups'
   id:
     | '__root__'
     | '/'
@@ -204,7 +227,9 @@ export interface FileRouteTypes {
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/auth/callback'
+    | '/feedback/$id'
     | '/produto/$id'
+    | '/api/public/hooks/send-followups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,7 +247,9 @@ export interface RootRouteChildren {
   TermosECondicoesRoute: typeof TermosECondicoesRoute
   WishlistRoute: typeof WishlistRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  FeedbackIdRoute: typeof FeedbackIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ApiPublicHooksSendFollowupsRoute: typeof ApiPublicHooksSendFollowupsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,11 +352,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/feedback/$id': {
+      id: '/feedback/$id'
+      path: '/feedback/$id'
+      fullPath: '/feedback/$id'
+      preLoaderRoute: typeof FeedbackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/send-followups': {
+      id: '/api/public/hooks/send-followups'
+      path: '/api/public/hooks/send-followups'
+      fullPath: '/api/public/hooks/send-followups'
+      preLoaderRoute: typeof ApiPublicHooksSendFollowupsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -350,7 +391,9 @@ const rootRouteChildren: RootRouteChildren = {
   TermosECondicoesRoute: TermosECondicoesRoute,
   WishlistRoute: WishlistRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  FeedbackIdRoute: FeedbackIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ApiPublicHooksSendFollowupsRoute: ApiPublicHooksSendFollowupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

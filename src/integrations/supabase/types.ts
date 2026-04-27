@@ -68,6 +68,50 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          created_at: string
+          id: string
+          piece_match: string
+          rating: number
+          reservation_id: string
+          return_intent: string
+          updated_at: string
+          user_id: string
+          wish_list_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          piece_match: string
+          rating: number
+          reservation_id: string
+          return_intent: string
+          updated_at?: string
+          user_id: string
+          wish_list_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          piece_match?: string
+          rating?: number
+          reservation_id?: string
+          return_intent?: string
+          updated_at?: string
+          user_id?: string
+          wish_list_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -137,16 +181,19 @@ export type Database = {
           customer_name: string
           customer_phone: string
           experience_details: Json
+          follow_up_sent_at: string | null
           id: string
           item_name: string
           item_type: string
           message: string | null
+          occasion: string | null
           preferred_date: string
           product_name: string
           reservation_date: string
           status: string
           updated_at: string
           user_id: string
+          visit_started_at: string | null
         }
         Insert: {
           created_at?: string
@@ -154,16 +201,19 @@ export type Database = {
           customer_name: string
           customer_phone: string
           experience_details?: Json
+          follow_up_sent_at?: string | null
           id?: string
           item_name: string
           item_type: string
           message?: string | null
+          occasion?: string | null
           preferred_date: string
           product_name: string
           reservation_date: string
           status?: string
           updated_at?: string
           user_id: string
+          visit_started_at?: string | null
         }
         Update: {
           created_at?: string
@@ -171,16 +221,19 @@ export type Database = {
           customer_name?: string
           customer_phone?: string
           experience_details?: Json
+          follow_up_sent_at?: string | null
           id?: string
           item_name?: string
           item_type?: string
           message?: string | null
+          occasion?: string | null
           preferred_date?: string
           product_name?: string
           reservation_date?: string
           status?: string
           updated_at?: string
           user_id?: string
+          visit_started_at?: string | null
         }
         Relationships: []
       }

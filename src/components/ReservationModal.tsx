@@ -34,6 +34,8 @@ export function ReservationModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  // Optional occasion (Checkpoint 4) — shown on every reservation
+  const [occasion, setOccasion] = useState("");
   // Boutique Privada extra fields
   const [brandsRequest, setBrandsRequest] = useState("");
   const [specialOccasion, setSpecialOccasion] = useState("");
@@ -45,6 +47,7 @@ export function ReservationModal({
     if (!open) return;
     setDate("");
     setTime("");
+    setOccasion("");
     setBrandsRequest("");
     setSpecialOccasion("");
     setAmbience("");
@@ -89,6 +92,7 @@ export function ReservationModal({
       date: String(formData.get("date") ?? "").trim(),
       time: String(formData.get("time") ?? "").trim() || undefined,
       message: String(formData.get("message") ?? "").trim() || undefined,
+      occasion: occasion.trim() || undefined,
     };
 
     if (!payload.date) {
@@ -141,6 +145,7 @@ export function ReservationModal({
           message: payload.message ?? null,
           status: "Confirmada",
           experience_details: experience_details ?? {},
+          occasion: payload.occasion ?? null,
         });
         if (error) console.error("Failed to save reservation", error);
 
@@ -401,6 +406,20 @@ export function ReservationModal({
               name="message"
               rows={3}
               className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="occasion" className="text-xs uppercase tracking-wider text-muted-foreground">
+              É para alguma ocasião especial?
+            </label>
+            <input
+              id="occasion"
+              type="text"
+              value={occasion}
+              onChange={(e) => setOccasion(e.target.value)}
+              placeholder="Aniversário, viagem, evento importante…"
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
             />
           </div>
 
