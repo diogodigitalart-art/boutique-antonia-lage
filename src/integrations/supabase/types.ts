@@ -41,6 +41,24 @@ export type Database = {
         }
         Relationships: []
       }
+      brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -126,6 +144,7 @@ export type Database = {
           original_price: number | null
           price: number
           reference: string
+          season: string | null
           sizes: Json
           updated_at: string
         }
@@ -142,6 +161,7 @@ export type Database = {
           original_price?: number | null
           price?: number
           reference: string
+          season?: string | null
           sizes?: Json
           updated_at?: string
         }
@@ -158,6 +178,7 @@ export type Database = {
           original_price?: number | null
           price?: number
           reference?: string
+          season?: string | null
           sizes?: Json
           updated_at?: string
         }

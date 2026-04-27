@@ -1,12 +1,35 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useProducts, type ProductRow, type ProductSize } from "@/lib/products";
 import { BRANDS } from "@/lib/data";
-import { Loader2, Plus, Pencil, Trash2, Search, ArrowLeft, Upload, X } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  ArrowLeft,
+  Upload,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Minus,
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  adminListProducts,
+  adminUpsertProduct,
+  adminDeleteProduct,
+  adminToggleProductActive,
+  adminUploadProductImage,
+  adminListBrands,
+  adminAddBrand,
+  adminDeleteBrand,
+  adminAdjustReservation,
+} from "@/server/products";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
@@ -19,6 +42,24 @@ export const Route = createFileRoute("/admin_/produtos")({
   head: () => ({ meta: [{ title: "Gestão de produtos | Admin" }] }),
   component: AdminProductsPage,
 });
+
+type ProductSize = { size: string; stock: number; reserved: number };
+type ProductRow = {
+  id: string;
+  name: string;
+  brand: string;
+  description: string;
+  price: number;
+  original_price: number | null;
+  category: string;
+  reference: string;
+  season: string | null;
+  images: string[];
+  sizes: ProductSize[];
+  is_active: boolean;
+  created_at: string;
+};
+type BrandRow = { id: string; name: string };
 
 function AdminProductsPage() {
   const { user, loading } = useAuth();
@@ -43,12 +84,47 @@ function AdminProductsPage() {
   );
 }
 
+async function getToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sessão expirada");
+  return token;
+}
+
 function Content() {
-  const { rows, loading, refresh } = useProducts();
+  const listFn = useServerFn(adminListProducts);
+  const deleteFn = useServerFn(adminDeleteProduct);
+  const toggleFn = useServerFn(adminToggleProductActive);
+  const listBrandsFn = useServerFn(adminListBrands);
+
+  const [rows, setRows] = useState<ProductRow[]>([]);
+  const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showBrands, setShowBrands] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const [p, b] = await Promise.all([
+        listFn({ data: { token } }),
+        listBrandsFn({ data: { token } }),
+      ]);
+      setRows((p.rows as unknown) as ProductRow[]);
+      setBrands((b.rows as unknown) as BrandRow[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao carregar");
+    } finally {
+      setLoading(false);
+    }
+  }, [listFn, listBrandsFn]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -58,32 +134,41 @@ function Content() {
       return (
         r.name.toLowerCase().includes(q) ||
         r.brand.toLowerCase().includes(q) ||
-        r.reference.toLowerCase().includes(q)
+        (r.reference || "").toLowerCase().includes(q)
       );
     });
   }, [rows, search, filterCat]);
 
   const toggleActive = async (r: ProductRow) => {
-    const { error } = await supabase
-      .from("products" as never)
-      .update({ is_active: !r.is_active } as never)
-      .eq("id", r.id);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      const token = await getToken();
+      await toggleFn({ data: { token, id: r.id, is_active: !r.is_active } });
       toast.success(r.is_active ? "Desactivado" : "Activado");
       refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
     }
   };
 
   const remove = async (r: ProductRow) => {
     if (!confirm(`Remover "${r.name}"?`)) return;
-    const { error } = await supabase.from("products" as never).delete().eq("id", r.id);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      const token = await getToken();
+      await deleteFn({ data: { token, id: r.id } });
       toast.success("Removido");
       refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
     }
   };
+
+  // Merged brand list (hardcoded + custom)
+  const allBrandNames = useMemo(() => {
+    const set = new Set<string>();
+    BRANDS.filter((b) => b !== "Todas").forEach((b) => set.add(b));
+    brands.forEach((b) => set.add(b.name));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [brands]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
@@ -102,7 +187,14 @@ function Content() {
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <BrandsSection
+        open={showBrands}
+        onToggle={() => setShowBrands((v) => !v)}
+        customBrands={brands}
+        onChanged={refresh}
+      />
+
+      <div className="mb-4 mt-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -135,6 +227,7 @@ function Content() {
                 <th className="px-4 py-3">Ref.</th>
                 <th className="px-4 py-3">Marca</th>
                 <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Season</th>
                 <th className="px-4 py-3">Categoria</th>
                 <th className="px-4 py-3">Preço</th>
                 <th className="px-4 py-3">Stock</th>
@@ -144,25 +237,25 @@ function Content() {
             </thead>
             <tbody>
               {filtered.map((r) => {
-                const totalStock = r.sizes.reduce((a, s) => a + (s.stock - s.reserved), 0);
+                const sizes = Array.isArray(r.sizes) ? r.sizes : [];
+                const totalStock = sizes.reduce((a, s) => a + (s.stock - s.reserved), 0);
                 return (
                   <tr key={r.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{r.reference}</td>
                     <td className="px-4 py-3">{r.brand}</td>
                     <td className="px-4 py-3 font-medium">{r.name}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{r.season || "—"}</td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">{r.category}</td>
                     <td className="px-4 py-3">€{r.price}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {r.sizes.map((s) => `${s.size}:${s.stock - s.reserved}`).join(" · ") || "—"}
+                      {sizes.map((s) => `${s.size}:${s.stock - s.reserved}`).join(" · ") || "—"}
                       <span className="ml-2 text-foreground">({totalStock})</span>
                     </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleActive(r)}
                         className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-wider ${
-                          r.is_active
-                            ? "bg-primary-soft text-primary"
-                            : "bg-muted text-muted-foreground"
+                          r.is_active ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {r.is_active ? "Sim" : "Não"}
@@ -178,7 +271,7 @@ function Content() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-xs text-muted-foreground">Sem produtos.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-xs text-muted-foreground">Sem produtos.</td></tr>
               )}
             </tbody>
           </table>
@@ -188,6 +281,7 @@ function Content() {
       {(editing || creating) && (
         <ProductForm
           row={editing}
+          brandOptions={allBrandNames}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
         />
@@ -196,96 +290,251 @@ function Content() {
   );
 }
 
+function BrandsSection({
+  open,
+  onToggle,
+  customBrands,
+  onChanged,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  customBrands: BrandRow[];
+  onChanged: () => void;
+}) {
+  const addFn = useServerFn(adminAddBrand);
+  const delFn = useServerFn(adminDeleteBrand);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const add = async () => {
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      const token = await getToken();
+      await addFn({ data: { token, name: name.trim() } });
+      setName("");
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (id: string) => {
+    try {
+      const token = await getToken();
+      await delFn({ data: { token, id } });
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
+      >
+        <span>Marcas ({customBrands.length} personalizadas)</span>
+        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {open && (
+        <div className="border-t border-border p-4">
+          <div className="flex gap-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nova marca…"
+              className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && add()}
+            />
+            <button onClick={add} disabled={busy} className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              Adicionar
+            </button>
+          </div>
+          {customBrands.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {customBrands.map((b) => (
+                <span key={b.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs">
+                  {b.name}
+                  <button onClick={() => remove(b.id)} className="text-muted-foreground hover:text-destructive">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            As marcas predefinidas estão sempre disponíveis. Aqui podes adicionar outras.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type FormState = {
   brand: string;
-  brandOther: string;
   name: string;
   reference: string;
   description: string;
   price: string;
   original_price: string;
   category: string;
+  season: string;
   is_active: boolean;
+  oneSize: boolean;
   sizes: Record<string, number>;
+  oneSizeStock: number;
   images: string[];
 };
 
-function ProductForm({ row, onClose, onSaved }: { row: ProductRow | null; onClose: () => void; onSaved: () => void }) {
+function ProductForm({
+  row,
+  brandOptions,
+  onClose,
+  onSaved,
+}: {
+  row: ProductRow | null;
+  brandOptions: string[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const isEdit = !!row;
+  const upsertFn = useServerFn(adminUpsertProduct);
+  const uploadFn = useServerFn(adminUploadProductImage);
+  const adjustFn = useServerFn(adminAdjustReservation);
+
   const initialSizes: Record<string, number> = {};
   SIZE_OPTIONS.forEach((s) => { initialSizes[s] = 0; });
-  row?.sizes.forEach((s) => { initialSizes[s.size] = s.stock; });
+  const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
+  existingSizes.forEach((s) => { if (SIZE_OPTIONS.includes(s.size as never)) initialSizes[s.size] = s.stock; });
 
-  const brandList = BRANDS.filter((b) => b !== "Todas");
-  const brandIsKnown = !row || brandList.includes(row.brand);
+  const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
+  const oneSizeStock = isOneSize ? existingSizes[0].stock : 1;
 
+  const knownBrand = !row || brandOptions.includes(row.brand);
   const [form, setForm] = useState<FormState>({
-    brand: brandIsKnown ? (row?.brand ?? brandList[0]) : "Outra",
-    brandOther: brandIsKnown ? "" : (row?.brand ?? ""),
+    brand: knownBrand ? (row?.brand ?? brandOptions[0] ?? "") : row!.brand,
     name: row?.name ?? "",
     reference: row?.reference ?? "",
     description: row?.description ?? "",
     price: row ? String(row.price) : "",
     original_price: row?.original_price != null ? String(row.original_price) : "",
     category: row?.category ?? "colecção",
+    season: row?.season ?? "",
     is_active: row?.is_active ?? true,
+    oneSize: isOneSize,
     sizes: initialSizes,
+    oneSizeStock,
     images: row?.images ?? [],
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Live local copy of reservations for in-modal manual marking
+  const [liveSizes, setLiveSizes] = useState<ProductSize[]>(existingSizes);
+
+  const fileToBase64 = (file: File): Promise<{ base64: string; type: string }> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1] || "";
+        resolve({ base64, type: file.type || "image/jpeg" });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
   const upload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    const newUrls: string[] = [];
-    for (const f of Array.from(files).slice(0, 6 - form.images.length)) {
-      const ext = f.name.split(".").pop() || "jpg";
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("product-images").upload(path, f, { upsert: false });
-      if (error) { toast.error(error.message); continue; }
-      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-      newUrls.push(data.publicUrl);
+    try {
+      const token = await getToken();
+      const remaining = 6 - form.images.length;
+      const newUrls: string[] = [];
+      for (const f of Array.from(files).slice(0, remaining)) {
+        const { base64, type } = await fileToBase64(f);
+        const res = await uploadFn({
+          data: { token, filename: f.name, contentType: type, dataBase64: base64 },
+        });
+        newUrls.push((res as { url: string }).url);
+      }
+      setForm((f) => ({ ...f, images: [...f.images, ...newUrls] }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a carregar imagem");
+    } finally {
+      setUploading(false);
     }
-    setForm((f) => ({ ...f, images: [...f.images, ...newUrls] }));
-    setUploading(false);
   };
 
   const submit = async () => {
-    const finalBrand = form.brand === "Outra" ? form.brandOther.trim() : form.brand;
-    if (!finalBrand) return toast.error("Indica a marca.");
+    if (!form.brand.trim()) return toast.error("Indica a marca.");
     if (!form.name.trim()) return toast.error("Indica o nome.");
     if (!form.reference.trim()) return toast.error("Indica a referência.");
     if (!form.price || isNaN(Number(form.price))) return toast.error("Preço inválido.");
 
-    const sizesPayload: ProductSize[] = SIZE_OPTIONS
-      .filter((s) => form.sizes[s] > 0)
-      .map((s) => {
-        const existing = row?.sizes.find((x) => x.size === s);
-        return { size: s, stock: form.sizes[s], reserved: existing?.reserved ?? 0 };
-      });
-
-    const payload = {
-      brand: finalBrand,
-      name: form.name.trim(),
-      reference: form.reference.trim(),
-      description: form.description.trim(),
-      price: Number(form.price),
-      original_price: form.original_price ? Number(form.original_price) : null,
-      category: form.category,
-      is_active: form.is_active,
-      sizes: sizesPayload,
-      images: form.images,
-    };
+    let sizesPayload: ProductSize[];
+    if (form.oneSize) {
+      const existingU = existingSizes.find((x) => x.size === "U");
+      sizesPayload = [{ size: "U", stock: Math.max(1, form.oneSizeStock || 1), reserved: existingU?.reserved ?? 0 }];
+    } else {
+      sizesPayload = SIZE_OPTIONS
+        .filter((s) => form.sizes[s] > 0)
+        .map((s) => {
+          const existing = existingSizes.find((x) => x.size === s);
+          return { size: s, stock: form.sizes[s], reserved: existing?.reserved ?? 0 };
+        });
+    }
 
     setSaving(true);
-    const { error } = isEdit
-      ? await supabase.from("products" as never).update(payload as never).eq("id", row!.id)
-      : await supabase.from("products" as never).insert(payload as never);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success(isEdit ? "Produto actualizado" : "Produto criado");
-    onSaved();
+    try {
+      const token = await getToken();
+      await upsertFn({
+        data: {
+          token,
+          product: {
+            id: row?.id,
+            brand: form.brand.trim(),
+            name: form.name.trim(),
+            reference: form.reference.trim(),
+            description: form.description.trim(),
+            price: Number(form.price),
+            original_price: form.original_price ? Number(form.original_price) : null,
+            category: form.category,
+            season: form.season.trim() || null,
+            images: form.images,
+            sizes: sizesPayload,
+            is_active: form.is_active,
+          },
+        },
+      });
+      toast.success(isEdit ? "Produto actualizado" : "Produto criado");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const adjust = async (size: string, delta: 1 | -1) => {
+    if (!row) return;
+    try {
+      const token = await getToken();
+      await adjustFn({ data: { token, productId: row.id, size, delta } });
+      setLiveSizes((prev) =>
+        prev.map((s) =>
+          s.size === size
+            ? { ...s, reserved: Math.max(0, Math.min(s.stock, s.reserved + delta)) }
+            : s,
+        ),
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    }
   };
 
   return (
@@ -298,12 +547,9 @@ function ProductForm({ row, onClose, onSaved }: { row: ProductRow | null; onClos
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Marca</label>
             <select value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm">
-              {brandList.map((b) => <option key={b} value={b}>{b}</option>)}
-              <option value="Outra">Outra…</option>
+              {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+              {!brandOptions.includes(form.brand) && form.brand && <option value={form.brand}>{form.brand}</option>}
             </select>
-            {form.brand === "Outra" && (
-              <input value={form.brandOther} onChange={(e) => setForm({ ...form, brandOther: e.target.value })} placeholder="Nova marca" className="mt-2 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
-            )}
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Categoria</label>
@@ -318,6 +564,10 @@ function ProductForm({ row, onClose, onSaved }: { row: ProductRow | null; onClos
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Referência</label>
             <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm font-mono" />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Season</label>
+            <input value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} placeholder="AW25, SS26…" className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
           </div>
           <div className="flex items-end gap-2">
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
@@ -337,17 +587,84 @@ function ProductForm({ row, onClose, onSaved }: { row: ProductRow | null; onClos
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm" />
           </div>
+
           <div className="sm:col-span-2">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Stock por tamanho</label>
-            <div className="mt-2 grid grid-cols-5 gap-2">
-              {SIZE_OPTIONS.map((s) => (
-                <div key={s} className="flex flex-col items-center rounded-md border border-border bg-card p-2">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s}</span>
-                  <input type="number" min="0" value={form.sizes[s]} onChange={(e) => setForm({ ...form, sizes: { ...form.sizes, [s]: Math.max(0, Number(e.target.value) || 0) } })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-center text-sm" />
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.oneSize}
+                onChange={(e) => setForm({ ...form, oneSize: e.target.checked })}
+              />
+              Tamanho único
+            </label>
+            {form.oneSize ? (
+              <div className="mt-2">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground">Stock</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.oneSizeStock}
+                  onChange={(e) => setForm({ ...form, oneSizeStock: Math.max(1, Number(e.target.value) || 1) })}
+                  className="mt-1 h-11 w-32 rounded-md border border-border bg-card px-3 text-sm"
+                />
+              </div>
+            ) : (
+              <>
+                <label className="mt-2 block text-xs uppercase tracking-wider text-muted-foreground">Stock por tamanho</label>
+                <div className="mt-2 grid grid-cols-5 gap-2">
+                  {SIZE_OPTIONS.map((s) => (
+                    <div key={s} className="flex flex-col items-center rounded-md border border-border bg-card p-2">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s}</span>
+                      <input type="number" min="0" value={form.sizes[s]} onChange={(e) => setForm({ ...form, sizes: { ...form.sizes, [s]: Math.max(0, Number(e.target.value) || 0) } })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-center text-sm" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
+
+          {isEdit && liveSizes.length > 0 && (
+            <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-4">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">Reservas manuais</label>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Marca como reservado para reservas presenciais (cria FOMO no site).
+              </p>
+              <div className="mt-3 space-y-2">
+                {liveSizes.map((s) => {
+                  const available = s.stock - s.reserved;
+                  return (
+                    <div key={s.size} className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="w-8 font-medium">{s.size}</span>
+                        <span className="text-xs text-muted-foreground">
+                          stock {s.stock} · reservado {s.reserved} · livre {available}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => adjust(s.size, -1)}
+                          disabled={s.reserved <= 0}
+                          className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs hover:bg-muted disabled:opacity-40"
+                        >
+                          <Minus size={12} /> Libertar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => adjust(s.size, 1)}
+                          disabled={available <= 0}
+                          className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+                        >
+                          <Plus size={12} /> Marcar reservado
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Imagens (até 6)</label>
             <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
