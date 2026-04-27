@@ -15,7 +15,7 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "arquivo", label: "Arquivo" },
 ];
 
-export const Route = createFileRoute("/admin/produtos")({
+export const Route = createFileRoute("/admin_/produtos")({
   head: () => ({ meta: [{ title: "Gestão de produtos | Admin" }] }),
   component: AdminProductsPage,
 });
