@@ -18,6 +18,7 @@ export type ProductRow = {
   sizes: ProductSize[];
   is_active: boolean;
   season: string | null;
+  discount_percent: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -28,13 +29,24 @@ export function rowToProduct(row: ProductRow): Product {
     .filter((s) => Number(s.stock) - Number(s.reserved) > 0)
     .map((s) => s.size);
   const fullyReserved = sizesArr.length > 0 && availableSizes.length === 0;
+  const basePrice = Number(row.price);
+  const pct = row.discount_percent != null ? Number(row.discount_percent) : null;
+  const hasDiscount = pct != null && pct > 0;
+  const finalPrice = hasDiscount
+    ? Math.round(basePrice * (1 - (pct as number) / 100) * 100) / 100
+    : basePrice;
+  const originalForDisplay = hasDiscount
+    ? basePrice
+    : row.original_price != null
+      ? Number(row.original_price)
+      : undefined;
   return {
     id: row.legacy_id || row.id,
     uuid: row.id,
     brand: row.brand,
     name: row.name,
-    price: Number(row.price),
-    originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    price: finalPrice,
+    originalPrice: originalForDisplay,
     image: row.images?.[0] || "",
     images: row.images || [],
     sizes: sizesArr.map((s) => s.size),
@@ -44,6 +56,7 @@ export function rowToProduct(row: ProductRow): Product {
     description: row.description,
     category: row.category === "arquivo" ? "archive" : "new",
     season: row.season || undefined,
+    discountPercent: hasDiscount ? (pct as number) : undefined,
   };
 }
 
