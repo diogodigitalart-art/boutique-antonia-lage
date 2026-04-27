@@ -403,20 +403,19 @@ type FormState = {
 function ProductForm({
   row,
   brandOptions,
+  seasonOptions,
   onClose,
   onSaved,
-  onAdjusted,
 }: {
   row: ProductRow | null;
   brandOptions: string[];
+  seasonOptions: string[];
   onClose: () => void;
   onSaved: () => void;
-  onAdjusted?: () => void;
 }) {
   const isEdit = !!row;
   const upsertFn = useServerFn(adminUpsertProduct);
   const uploadFn = useServerFn(adminUploadProductImage);
-  const adjustFn = useServerFn(adminAdjustReservation);
 
   const initialSizes: Record<string, number> = {};
   SIZE_OPTIONS.forEach((s) => { initialSizes[s] = 0; });
@@ -445,7 +444,7 @@ function ProductForm({
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // Live local copy of reservations for in-modal manual marking
+  // Local copy of reservations for in-modal manual marking — persisted on save
   const [liveSizes, setLiveSizes] = useState<ProductSize[]>(existingSizes);
 
   const fileToBase64 = (file: File): Promise<{ base64: string; type: string }> =>
