@@ -227,6 +227,51 @@ export const adminDeleteBrand = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adminListSeasons = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    return { token: i.token as string };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { data: rows, error } = await supabaseAdmin
+      .from("seasons")
+      .select("id, name")
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { rows: rows ?? [] };
+  });
+
+export const adminAddSeason = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    if (!s(i.name) || !(i.name as string).trim()) throw new Error("Missing name");
+    const name = (i.name as string).trim().slice(0, 40);
+    return { token: i.token as string, name };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { error } = await supabaseAdmin.from("seasons").insert({ name: data.name });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteSeason = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    if (!s(i.id)) throw new Error("Missing id");
+    return { token: i.token as string, id: i.id as string };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { error } = await supabaseAdmin.from("seasons").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const adminAdjustReservation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
