@@ -577,7 +577,22 @@ function ProductForm({
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Season</label>
-            <input value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} placeholder="AW25, SS26…" className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
+            <select
+              value={form.season}
+              onChange={(e) => setForm({ ...form, season: e.target.value })}
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+            >
+              <option value="">— Sem season —</option>
+              {seasonOptions.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              {form.season && !seasonOptions.includes(form.season) && (
+                <option value={form.season}>{form.season} (legado)</option>
+              )}
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Gerir seasons em <span className="underline">Configurações</span>.
+            </p>
           </div>
           <div className="flex items-end gap-2">
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
