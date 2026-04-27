@@ -27,6 +27,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
+import { PRODUCTS } from "@/lib/data";
+
+const productLabel = (id: string) => {
+  const p = PRODUCTS.find((x) => x.id === id);
+  return p ? `${p.brand} — ${p.name}` : id;
+};
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 
@@ -396,11 +402,20 @@ function UserDetail({
                 key={w.id}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground"
               >
-                {w.product_id}
+                {productLabel(w.product_id)}
               </li>
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* Notification preferences */}
+      <Section icon={Mail} title="Preferências de contacto">
+        <NotificationPreferenceView
+          details={user.profile_details}
+          phone={user.phone}
+          wishlistIds={user.wishlist.map((w) => w.product_id)}
+        />
       </Section>
 
       {/* Profile details */}
