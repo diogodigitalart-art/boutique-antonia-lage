@@ -4,11 +4,12 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { PRODUCTS } from "@/lib/data";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { EditProfileModal } from "@/components/EditProfileModal";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -53,6 +54,7 @@ function ProfileContent() {
   const { user, profile, signOut } = useAuth();
   const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -125,6 +127,17 @@ function ProfileContent() {
               <p className="mt-2 break-words text-primary-foreground/85">
                 {profile?.email || user?.email}
               </p>
+              {profile?.phone && (
+                <p className="mt-1 break-words text-sm text-primary-foreground/75">
+                  {profile.phone}
+                </p>
+              )}
+              <button
+                onClick={() => setEditOpen(true)}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary-foreground/40 bg-primary-foreground/10 px-4 py-2 text-xs uppercase tracking-wider text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/20"
+              >
+                <Pencil size={13} /> Editar perfil
+              </button>
             </div>
             <button
               onClick={async () => {
@@ -319,6 +332,8 @@ function ProfileContent() {
           <LogOut size={14} /> Terminar sessão
         </button>
       </section>
+
+      <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
     </Layout>
   );
 }
