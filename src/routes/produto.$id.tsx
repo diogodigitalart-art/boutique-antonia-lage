@@ -108,9 +108,16 @@ function ProductPage() {
         </div>
 
         <div className="md:col-span-2 md:py-4">
-          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-            {product.brand}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              {product.brand}
+            </p>
+            {product.season && (
+              <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                {product.season}
+              </span>
+            )}
+          </div>
           <h1 className="mt-2 font-display text-4xl italic text-foreground md:text-5xl">
             {product.name}
           </h1>
