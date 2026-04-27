@@ -26,6 +26,7 @@ import {
   Plus,
   Star,
   Package,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
