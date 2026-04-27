@@ -136,6 +136,7 @@ export type Database = {
           category: string
           created_at: string
           description: string
+          discount_percent: number | null
           id: string
           images: string[]
           is_active: boolean
@@ -153,6 +154,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          discount_percent?: number | null
           id?: string
           images?: string[]
           is_active?: boolean
@@ -170,6 +172,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          discount_percent?: number | null
           id?: string
           images?: string[]
           is_active?: boolean

@@ -27,6 +27,7 @@ export type AdminProductPayload = {
   category: string;
   reference: string;
   season: string | null;
+  discount_percent: number | null;
   images: string[];
   sizes: AdminProductSize[];
   is_active: boolean;
@@ -56,6 +57,10 @@ function parsePayload(input: unknown): AdminProductPayload {
     category: String(i.category || "colecção"),
     reference: String(i.reference || "").trim(),
     season: s(i.season) && (i.season as string).trim() ? (i.season as string).trim() : null,
+    discount_percent:
+      i.discount_percent == null || i.discount_percent === ""
+        ? null
+        : Math.max(0, Math.min(100, Math.round(Number(i.discount_percent)))),
     images,
     sizes,
     is_active: Boolean(i.is_active),
@@ -99,6 +104,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       category: p.category,
       reference: p.reference,
       season: p.season,
+      discount_percent: p.discount_percent,
       images: p.images,
       sizes: p.sizes,
       is_active: p.is_active,

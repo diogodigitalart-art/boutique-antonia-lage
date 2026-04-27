@@ -54,6 +54,7 @@ type ProductRow = {
   category: string;
   reference: string;
   season: string | null;
+  discount_percent: number | null;
   images: string[];
   sizes: ProductSize[];
   is_active: boolean;
@@ -284,6 +285,7 @@ function Content() {
           brandOptions={allBrandNames}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
+          onAdjusted={refresh}
         />
       )}
     </div>
@@ -382,6 +384,7 @@ type FormState = {
   description: string;
   price: string;
   original_price: string;
+  discount_percent: string;
   category: string;
   season: string;
   is_active: boolean;
@@ -396,11 +399,13 @@ function ProductForm({
   brandOptions,
   onClose,
   onSaved,
+  onAdjusted,
 }: {
   row: ProductRow | null;
   brandOptions: string[];
   onClose: () => void;
   onSaved: () => void;
+  onAdjusted?: () => void;
 }) {
   const isEdit = !!row;
   const upsertFn = useServerFn(adminUpsertProduct);
@@ -423,6 +428,7 @@ function ProductForm({
     description: row?.description ?? "",
     price: row ? String(row.price) : "",
     original_price: row?.original_price != null ? String(row.original_price) : "",
+    discount_percent: row?.discount_percent != null ? String(row.discount_percent) : "",
     category: row?.category ?? "colecção",
     season: row?.season ?? "",
     is_active: row?.is_active ?? true,
@@ -503,6 +509,7 @@ function ProductForm({
             description: form.description.trim(),
             price: Number(form.price),
             original_price: form.original_price ? Number(form.original_price) : null,
+            discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
             season: form.season.trim() || null,
             images: form.images,
@@ -532,6 +539,8 @@ function ProductForm({
             : s,
         ),
       );
+      onAdjusted?.();
+      toast.success(delta > 0 ? "Marcado como reservado" : "Reserva libertada");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     }
@@ -582,6 +591,22 @@ function ProductForm({
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Preço original (opcional)</label>
             <input type="number" min="0" step="0.01" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Desconto (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={form.discount_percent}
+              onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+              placeholder="ex: 20"
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Quando definido, mostra preço com desconto e badge −X%.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</label>

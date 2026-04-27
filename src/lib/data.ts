@@ -21,6 +21,8 @@ export type Product = {
   description: string;
   category: "new" | "archive" | "curated";
   season?: string;
+  /** Discount percentage 0-100. When set, price = original * (1 - pct/100). */
+  discountPercent?: number;
 };
 
 export type Experience = {

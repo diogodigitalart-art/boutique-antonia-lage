@@ -413,7 +413,7 @@ function UserDetail({
                 key={w.id}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground"
               >
-                {productLabel(w.product_id)}
+                {w.product_label || productLabel(w.product_id)}
               </li>
             ))}
           </ul>

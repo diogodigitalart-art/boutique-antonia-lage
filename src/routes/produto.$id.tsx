@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useProducts } from "@/lib/products";
@@ -32,14 +32,28 @@ export const Route = createFileRoute("/produto/$id")({
 
 function ProductPage() {
   const { id } = Route.useParams();
-  const { byId, products, loading } = useProducts();
+  const { byId, products, loading, refresh } = useProducts();
   const product: Product | undefined = byId(id);
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const { session } = useAuth();
-  const [size, setSize] = useState<string | null>(null);
+  const isOneSize =
+    !!product && product.sizes.length === 1 && product.sizes[0] === "U";
+  const [size, setSize] = useState<string | null>(isOneSize ? "U" : null);
   const [reserveOpen, setReserveOpen] = useState(false);
+
+  // Refresh products on mount so admin reservation changes are reflected.
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Auto-select "U" when product loads as one-size.
+  useEffect(() => {
+    if (isOneSize && size !== "U") setSize("U");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOneSize]);
 
   if (loading) {
     return (
@@ -62,6 +76,8 @@ function ProductPage() {
   }
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
+  const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
+  const showStrikethrough = hasDiscount || isArchive;
   const availableSet = new Set(product.availableSizes ?? product.sizes);
 
   const requireAuth = (next: () => void) => {
@@ -123,51 +139,61 @@ function ProductPage() {
           </h1>
 
           <div className="mt-4 flex items-baseline gap-3">
-            {isArchive ? (
+            {showStrikethrough ? (
               <>
                 <span className="text-lg text-muted-foreground line-through">
                   €{product.originalPrice}
                 </span>
                 <span className="text-2xl font-medium text-primary">€{product.price}</span>
-                <span className="rounded-full bg-primary-soft px-3 py-1 text-[10px] uppercase tracking-wider text-primary">
-                  {t("archive_price")}
-                </span>
+                {hasDiscount ? (
+                  <span className="rounded-full bg-red-600 px-3 py-1 text-[10px] uppercase tracking-wider text-white">
+                    −{product.discountPercent}%
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-primary-soft px-3 py-1 text-[10px] uppercase tracking-wider text-primary">
+                    {t("archive_price")}
+                  </span>
+                )}
               </>
             ) : (
               <span className="text-2xl text-foreground">€{product.price}</span>
             )}
           </div>
 
-          {/* Sizes — always show XS–XL, disable unavailable */}
+          {/* Sizes */}
           <div className="mt-8">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm uppercase tracking-wider text-muted-foreground">
                 {t("size")}
               </span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {ALL_SIZES.map((s) => {
-                const inProduct = product.sizes.includes(s);
-                const available = inProduct && availableSet.has(s);
-                const selected = size === s;
-                return (
-                  <button
-                    key={s}
-                    onClick={() => available && setSize(s)}
-                    disabled={!available}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md border text-sm transition ${
-                      selected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : available
-                          ? "border-border bg-card text-foreground hover:border-primary"
-                          : "cursor-not-allowed border-border bg-muted text-muted-foreground/50 line-through"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
+            {isOneSize ? (
+              <p className="text-sm text-foreground">Tamanho único</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {ALL_SIZES.map((s) => {
+                  const inProduct = product.sizes.includes(s);
+                  const available = inProduct && availableSet.has(s);
+                  const selected = size === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => available && setSize(s)}
+                      disabled={!available}
+                      className={`flex h-11 w-11 items-center justify-center rounded-md border text-sm transition ${
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : available
+                            ? "border-border bg-card text-foreground hover:border-primary"
+                            : "cursor-not-allowed border-border bg-muted text-muted-foreground/50 line-through"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {product.fullyReserved && (
               <p className="mt-3 text-xs uppercase tracking-wider text-destructive">
                 Esgotado — todas as peças estão reservadas.
@@ -176,11 +202,11 @@ function ProductPage() {
           </div>
 
           {/* Description */}
-          <p className="mt-8 leading-relaxed text-muted-foreground">
-            {product.description} Uma peça pensada para durar — tecidos nobres, acabamentos
-            cuidados e um caimento que valoriza a silhueta. Ideal para compor um guarda-roupa
-            elegante e intemporal.
-          </p>
+          {product.description && (
+            <p className="mt-8 whitespace-pre-line leading-relaxed text-muted-foreground">
+              {product.description}
+            </p>
+          )}
 
           {/* Actions — stacked full-width, Comprar primary first */}
           <div className="mt-8 flex flex-col gap-3">
