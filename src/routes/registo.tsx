@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -14,7 +14,6 @@ export const Route = createFileRoute("/registo")({
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -90,13 +89,7 @@ function RegisterPage() {
       <div className="w-full max-w-sm">
         <button
           type="button"
-          onClick={() => {
-            if (typeof window !== "undefined" && window.history.length > 1) {
-              router.history.back();
-            } else {
-              navigate({ to: "/" });
-            }
-          }}
+          onClick={() => navigate({ to: "/" })}
           className="mb-6 inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft size={14} /> Voltar

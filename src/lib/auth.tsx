@@ -2,11 +2,22 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
+type ProfileDetails = {
+  city?: string;
+  birth_month?: string;
+  birth_year?: string;
+  style_preference?: string;
+  favourite_colours?: string[];
+  occasions?: string[];
+  heard_from?: string;
+};
+
 type Profile = {
   id: string;
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  profile_details: ProfileDetails | null;
 };
 
 type AuthCtx = {
@@ -57,10 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, email, phone")
+      .select("id, full_name, email, phone, profile_details")
       .eq("id", userId)
       .maybeSingle();
-    if (data) setProfile(data);
+    if (data) {
+      setProfile({
+        ...data,
+        profile_details: (data.profile_details as ProfileDetails | null) ?? null,
+      });
+    }
   };
 
   const signOut = async () => {

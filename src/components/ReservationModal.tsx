@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendReservationEmail } from "@/server/reservation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { TIME_SLOTS, SCHEDULE_NOTE, isSunday } from "@/lib/reservations";
 
 type Props = {
   open: boolean;
@@ -27,8 +28,37 @@ export function ReservationModal({
   const send = useServerFn(sendReservationEmail);
   const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
-  const isExperience = itemType === "experiencia";
-  const TIME_SLOTS = ["10:00", "11:00", "14:00", "15:00", "16:00", "17:00"];
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    setDate("");
+    setTime("");
+    (async () => {
+      const { data } = await supabase
+        .from("blocked_slots" as never)
+        .select("blocked_date, blocked_time")
+        .gte("blocked_date", today);
+      setBlocked((data as Array<{ blocked_date: string; blocked_time: string | null }>) ?? []);
+    })();
+  }, [open, today]);
+
+  const dateIsSunday = isSunday(date);
+  const dateFullyBlocked = useMemo(
+    () => Boolean(date) && blocked.some((b) => b.blocked_date === date && !b.blocked_time),
+    [date, blocked],
+  );
+  const blockedTimesForDate = useMemo(
+    () =>
+      new Set(
+        blocked
+          .filter((b) => b.blocked_date === date && b.blocked_time)
+          .map((b) => b.blocked_time as string),
+      ),
+    [date, blocked],
+  );
 
   if (!open) return null;
 
@@ -43,14 +73,28 @@ export function ReservationModal({
       email: String(formData.get("email") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim(),
       date: String(formData.get("date") ?? "").trim(),
-      time: isExperience
-        ? String(formData.get("time") ?? "").trim() || undefined
-        : undefined,
+      time: String(formData.get("time") ?? "").trim() || undefined,
       message: String(formData.get("message") ?? "").trim() || undefined,
     };
 
-    if (isExperience && !payload.time) {
+    if (!payload.date) {
+      toast.error("Selecciona uma data.");
+      return;
+    }
+    if (isSunday(payload.date)) {
+      toast.error("A boutique está fechada ao Domingo.");
+      return;
+    }
+    if (dateFullyBlocked) {
+      toast.error("Essa data não está disponível.");
+      return;
+    }
+    if (!payload.time) {
       toast.error("Selecciona uma hora preferida.");
+      return;
+    }
+    if (blockedTimesForDate.has(payload.time)) {
+      toast.error("Essa hora não está disponível.");
       return;
     }
 
@@ -169,33 +213,53 @@ export function ReservationModal({
               required
               type="date"
               min={today}
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setTime("");
+              }}
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
             />
+            {dateIsSunday && (
+              <p className="mt-1.5 text-xs text-destructive">
+                A boutique está fechada ao Domingo. Escolhe outro dia.
+              </p>
+            )}
+            {!dateIsSunday && dateFullyBlocked && (
+              <p className="mt-1.5 text-xs text-destructive">
+                Esta data não está disponível.
+              </p>
+            )}
           </div>
 
-          {isExperience && (
-            <div>
-              <label htmlFor="time" className="text-xs uppercase tracking-wider text-muted-foreground">
-                Hora preferida
-              </label>
-              <select
-                id="time"
-                name="time"
-                required
-                defaultValue=""
-                className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
-              >
-                <option value="" disabled>
-                  Seleccionar hora
-                </option>
-                {TIME_SLOTS.map((slot) => (
-                  <option key={slot} value={slot}>
+          <div>
+            <label htmlFor="time" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Hora preferida
+            </label>
+            <select
+              id="time"
+              name="time"
+              required
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={!date || dateIsSunday || dateFullyBlocked}
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="" disabled>
+                Seleccionar hora
+              </option>
+              {TIME_SLOTS.map((slot) => {
+                const isBlocked = blockedTimesForDate.has(slot);
+                return (
+                  <option key={slot} value={slot} disabled={isBlocked}>
                     {slot}
+                    {isBlocked ? " — indisponível" : ""}
                   </option>
-                ))}
-              </select>
-            </div>
-          )}
+                );
+              })}
+            </select>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">{SCHEDULE_NOTE}</p>
+          </div>
 
           <div>
             <label htmlFor="message" className="text-xs uppercase tracking-wider text-muted-foreground">

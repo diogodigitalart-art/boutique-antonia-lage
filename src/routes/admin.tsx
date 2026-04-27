@@ -4,12 +4,30 @@ import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminData, updateReservationStatus, type AdminPayload, type AdminUser } from "@/server/admin";
-import { Search, Users, Calendar, Mail, Heart, Sparkles, Loader2 } from "lucide-react";
+import {
+  getAdminData,
+  updateReservationStatus,
+  addBlockedSlot,
+  deleteBlockedSlot,
+  type AdminPayload,
+  type AdminUser,
+} from "@/server/admin";
+import {
+  Search,
+  Users,
+  Calendar,
+  Mail,
+  Heart,
+  Sparkles,
+  Loader2,
+  CalendarOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
+import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
-const STATUS_OPTIONS = ["Confirmada", "Em visita", "Cancelada"] as const;
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin | Boutique Antónia Lage" }] }),
@@ -45,6 +63,8 @@ function AdminPage() {
 function AdminContent() {
   const fetchData = useServerFn(getAdminData);
   const setStatus = useServerFn(updateReservationStatus);
+  const addSlot = useServerFn(addBlockedSlot);
+  const removeSlot = useServerFn(deleteBlockedSlot);
   const [data, setData] = useState<AdminPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -96,6 +116,32 @@ function AdminContent() {
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro a atualizar");
+    }
+  };
+
+  const handleAddSlot = async (date: string, time: string | null, reason: string) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return;
+    try {
+      await addSlot({ data: { token, date, time, reason } });
+      toast.success("Bloqueio adicionado");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a bloquear");
+    }
+  };
+
+  const handleRemoveSlot = async (id: string) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return;
+    try {
+      await removeSlot({ data: { token, id } });
+      toast.success("Bloqueio removido");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a remover");
     }
   };
 
@@ -168,6 +214,13 @@ function AdminContent() {
           )}
         </section>
       </div>
+
+      {/* Blocked slots management */}
+      <BlockedSlotsSection
+        slots={data?.blockedSlots ?? []}
+        onAdd={handleAddSlot}
+        onRemove={handleRemoveSlot}
+      />
     </div>
   );
 }
@@ -251,7 +304,7 @@ function UserDetail({
                   <select
                     value={r.status}
                     onChange={(e) => onStatusChange(r.id, e.target.value)}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                    className={`${statusBadgeClasses(r.status)} cursor-pointer border-0 outline-none focus:ring-2 focus:ring-primary`}
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>
@@ -292,6 +345,11 @@ function UserDetail({
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* Profile details */}
+      <Section icon={Sparkles} title="Preferências de estilo">
+        <ProfileDetailsView details={user.profile_details} phone={user.phone} />
       </Section>
 
       {/* Contact messages */}
@@ -345,4 +403,201 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="rounded-xl bg-muted/30 p-4 text-center text-xs text-muted-foreground">{children}</p>;
+}
+
+const PROFILE_DETAIL_LABELS: Record<string, string> = {
+  city: "Cidade",
+  birth_month: "Mês de nascimento",
+  birth_year: "Ano de nascimento",
+  style_preference: "Estilo preferido",
+  favourite_colours: "Cores favoritas",
+  occasions: "Ocasiões",
+  heard_from: "Como nos conheceu",
+};
+
+const MONTH_NAMES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function ProfileDetailsView({
+  details,
+  phone,
+}: {
+  details: AdminUser["profile_details"];
+  phone: string | null;
+}) {
+  const d = (details && typeof details === "object" && !Array.isArray(details)
+    ? (details as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+  const entries: Array<[string, string]> = [];
+  if (phone) entries.push(["Telefone", phone]);
+  for (const [k, label] of Object.entries(PROFILE_DETAIL_LABELS)) {
+    const v = d[k];
+    if (v == null || v === "") continue;
+    if (Array.isArray(v)) {
+      if (v.length === 0) continue;
+      entries.push([label, v.join(", ")]);
+    } else if (k === "birth_month") {
+      const idx = Number(v) - 1;
+      entries.push([label, MONTH_NAMES[idx] ?? String(v)]);
+    } else {
+      entries.push([label, String(v)]);
+    }
+  }
+  if (entries.length === 0) {
+    return <Empty>Sem preferências preenchidas.</Empty>;
+  }
+  return (
+    <dl className="grid grid-cols-1 gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
+      {entries.map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</dt>
+          <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function BlockedSlotsSection({
+  slots,
+  onAdd,
+  onRemove,
+}: {
+  slots: AdminPayload["blockedSlots"];
+  onAdd: (date: string, time: string | null, reason: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const today = new Date().toISOString().split("T")[0];
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [reason, setReason] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!date) {
+      toast.error("Indica uma data.");
+      return;
+    }
+    onAdd(date, time || null, reason);
+    setDate("");
+    setTime("");
+    setReason("");
+  };
+
+  const fmtDate = (d: string) =>
+    new Date(`${d}T00:00:00`).toLocaleDateString("pt-PT", {
+      weekday: "short",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+  return (
+    <section className="mt-10 rounded-2xl border border-border bg-card p-6">
+      <div className="mb-5 flex items-center gap-2">
+        <CalendarOff className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          Gestão de horários
+        </h2>
+      </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Bloqueia datas inteiras ou horas específicas em que a boutique está fechada ou indisponível.
+      </p>
+
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 gap-3 rounded-xl bg-muted/30 p-4 md:grid-cols-[160px_160px_1fr_auto]"
+      >
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Data</label>
+          <input
+            type="date"
+            min={today}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Hora</label>
+          <select
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+          >
+            <option value="">Dia inteiro</option>
+            {TIME_SLOTS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Motivo (opcional)
+          </label>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Ex: Feriado, formação…"
+            maxLength={500}
+            className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            type="submit"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-xs uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
+          >
+            <Plus size={14} /> Bloquear
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-6">
+        {slots.length === 0 ? (
+          <Empty>Sem bloqueios activos.</Empty>
+        ) : (
+          <ul className="space-y-2">
+            {slots.map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {fmtDate(s.blocked_date)}
+                    {s.blocked_time ? ` · ${s.blocked_time}` : " · Dia inteiro"}
+                  </p>
+                  {s.reason && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{s.reason}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => onRemove(s.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-destructive hover:text-destructive"
+                >
+                  <Trash2 size={13} /> Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
 }
