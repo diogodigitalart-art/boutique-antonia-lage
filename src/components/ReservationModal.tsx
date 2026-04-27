@@ -296,6 +296,102 @@ export function ReservationModal({
             <p className="mt-1.5 text-[11px] text-muted-foreground">{SCHEDULE_NOTE}</p>
           </div>
 
+          {collectExperienceDetails && (
+            <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-4 sm:p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-primary">
+                Experiência personalizada
+              </p>
+              <h3 className="mt-1 font-display text-xl italic text-foreground">
+                Ajuda-nos a criar a experiência perfeita para ti
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Todos os campos são opcionais.
+              </p>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="brands_request" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Há alguma marca ou peça específica que queiras ver?
+                  </label>
+                  <input
+                    id="brands_request"
+                    type="text"
+                    value={brandsRequest}
+                    onChange={(e) => setBrandsRequest(e.target.value)}
+                    placeholder="Ex.: Self-Portrait, vestido midi…"
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="special_occasion" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    É para uma ocasião especial?
+                  </label>
+                  <input
+                    id="special_occasion"
+                    type="text"
+                    value={specialOccasion}
+                    onChange={(e) => setSpecialOccasion(e.target.value)}
+                    placeholder="Aniversário, presente, reunião importante…"
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="ambience" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Como preferes o ambiente?
+                  </label>
+                  <select
+                    id="ambience"
+                    value={ambience}
+                    onChange={(e) => setAmbience(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Tranquilo e íntimo">Tranquilo e íntimo</option>
+                    <option value="Dinâmico e animado">Dinâmico e animado</option>
+                    <option value="Sem preferência">Sem preferência</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="music_pref" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Gostas de música ambiente?
+                  </label>
+                  <select
+                    id="music_pref"
+                    value={musicPref}
+                    onChange={(e) => setMusicPref(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                    <option value="Sem preferência">Sem preferência</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="companion" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Vens sozinha ou acompanhada?
+                  </label>
+                  <select
+                    id="companion"
+                    value={companion}
+                    onChange={(e) => setCompanion(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Sozinha">Sozinha</option>
+                    <option value="Com amigas">Com amigas</option>
+                    <option value="Com familiar">Com familiar</option>
+                    <option value="Com parceiro/a">Com parceiro/a</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label htmlFor="message" className="text-xs uppercase tracking-wider text-muted-foreground">
               Mensagem opcional
