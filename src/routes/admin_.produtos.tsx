@@ -97,9 +97,11 @@ function Content() {
   const deleteFn = useServerFn(adminDeleteProduct);
   const toggleFn = useServerFn(adminToggleProductActive);
   const listBrandsFn = useServerFn(adminListBrands);
+  const listSeasonsFn = useServerFn(adminListSeasons);
 
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [seasons, setSeasons] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -110,18 +112,20 @@ function Content() {
   const refresh = useCallback(async () => {
     try {
       const token = await getToken();
-      const [p, b] = await Promise.all([
+      const [p, b, sRes] = await Promise.all([
         listFn({ data: { token } }),
         listBrandsFn({ data: { token } }),
+        listSeasonsFn({ data: { token } }),
       ]);
       setRows((p.rows as unknown) as ProductRow[]);
       setBrands((b.rows as unknown) as BrandRow[]);
+      setSeasons((sRes.rows as unknown) as BrandRow[]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar");
     } finally {
       setLoading(false);
     }
-  }, [listFn, listBrandsFn]);
+  }, [listFn, listBrandsFn, listSeasonsFn]);
 
   useEffect(() => {
     refresh();
@@ -170,6 +174,8 @@ function Content() {
     brands.forEach((b) => set.add(b.name));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [brands]);
+
+  const seasonNames = useMemo(() => seasons.map((s) => s.name), [seasons]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
@@ -283,9 +289,9 @@ function Content() {
         <ProductForm
           row={editing}
           brandOptions={allBrandNames}
+          seasonOptions={seasonNames}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
-          onAdjusted={refresh}
         />
       )}
     </div>
