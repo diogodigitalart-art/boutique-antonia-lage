@@ -27,6 +27,8 @@ export function ReservationModal({
   const send = useServerFn(sendReservationEmail);
   const { user } = useAuth();
   const today = new Date().toISOString().split("T")[0];
+  const isExperience = itemType === "experiencia";
+  const TIME_SLOTS = ["10:00", "11:00", "14:00", "15:00", "16:00", "17:00"];
 
   if (!open) return null;
 
@@ -41,8 +43,16 @@ export function ReservationModal({
       email: String(formData.get("email") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim(),
       date: String(formData.get("date") ?? "").trim(),
+      time: isExperience
+        ? String(formData.get("time") ?? "").trim() || undefined
+        : undefined,
       message: String(formData.get("message") ?? "").trim() || undefined,
     };
+
+    if (isExperience && !payload.time) {
+      toast.error("Selecciona uma hora preferida.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -56,7 +66,9 @@ export function ReservationModal({
           customer_name: payload.name,
           customer_email: payload.email,
           customer_phone: payload.phone,
-          reservation_date: payload.date,
+          reservation_date: payload.time
+            ? `${payload.date} ${payload.time}`
+            : payload.date,
           preferred_date: payload.date,
           message: payload.message ?? null,
           status: "Confirmada",
@@ -160,6 +172,30 @@ export function ReservationModal({
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
             />
           </div>
+
+          {isExperience && (
+            <div>
+              <label htmlFor="time" className="text-xs uppercase tracking-wider text-muted-foreground">
+                Hora preferida
+              </label>
+              <select
+                id="time"
+                name="time"
+                required
+                defaultValue=""
+                className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
+              >
+                <option value="" disabled>
+                  Seleccionar hora
+                </option>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="message" className="text-xs uppercase tracking-wider text-muted-foreground">
