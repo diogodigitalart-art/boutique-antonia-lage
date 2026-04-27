@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
-  toastId: string | number;
   userId: string;
   currentDetails: Record<string, unknown> | null;
+  onClose: () => void;
   onSaved: () => void;
 };
 
@@ -14,13 +15,13 @@ type Props = {
  * Rendered via sonner's `toast.custom` so we can show two CTAs and an
  * inline form with channel preference + optional WhatsApp number.
  */
-export function WishlistNotifyToast({ toastId, userId, currentDetails, onSaved }: Props) {
+export function WishlistNotifyToast({ userId, currentDetails, onClose, onSaved }: Props) {
   const [step, setStep] = useState<"ask" | "form">("ask");
   const [channel, setChannel] = useState<"email" | "whatsapp">("email");
   const [whatsapp, setWhatsapp] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const dismiss = () => toast.dismiss(toastId);
+  const dismiss = () => onClose();
 
   const save = async (pref: { channel: "email" | "whatsapp"; whatsapp?: string }) => {
     setSubmitting(true);
@@ -38,16 +39,31 @@ export function WishlistNotifyToast({ toastId, userId, currentDetails, onSaved }
       return;
     }
     onSaved();
-    dismiss();
+    onClose();
     toast.success("Preferência guardada — vamos avisar-te.");
   };
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-4 shadow-lg">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+72px)] md:justify-end md:px-6 md:pb-6"
+      role="dialog"
+      aria-live="polite"
+    >
+      <div className="pointer-events-auto w-full max-w-sm rounded-2xl border border-border bg-background p-4 shadow-2xl">
+      <div className="flex items-start justify-between gap-3">
       <p className="text-sm text-foreground">
         Quer ser avisada quando estas peças tiverem desconto ou chegarem
         novidades semelhantes?
       </p>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Fechar"
+        className="-mr-1 -mt-1 rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+      >
+        <X size={16} strokeWidth={1.5} />
+      </button>
+      </div>
 
       {step === "ask" ? (
         <div className="mt-3 flex gap-2">
@@ -124,6 +140,7 @@ export function WishlistNotifyToast({ toastId, userId, currentDetails, onSaved }
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
