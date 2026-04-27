@@ -239,7 +239,9 @@ export type Database = {
           message: string | null
           occasion: string | null
           preferred_date: string
+          product_id: string | null
           product_name: string
+          product_size: string | null
           reservation_date: string
           status: string
           updated_at: string
@@ -259,7 +261,9 @@ export type Database = {
           message?: string | null
           occasion?: string | null
           preferred_date: string
+          product_id?: string | null
           product_name: string
+          product_size?: string | null
           reservation_date: string
           status?: string
           updated_at?: string
@@ -279,7 +283,9 @@ export type Database = {
           message?: string | null
           occasion?: string | null
           preferred_date?: string
+          product_id?: string | null
           product_name?: string
+          product_size?: string | null
           reservation_date?: string
           status?: string
           updated_at?: string
