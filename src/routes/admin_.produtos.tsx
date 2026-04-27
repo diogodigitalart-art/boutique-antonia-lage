@@ -95,6 +95,7 @@ function Content() {
   const listFn = useServerFn(adminListProducts);
   const deleteFn = useServerFn(adminDeleteProduct);
   const toggleFn = useServerFn(adminToggleProductActive);
+  const listBrandsFn = useServerFn(adminListBrands);
 
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [brands, setBrands] = useState<BrandRow[]>([]);
@@ -110,7 +111,7 @@ function Content() {
       const token = await getToken();
       const [p, b] = await Promise.all([
         listFn({ data: { token } }),
-        useServerFnCall(adminListBrands, { token }),
+        listBrandsFn({ data: { token } }),
       ]);
       setRows(p.rows as ProductRow[]);
       setBrands(b.rows as BrandRow[]);
@@ -119,7 +120,7 @@ function Content() {
     } finally {
       setLoading(false);
     }
-  }, [listFn]);
+  }, [listFn, listBrandsFn]);
 
   useEffect(() => {
     refresh();
@@ -287,11 +288,6 @@ function Content() {
       )}
     </div>
   );
-}
-
-// Helper: invoke a server function imperatively (without hook)
-async function useServerFnCall<T>(fn: { (args: { data: unknown }): Promise<T> }, payload: unknown): Promise<T> {
-  return fn({ data: payload as never });
 }
 
 function BrandsSection({
