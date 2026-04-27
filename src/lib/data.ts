@@ -1,14 +1,23 @@
 // Mock data for Boutique Antónia Lage
-// Structured for easy future swap to Lovable Cloud DB + Stripe
+// Experiences are still hardcoded; products now come from the live Supabase
+// `products` table via `useProducts()` (see `src/lib/products.tsx`).
 
 export type Product = {
   id: string;
+  /** Database UUID — required when calling stock-adjust functions. */
+  uuid?: string;
   brand: string;
   name: string;
   price: number;
   originalPrice?: number;
   image: string;
+  images?: string[];
   sizes: string[];
+  /** Per-size availability (sizes that still have stock available). */
+  availableSizes?: string[];
+  /** True when every size is reserved (no stock available). */
+  fullyReserved?: boolean;
+  reference?: string;
   description: string;
   category: "new" | "archive" | "curated";
 };
