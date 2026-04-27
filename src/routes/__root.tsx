@@ -4,6 +4,7 @@ import appCss from "../styles.css?url";
 import { I18nProvider } from "@/lib/i18n";
 import { WishlistProvider } from "@/lib/wishlist";
 import { AuthProvider } from "@/lib/auth";
+import { ProductsProvider } from "@/lib/products";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -84,10 +85,12 @@ function RootComponent() {
   return (
     <I18nProvider>
       <AuthProvider>
-        <WishlistProvider>
-          <Outlet />
-          <Toaster position="top-center" />
-        </WishlistProvider>
+        <ProductsProvider>
+          <WishlistProvider>
+            <Outlet />
+            <Toaster position="top-center" />
+          </WishlistProvider>
+        </ProductsProvider>
       </AuthProvider>
     </I18nProvider>
   );
