@@ -4,12 +4,30 @@ import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminData, updateReservationStatus, type AdminPayload, type AdminUser } from "@/server/admin";
-import { Search, Users, Calendar, Mail, Heart, Sparkles, Loader2 } from "lucide-react";
+import {
+  getAdminData,
+  updateReservationStatus,
+  addBlockedSlot,
+  deleteBlockedSlot,
+  type AdminPayload,
+  type AdminUser,
+} from "@/server/admin";
+import {
+  Search,
+  Users,
+  Calendar,
+  Mail,
+  Heart,
+  Sparkles,
+  Loader2,
+  CalendarOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
+import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
-const STATUS_OPTIONS = ["Confirmada", "Em visita", "Cancelada"] as const;
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin | Boutique Antónia Lage" }] }),
@@ -45,6 +63,8 @@ function AdminPage() {
 function AdminContent() {
   const fetchData = useServerFn(getAdminData);
   const setStatus = useServerFn(updateReservationStatus);
+  const addSlot = useServerFn(addBlockedSlot);
+  const removeSlot = useServerFn(deleteBlockedSlot);
   const [data, setData] = useState<AdminPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -96,6 +116,32 @@ function AdminContent() {
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro a atualizar");
+    }
+  };
+
+  const handleAddSlot = async (date: string, time: string | null, reason: string) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return;
+    try {
+      await addSlot({ data: { token, date, time, reason } });
+      toast.success("Bloqueio adicionado");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a bloquear");
+    }
+  };
+
+  const handleRemoveSlot = async (id: string) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return;
+    try {
+      await removeSlot({ data: { token, id } });
+      toast.success("Bloqueio removido");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a remover");
     }
   };
 
@@ -168,6 +214,13 @@ function AdminContent() {
           )}
         </section>
       </div>
+
+      {/* Blocked slots management */}
+      <BlockedSlotsSection
+        slots={data?.blockedSlots ?? []}
+        onAdd={handleAddSlot}
+        onRemove={handleRemoveSlot}
+      />
     </div>
   );
 }
@@ -251,7 +304,7 @@ function UserDetail({
                   <select
                     value={r.status}
                     onChange={(e) => onStatusChange(r.id, e.target.value)}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                    className={`${statusBadgeClasses(r.status)} cursor-pointer border-0 outline-none focus:ring-2 focus:ring-primary`}
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>
@@ -292,6 +345,11 @@ function UserDetail({
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* Profile details */}
+      <Section icon={Sparkles} title="Preferências de estilo">
+        <ProfileDetailsView details={user.profile_details} phone={user.phone} />
       </Section>
 
       {/* Contact messages */}
