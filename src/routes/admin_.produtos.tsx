@@ -592,6 +592,22 @@ function ProductForm({
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Preço original (opcional)</label>
             <input type="number" min="0" step="0.01" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Desconto (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={form.discount_percent}
+              onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+              placeholder="ex: 20"
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Quando definido, mostra preço com desconto e badge −X%.
+            </p>
+          </div>
           <div className="sm:col-span-2">
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm" />
