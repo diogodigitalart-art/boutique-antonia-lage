@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
@@ -24,6 +25,7 @@ import {
   Trash2,
   Plus,
   Star,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
@@ -162,9 +164,18 @@ function AdminContent() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
-      <header className="mb-8">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Painel</p>
-        <h1 className="mt-2 font-display text-3xl italic text-foreground md:text-4xl">Admin</h1>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Painel</p>
+          <h1 className="mt-2 font-display text-3xl italic text-foreground md:text-4xl">Admin</h1>
+        </div>
+        <Link
+          to="/admin/produtos"
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs uppercase tracking-[0.18em] text-foreground transition hover:bg-muted"
+        >
+          <Package size={14} />
+          Gestão de Produtos
+        </Link>
       </header>
 
       {/* Stats */}
