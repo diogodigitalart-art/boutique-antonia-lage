@@ -435,7 +435,10 @@ function UserDetail({
         <NotificationPreferenceView
           details={user.profile_details}
           phone={user.phone}
-          wishlistIds={user.wishlist.map((w) => w.product_id)}
+          wishlistItems={user.wishlist.map((w) => ({
+            id: w.product_id,
+            label: w.product_label || productLabel(w.product_id),
+          }))}
         />
       </Section>
 
@@ -565,11 +568,11 @@ function ProfileDetailsView({
 function NotificationPreferenceView({
   details,
   phone,
-  wishlistIds,
+  wishlistItems,
 }: {
   details: AdminUser["profile_details"];
   phone: string | null;
-  wishlistIds: string[];
+  wishlistItems: Array<{ id: string; label: string }>;
 }) {
   const d = (details && typeof details === "object" && !Array.isArray(details)
     ? (details as Record<string, unknown>)
@@ -584,7 +587,7 @@ function NotificationPreferenceView({
 
   const isWhatsapp = pref.channel === "whatsapp";
   const whatsappNumber = pref.whatsapp || phone || "—";
-  const topThree = wishlistIds.slice(0, 3);
+  const topThree = wishlistItems.slice(0, 3);
 
   return (
     <div className="space-y-3 rounded-xl bg-muted/40 p-4">
@@ -608,9 +611,9 @@ function NotificationPreferenceView({
           <p className="mt-1 text-xs text-muted-foreground">Wishlist vazia.</p>
         ) : (
           <ul className="mt-1.5 space-y-1">
-            {topThree.map((id) => (
-              <li key={id} className="text-sm text-foreground">
-                · {productLabel(id)}
+            {topThree.map((it) => (
+              <li key={it.id} className="text-sm text-foreground">
+                · {it.label}
               </li>
             ))}
           </ul>
