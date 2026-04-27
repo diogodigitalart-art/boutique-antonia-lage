@@ -489,14 +489,18 @@ function ProductForm({
 
     let sizesPayload: ProductSize[];
     if (form.oneSize) {
-      const existingU = existingSizes.find((x) => x.size === "U");
-      sizesPayload = [{ size: "U", stock: Math.max(1, form.oneSizeStock || 1), reserved: existingU?.reserved ?? 0 }];
+      const liveU = liveSizes.find((x) => x.size === "U");
+      sizesPayload = [{
+        size: "U",
+        stock: Math.max(1, form.oneSizeStock || 1),
+        reserved: liveU?.reserved ?? 0,
+      }];
     } else {
       sizesPayload = SIZE_OPTIONS
         .filter((s) => form.sizes[s] > 0)
         .map((s) => {
-          const existing = existingSizes.find((x) => x.size === s);
-          return { size: s, stock: form.sizes[s], reserved: existing?.reserved ?? 0 };
+          const live = liveSizes.find((x) => x.size === s);
+          return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
         });
     }
 
@@ -532,23 +536,15 @@ function ProductForm({
     }
   };
 
-  const adjust = async (size: string, delta: 1 | -1) => {
-    if (!row) return;
-    try {
-      const token = await getToken();
-      await adjustFn({ data: { token, productId: row.id, size, delta } });
-      setLiveSizes((prev) =>
-        prev.map((s) =>
-          s.size === size
-            ? { ...s, reserved: Math.max(0, Math.min(s.stock, s.reserved + delta)) }
-            : s,
-        ),
-      );
-      onAdjusted?.();
-      toast.success(delta > 0 ? "Marcado como reservado" : "Reserva libertada");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro");
-    }
+  // Local-only: only persisted to Supabase when admin clicks "Guardar"
+  const adjust = (size: string, delta: 1 | -1) => {
+    setLiveSizes((prev) =>
+      prev.map((s) =>
+        s.size === size
+          ? { ...s, reserved: Math.max(0, Math.min(s.stock, s.reserved + delta)) }
+          : s,
+      ),
+    );
   };
 
   return (
