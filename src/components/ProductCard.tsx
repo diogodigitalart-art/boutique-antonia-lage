@@ -55,9 +55,16 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
         />
       </button>
       <Link to="/produto/$id" params={{ id: product.id }} className="mt-4 block">
-        <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
-          {product.brand}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
+            {product.brand}
+          </p>
+          {product.season && (
+            <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+              {product.season}
+            </span>
+          )}
+        </div>
         <h3 className="mt-1.5 font-display text-lg font-light italic leading-tight text-foreground md:text-xl">
           {product.name}
         </h3>
