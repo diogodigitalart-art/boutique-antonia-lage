@@ -10,6 +10,10 @@ type ProfileDetails = {
   favourite_colours?: string[];
   occasions?: string[];
   heard_from?: string;
+  notification_preference?: {
+    channel: "email" | "whatsapp";
+    whatsapp?: string;
+  };
 };
 
 type Profile = {
