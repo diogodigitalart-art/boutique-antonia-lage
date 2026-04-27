@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { statusBadgeClasses } from "@/lib/reservations";
 
 export const Route = createFileRoute("/perfil")({
@@ -154,6 +155,7 @@ function ProfileContent() {
       </section>
 
       <section className="mx-auto max-w-5xl space-y-10 px-4 py-12 md:px-8 md:py-16">
+        <OnboardingBanner />
         {/* Perfil de estilo */}
         <div>
           <SectionHeader
