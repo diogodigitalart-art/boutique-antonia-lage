@@ -40,7 +40,7 @@ export type AdminUser = {
     status: string;
     created_at: string;
   }>;
-  wishlist: Array<{ id: string; product_id: string; created_at: string }>;
+  wishlist: Array<{ id: string; product_id: string; product_label: string; created_at: string }>;
   quiz: { answers: JsonValue; profile_description: string; created_at: string } | null;
   feedback: Array<{
     id: string;
