@@ -20,6 +20,7 @@ export type Product = {
   reference?: string;
   description: string;
   category: "new" | "archive" | "curated";
+  season?: string;
 };
 
 export type Experience = {
