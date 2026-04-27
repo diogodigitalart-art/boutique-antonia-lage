@@ -23,6 +23,7 @@ import {
   CalendarOff,
   Trash2,
   Plus,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
@@ -323,6 +324,61 @@ function UserDetail({
                   <p className="mt-3 rounded-lg bg-muted/40 p-3 text-xs text-foreground">{r.message}</p>
                 )}
                 <p className="mt-2 text-[11px] text-muted-foreground">Criada em {fmt(r.created_at)}</p>
+                {(() => {
+                  const fb = user.feedback.find((f) => f.reservation_id === r.id);
+                  if (!fb) return null;
+                  return (
+                    <div className="mt-3 rounded-lg border border-primary/30 bg-primary-soft/40 p-3 text-xs">
+                      <div className="flex items-center gap-1 text-primary">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={12}
+                            className={i < fb.rating ? "fill-primary text-primary" : "text-muted-foreground"}
+                          />
+                        ))}
+                        <span className="ml-2 text-foreground">{fb.rating}/5</span>
+                      </div>
+                      <p className="mt-1.5 text-foreground">
+                        Peça: <strong>{fb.piece_match}</strong> · Voltaria: <strong>{fb.return_intent}</strong>
+                      </p>
+                      {fb.wish_list_text && (
+                        <p className="mt-1 text-foreground">"{fb.wish_list_text}"</p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* Feedback summary */}
+      <Section icon={Star} title={`Feedback (${user.feedback.length})`}>
+        {user.feedback.length === 0 ? (
+          <Empty>Sem feedback recebido.</Empty>
+        ) : (
+          <ul className="space-y-2">
+            {user.feedback.map((f) => (
+              <li key={f.id} className="rounded-xl border border-border p-3 text-xs">
+                <div className="flex items-center gap-1 text-primary">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={12}
+                      className={i < f.rating ? "fill-primary text-primary" : "text-muted-foreground"}
+                    />
+                  ))}
+                  <span className="ml-2 text-foreground">{f.rating}/5</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">{fmt(f.created_at)}</span>
+                </div>
+                <p className="mt-1.5 text-foreground">
+                  Peça: <strong>{f.piece_match}</strong> · Voltaria: <strong>{f.return_intent}</strong>
+                </p>
+                {f.wish_list_text && (
+                  <p className="mt-1 italic text-foreground">"{f.wish_list_text}"</p>
+                )}
               </li>
             ))}
           </ul>
