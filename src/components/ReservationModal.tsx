@@ -34,6 +34,8 @@ export function ReservationModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  // Optional occasion (Checkpoint 4) — shown on every reservation
+  const [occasion, setOccasion] = useState("");
   // Boutique Privada extra fields
   const [brandsRequest, setBrandsRequest] = useState("");
   const [specialOccasion, setSpecialOccasion] = useState("");
@@ -45,6 +47,7 @@ export function ReservationModal({
     if (!open) return;
     setDate("");
     setTime("");
+    setOccasion("");
     setBrandsRequest("");
     setSpecialOccasion("");
     setAmbience("");
@@ -89,6 +92,7 @@ export function ReservationModal({
       date: String(formData.get("date") ?? "").trim(),
       time: String(formData.get("time") ?? "").trim() || undefined,
       message: String(formData.get("message") ?? "").trim() || undefined,
+      occasion: occasion.trim() || undefined,
     };
 
     if (!payload.date) {
