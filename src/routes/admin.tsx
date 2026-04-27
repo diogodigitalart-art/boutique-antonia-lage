@@ -27,6 +27,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
+import { PRODUCTS } from "@/lib/data";
+
+const productLabel = (id: string) => {
+  const p = PRODUCTS.find((x) => x.id === id);
+  return p ? `${p.brand} — ${p.name}` : id;
+};
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 
@@ -396,11 +402,20 @@ function UserDetail({
                 key={w.id}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground"
               >
-                {w.product_id}
+                {productLabel(w.product_id)}
               </li>
             ))}
           </ul>
         )}
+      </Section>
+
+      {/* Notification preferences */}
+      <Section icon={Mail} title="Preferências de contacto">
+        <NotificationPreferenceView
+          details={user.profile_details}
+          phone={user.phone}
+          wishlistIds={user.wishlist.map((w) => w.product_id)}
+        />
       </Section>
 
       {/* Profile details */}
@@ -523,6 +538,64 @@ function ProfileDetailsView({
         </div>
       ))}
     </dl>
+  );
+}
+
+function NotificationPreferenceView({
+  details,
+  phone,
+  wishlistIds,
+}: {
+  details: AdminUser["profile_details"];
+  phone: string | null;
+  wishlistIds: string[];
+}) {
+  const d = (details && typeof details === "object" && !Array.isArray(details)
+    ? (details as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+  const pref = d.notification_preference as
+    | { channel?: "email" | "whatsapp"; whatsapp?: string }
+    | undefined;
+
+  if (!pref || !pref.channel) {
+    return <Empty>Sem preferência definida.</Empty>;
+  }
+
+  const isWhatsapp = pref.channel === "whatsapp";
+  const whatsappNumber = pref.whatsapp || phone || "—";
+  const topThree = wishlistIds.slice(0, 3);
+
+  return (
+    <div className="space-y-3 rounded-xl bg-muted/40 p-4">
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Canal</dt>
+          <dd className="mt-0.5 text-sm text-foreground">{isWhatsapp ? "WhatsApp" : "Email"}</dd>
+        </div>
+        {isWhatsapp && (
+          <div>
+            <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Telefone</dt>
+            <dd className="mt-0.5 text-sm text-foreground">{whatsappNumber}</dd>
+          </div>
+        )}
+      </dl>
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Peças a notificar (primeiras 3 da wishlist)
+        </p>
+        {topThree.length === 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">Wishlist vazia.</p>
+        ) : (
+          <ul className="mt-1.5 space-y-1">
+            {topThree.map((id) => (
+              <li key={id} className="text-sm text-foreground">
+                · {productLabel(id)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
