@@ -113,8 +113,8 @@ function Content() {
         listFn({ data: { token } }),
         listBrandsFn({ data: { token } }),
       ]);
-      setRows(p.rows as ProductRow[]);
-      setBrands(b.rows as BrandRow[]);
+      setRows((p.rows as unknown) as ProductRow[]);
+      setBrands((b.rows as unknown) as BrandRow[]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar");
     } finally {
