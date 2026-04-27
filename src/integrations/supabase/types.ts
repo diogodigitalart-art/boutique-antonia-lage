@@ -318,6 +318,24 @@ export type Database = {
         }
         Relationships: []
       }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       style_profiles: {
         Row: {
           answers: Json
