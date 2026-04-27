@@ -56,6 +56,7 @@ function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
   const { user, profile, signOut } = useAuth();
+  const { products } = useProducts();
   const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -100,7 +101,7 @@ function ProfileContent() {
     })();
   }, [user]);
 
-  const wishItems = PRODUCTS.filter((p) => ids.includes(p.id)).slice(0, 4);
+  const wishItems = products.filter((p) => ids.includes(p.id)).slice(0, 4);
 
   const formatDate = (iso: string) => {
     if (!iso) return "";
