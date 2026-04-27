@@ -13,7 +13,7 @@ export const Route = createFileRoute("/quiz")({
       { title: "Quiz de estilo | Boutique Antónia Lage" },
       {
         name: "description",
-        content: "Quatro perguntas para criarmos o teu perfil de estilo personalizado.",
+        content: "Seis perguntas para criarmos o teu perfil de estilo personalizado.",
       },
     ],
   }),
