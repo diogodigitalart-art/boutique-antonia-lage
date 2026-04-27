@@ -14,6 +14,8 @@ type Props = {
   contextLabel?: string;
   itemName: string;
   itemType: "produto" | "experiencia";
+  /** When true, show extra Boutique Privada questions and save them to experience_details. */
+  collectExperienceDetails?: boolean;
 };
 
 export function ReservationModal({
@@ -23,19 +25,31 @@ export function ReservationModal({
   contextLabel,
   itemName,
   itemType,
+  collectExperienceDetails = false,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const send = useServerFn(sendReservationEmail);
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  // Boutique Privada extra fields
+  const [brandsRequest, setBrandsRequest] = useState("");
+  const [specialOccasion, setSpecialOccasion] = useState("");
+  const [ambience, setAmbience] = useState("");
+  const [musicPref, setMusicPref] = useState("");
+  const [companion, setCompanion] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setDate("");
     setTime("");
+    setBrandsRequest("");
+    setSpecialOccasion("");
+    setAmbience("");
+    setMusicPref("");
+    setCompanion("");
     (async () => {
       const { data } = await supabase
         .from("blocked_slots" as never)
@@ -100,7 +114,17 @@ export function ReservationModal({
 
     setSubmitting(true);
     try {
-      await send({ data: payload });
+      const experience_details = collectExperienceDetails
+        ? {
+            brands_request: brandsRequest.trim() || undefined,
+            special_occasion: specialOccasion.trim() || undefined,
+            ambience: ambience || undefined,
+            music_preference: musicPref || undefined,
+            companion: companion || undefined,
+          }
+        : undefined;
+
+      await send({ data: { ...payload, experienceDetails: experience_details } });
       if (user) {
         const { error } = await supabase.from("reservations").insert({
           user_id: user.id,
@@ -116,8 +140,19 @@ export function ReservationModal({
           preferred_date: payload.date,
           message: payload.message ?? null,
           status: "Confirmada",
+          experience_details: experience_details ?? {},
         });
         if (error) console.error("Failed to save reservation", error);
+
+        // Auto-save phone to profile if not already set
+        if (payload.phone && !profile?.phone) {
+          const { error: pErr } = await supabase
+            .from("profiles")
+            .update({ phone: payload.phone })
+            .eq("id", user.id);
+          if (pErr) console.error("Failed to save phone to profile", pErr);
+          else await refreshProfile();
+        }
       }
       onClose();
       toast.success("Reserva confirmada! Entraremos em contacto em breve.");
@@ -260,6 +295,102 @@ export function ReservationModal({
             </select>
             <p className="mt-1.5 text-[11px] text-muted-foreground">{SCHEDULE_NOTE}</p>
           </div>
+
+          {collectExperienceDetails && (
+            <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-4 sm:p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-primary">
+                Experiência personalizada
+              </p>
+              <h3 className="mt-1 font-display text-xl italic text-foreground">
+                Ajuda-nos a criar a experiência perfeita para ti
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Todos os campos são opcionais.
+              </p>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="brands_request" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Há alguma marca ou peça específica que queiras ver?
+                  </label>
+                  <input
+                    id="brands_request"
+                    type="text"
+                    value={brandsRequest}
+                    onChange={(e) => setBrandsRequest(e.target.value)}
+                    placeholder="Ex.: Self-Portrait, vestido midi…"
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="special_occasion" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    É para uma ocasião especial?
+                  </label>
+                  <input
+                    id="special_occasion"
+                    type="text"
+                    value={specialOccasion}
+                    onChange={(e) => setSpecialOccasion(e.target.value)}
+                    placeholder="Aniversário, presente, reunião importante…"
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="ambience" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Como preferes o ambiente?
+                  </label>
+                  <select
+                    id="ambience"
+                    value={ambience}
+                    onChange={(e) => setAmbience(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Tranquilo e íntimo">Tranquilo e íntimo</option>
+                    <option value="Dinâmico e animado">Dinâmico e animado</option>
+                    <option value="Sem preferência">Sem preferência</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="music_pref" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Gostas de música ambiente?
+                  </label>
+                  <select
+                    id="music_pref"
+                    value={musicPref}
+                    onChange={(e) => setMusicPref(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                    <option value="Sem preferência">Sem preferência</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="companion" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Vens sozinha ou acompanhada?
+                  </label>
+                  <select
+                    id="companion"
+                    value={companion}
+                    onChange={(e) => setCompanion(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="Sozinha">Sozinha</option>
+                    <option value="Com amigas">Com amigas</option>
+                    <option value="Com familiar">Com familiar</option>
+                    <option value="Com parceiro/a">Com parceiro/a</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="message" className="text-xs uppercase tracking-wider text-muted-foreground">

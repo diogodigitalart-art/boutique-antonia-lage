@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, Calendar, Sparkles, Shirt, Wallet } from "lucide-react";
+import { Check, Calendar, Sparkles, Shirt, Wallet, Music, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/quiz")({
   head: () => ({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/quiz")({
       { title: "Quiz de estilo | Boutique Antónia Lage" },
       {
         name: "description",
-        content: "Quatro perguntas para criarmos o teu perfil de estilo personalizado.",
+        content: "Seis perguntas para criarmos o teu perfil de estilo personalizado.",
       },
     ],
   }),
@@ -26,6 +26,8 @@ type QDict = {
   quiz_q2: string;
   quiz_q3: string;
   quiz_q4: string;
+  quiz_q5: string;
+  quiz_q6: string;
 };
 
 const questions: Q[] = [
@@ -39,6 +41,32 @@ const questions: Q[] = [
   },
   { key: "piece", q: "quiz_q3", label: "Peça favorita", icon: Shirt, options: ["Vestidos", "Alfaiataria", "Casacos", "Blusas"] },
   { key: "budget", q: "quiz_q4", label: "Orçamento", icon: Wallet, options: ["até €300", "€300–€600", "€600–€1000", "€1000+"] },
+  {
+    key: "music",
+    q: "quiz_q5",
+    label: "Música",
+    icon: Music,
+    options: [
+      "Pop & charts",
+      "Jazz & soul",
+      "Indie & alternativo",
+      "Clássica",
+      "Nada — prefiro silêncio",
+    ],
+  },
+  {
+    key: "week",
+    q: "quiz_q6",
+    label: "Semana típica",
+    icon: CalendarDays,
+    options: [
+      "Maioritariamente em escritório",
+      "Muitas reuniões e eventos",
+      "Trabalho criativo ou flexível",
+      "Em casa ou a estudar",
+      "Muito variada",
+    ],
+  },
 ];
 
 function buildProfileDescription(a: Record<string, string>) {

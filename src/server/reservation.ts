@@ -13,6 +13,13 @@ export type ReservationInput = {
   date: string;
   time?: string;
   message?: string;
+  experienceDetails?: {
+    brands_request?: string;
+    special_occasion?: string;
+    ambience?: string;
+    music_preference?: string;
+    companion?: string;
+  };
 };
 
 function escapeHtml(input: string) {
@@ -52,6 +59,22 @@ function validate(input: unknown): ReservationInput {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email)) {
     throw new Error("Invalid email");
   }
+  let experienceDetails: ReservationInput["experienceDetails"] | undefined;
+  if (i.experienceDetails !== undefined) {
+    if (typeof i.experienceDetails !== "object" || i.experienceDetails === null) {
+      throw new Error("Invalid experienceDetails");
+    }
+    const ed = i.experienceDetails as Record<string, unknown>;
+    const pickStr = (v: unknown, max = 500) =>
+      typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined;
+    experienceDetails = {
+      brands_request: pickStr(ed.brands_request, 500),
+      special_occasion: pickStr(ed.special_occasion, 500),
+      ambience: pickStr(ed.ambience, 100),
+      music_preference: pickStr(ed.music_preference, 100),
+      companion: pickStr(ed.companion, 100),
+    };
+  }
   return {
     itemName: i.itemName,
     itemType: i.itemType,
@@ -61,6 +84,7 @@ function validate(input: unknown): ReservationInput {
     date: i.date,
     time: typeof i.time === "string" && i.time.length > 0 ? i.time : undefined,
     message: typeof i.message === "string" ? i.message : undefined,
+    experienceDetails,
   };
 }
 
@@ -83,6 +107,29 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
       ? `<tr><td style="padding:8px 0;color:#666;">Hora preferida</td><td style="padding:8px 0;">${escapeHtml(data.time)}</td></tr>`
       : "";
 
+    const ed = data.experienceDetails;
+    const edRows = ed
+      ? [
+          ed.brands_request
+            ? `<tr><td style="padding:8px 0;color:#666;">Marcas/peças desejadas</td><td style="padding:8px 0;">${escapeHtml(ed.brands_request)}</td></tr>`
+            : "",
+          ed.special_occasion
+            ? `<tr><td style="padding:8px 0;color:#666;">Ocasião especial</td><td style="padding:8px 0;">${escapeHtml(ed.special_occasion)}</td></tr>`
+            : "",
+          ed.ambience
+            ? `<tr><td style="padding:8px 0;color:#666;">Ambiente</td><td style="padding:8px 0;">${escapeHtml(ed.ambience)}</td></tr>`
+            : "",
+          ed.music_preference
+            ? `<tr><td style="padding:8px 0;color:#666;">Música ambiente</td><td style="padding:8px 0;">${escapeHtml(ed.music_preference)}</td></tr>`
+            : "",
+          ed.companion
+            ? `<tr><td style="padding:8px 0;color:#666;">Acompanhamento</td><td style="padding:8px 0;">${escapeHtml(ed.companion)}</td></tr>`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("")
+      : "";
+
     const html = `
       <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 560px;">
         <h2 style="margin:0 0 16px;">Nova reserva recebida</h2>
@@ -94,6 +141,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
           <tr><td style="padding:8px 0;color:#666;">Telefone</td><td style="padding:8px 0;">${escapeHtml(data.phone)}</td></tr>
           <tr><td style="padding:8px 0;color:#666;">Data preferida</td><td style="padding:8px 0;">${escapeHtml(data.date)}</td></tr>
           ${timeRow}
+          ${edRows}
         </table>
         ${messageHtml}
       </div>
@@ -108,6 +156,11 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
       `Telefone: ${data.phone}`,
       `Data preferida: ${data.date}`,
       data.time ? `Hora preferida: ${data.time}` : "",
+      ed?.brands_request ? `Marcas/peças desejadas: ${ed.brands_request}` : "",
+      ed?.special_occasion ? `Ocasião especial: ${ed.special_occasion}` : "",
+      ed?.ambience ? `Ambiente: ${ed.ambience}` : "",
+      ed?.music_preference ? `Música ambiente: ${ed.music_preference}` : "",
+      ed?.companion ? `Acompanhamento: ${ed.companion}` : "",
       data.message ? `Mensagem: ${data.message}` : "",
     ]
       .filter(Boolean)
