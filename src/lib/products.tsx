@@ -17,6 +17,7 @@ export type ProductRow = {
   legacy_id: string | null;
   sizes: ProductSize[];
   is_active: boolean;
+  season: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -42,6 +43,7 @@ export function rowToProduct(row: ProductRow): Product {
     reference: row.reference,
     description: row.description,
     category: row.category === "arquivo" ? "archive" : "new",
+    season: row.season || undefined,
   };
 }
 
