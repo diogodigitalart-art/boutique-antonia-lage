@@ -14,6 +14,8 @@ type Props = {
   contextLabel?: string;
   itemName: string;
   itemType: "produto" | "experiencia";
+  /** When true, show extra Boutique Privada questions and save them to experience_details. */
+  collectExperienceDetails?: boolean;
 };
 
 export function ReservationModal({
@@ -23,19 +25,31 @@ export function ReservationModal({
   contextLabel,
   itemName,
   itemType,
+  collectExperienceDetails = false,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const send = useServerFn(sendReservationEmail);
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  // Boutique Privada extra fields
+  const [brandsRequest, setBrandsRequest] = useState("");
+  const [specialOccasion, setSpecialOccasion] = useState("");
+  const [ambience, setAmbience] = useState("");
+  const [musicPref, setMusicPref] = useState("");
+  const [companion, setCompanion] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setDate("");
     setTime("");
+    setBrandsRequest("");
+    setSpecialOccasion("");
+    setAmbience("");
+    setMusicPref("");
+    setCompanion("");
     (async () => {
       const { data } = await supabase
         .from("blocked_slots" as never)
@@ -100,7 +114,17 @@ export function ReservationModal({
 
     setSubmitting(true);
     try {
-      await send({ data: payload });
+      const experience_details = collectExperienceDetails
+        ? {
+            brands_request: brandsRequest.trim() || undefined,
+            special_occasion: specialOccasion.trim() || undefined,
+            ambience: ambience || undefined,
+            music_preference: musicPref || undefined,
+            companion: companion || undefined,
+          }
+        : undefined;
+
+      await send({ data: { ...payload, experienceDetails: experience_details } });
       if (user) {
         const { error } = await supabase.from("reservations").insert({
           user_id: user.id,
@@ -116,8 +140,19 @@ export function ReservationModal({
           preferred_date: payload.date,
           message: payload.message ?? null,
           status: "Confirmada",
+          experience_details: experience_details ?? {},
         });
         if (error) console.error("Failed to save reservation", error);
+
+        // Auto-save phone to profile if not already set
+        if (payload.phone && !profile?.phone) {
+          const { error: pErr } = await supabase
+            .from("profiles")
+            .update({ phone: payload.phone })
+            .eq("id", user.id);
+          if (pErr) console.error("Failed to save phone to profile", pErr);
+          else await refreshProfile();
+        }
       }
       onClose();
       toast.success("Reserva confirmada! Entraremos em contacto em breve.");
