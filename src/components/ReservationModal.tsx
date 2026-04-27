@@ -409,6 +409,20 @@ export function ReservationModal({
             />
           </div>
 
+          <div>
+            <label htmlFor="occasion" className="text-xs uppercase tracking-wider text-muted-foreground">
+              É para alguma ocasião especial?
+            </label>
+            <input
+              id="occasion"
+              type="text"
+              value={occasion}
+              onChange={(e) => setOccasion(e.target.value)}
+              placeholder="Aniversário, viagem, evento importante…"
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
+            />
+          </div>
+
           <div className="flex flex-col items-center gap-3 pt-2">
             <button
               type="submit"
