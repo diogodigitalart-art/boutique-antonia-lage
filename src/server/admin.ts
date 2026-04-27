@@ -122,6 +122,17 @@ export const getAdminData = createServerFn({ method: "POST" })
     const blockedSlots = blockedRes.data ?? [];
     const feedback = feedbackRes.data ?? [];
 
+    // Build a product lookup so wishlist UUIDs / legacy IDs resolve to labels.
+    const { data: productsData } = await supabaseAdmin
+      .from("products")
+      .select("id, legacy_id, brand, name");
+    const productMap = new Map<string, string>();
+    (productsData ?? []).forEach((p) => {
+      const label = `${p.brand} — ${p.name}`;
+      if (p.id) productMap.set(p.id, label);
+      if (p.legacy_id) productMap.set(p.legacy_id, label);
+    });
+
     const users: AdminUser[] = profiles.map((p) => {
       const userReservations = reservations
         .filter((r) => r.user_id === p.id)
@@ -141,7 +152,12 @@ export const getAdminData = createServerFn({ method: "POST" })
         }));
       const userWishlist = wishlist
         .filter((w) => w.user_id === p.id)
-        .map((w) => ({ id: w.id, product_id: w.product_id, created_at: w.created_at }));
+        .map((w) => ({
+          id: w.id,
+          product_id: w.product_id,
+          product_label: productMap.get(w.product_id) || w.product_id,
+          created_at: w.created_at,
+        }));
       const userQuiz = quiz.find((q) => q.user_id === p.id);
       const userContacts = contacts
         .filter((c) => p.email && c.email.toLowerCase() === (p.email || "").toLowerCase())
