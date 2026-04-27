@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
-import { PRODUCTS } from "@/lib/data";
+import { useProducts } from "@/lib/products";
 import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
