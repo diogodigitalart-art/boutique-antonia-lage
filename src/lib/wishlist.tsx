@@ -19,6 +19,7 @@ const Ctx = createContext<WishlistCtx>({
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [ids, setIds] = useState<string[]>([]);
+  const [notifyOpen, setNotifyOpen] = useState(false);
   const activeUserId = useRef<string | null>(null);
   const idsRef = useRef<string[]>([]);
   const promptShownForUser = useRef<string | null>(null);
@@ -100,23 +101,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         promptShownForUser.current !== userId
       ) {
         promptShownForUser.current = userId;
-        const currentDetails = (profile?.profile_details ?? {}) as Record<
-          string,
-          unknown
-        >;
-        toast.custom(
-          (t) => (
-            <WishlistNotifyToast
-              toastId={t}
-              userId={userId}
-              currentDetails={currentDetails}
-              onSaved={() => {
-                void refreshProfile();
-              }}
-            />
-          ),
-          { duration: 30000, position: "bottom-center" },
-        );
+        setNotifyOpen(true);
       }
 
       return { ok: true };
@@ -140,7 +125,23 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const has = (id: string) => ids.includes(id);
 
-  return <Ctx.Provider value={{ ids, toggle, has }}>{children}</Ctx.Provider>;
+  const currentDetails = (profile?.profile_details ?? {}) as Record<string, unknown>;
+
+  return (
+    <Ctx.Provider value={{ ids, toggle, has }}>
+      {children}
+      {notifyOpen && user ? (
+        <WishlistNotifyToast
+          userId={user.id}
+          currentDetails={currentDetails}
+          onClose={() => setNotifyOpen(false)}
+          onSaved={() => {
+            void refreshProfile();
+          }}
+        />
+      ) : null}
+    </Ctx.Provider>
+  );
 }
 
 export const useWishlist = () => useContext(Ctx);
