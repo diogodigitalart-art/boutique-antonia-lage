@@ -2,7 +2,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-type Profile = { id: string; full_name: string | null; email: string | null };
+type Profile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+};
 
 type AuthCtx = {
   session: Session | null;
@@ -10,6 +15,7 @@ type AuthCtx = {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx>({
@@ -18,6 +24,7 @@ const Ctx = createContext<AuthCtx>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -50,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, email")
+      .select("id, full_name, email, phone")
       .eq("id", userId)
       .maybeSingle();
     if (data) setProfile(data);
@@ -66,8 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshProfile = async () => {
+    if (session?.user) await fetchProfile(session.user.id);
+  };
+
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut }}>
+    <Ctx.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        loading,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

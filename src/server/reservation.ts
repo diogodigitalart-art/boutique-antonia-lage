@@ -11,6 +11,7 @@ export type ReservationInput = {
   email: string;
   phone: string;
   date: string;
+  time?: string;
   message?: string;
 };
 
@@ -45,6 +46,9 @@ function validate(input: unknown): ReservationInput {
   if (i.message !== undefined && (typeof i.message !== "string" || i.message.length > 2000)) {
     throw new Error("Invalid message");
   }
+  if (i.time !== undefined && (typeof i.time !== "string" || i.time.length > 20)) {
+    throw new Error("Invalid time");
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email)) {
     throw new Error("Invalid email");
   }
@@ -55,6 +59,7 @@ function validate(input: unknown): ReservationInput {
     email: i.email,
     phone: i.phone,
     date: i.date,
+    time: typeof i.time === "string" && i.time.length > 0 ? i.time : undefined,
     message: typeof i.message === "string" ? i.message : undefined,
   };
 }
@@ -74,6 +79,9 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
           data.message,
         ).replace(/\n/g, "<br/>")}</p>`
       : "";
+    const timeRow = data.time
+      ? `<tr><td style="padding:8px 0;color:#666;">Hora preferida</td><td style="padding:8px 0;">${escapeHtml(data.time)}</td></tr>`
+      : "";
 
     const html = `
       <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 560px;">
@@ -85,6 +93,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
           <tr><td style="padding:8px 0;color:#666;">Email</td><td style="padding:8px 0;">${escapeHtml(data.email)}</td></tr>
           <tr><td style="padding:8px 0;color:#666;">Telefone</td><td style="padding:8px 0;">${escapeHtml(data.phone)}</td></tr>
           <tr><td style="padding:8px 0;color:#666;">Data preferida</td><td style="padding:8px 0;">${escapeHtml(data.date)}</td></tr>
+          ${timeRow}
         </table>
         ${messageHtml}
       </div>
@@ -98,6 +107,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
       `Email: ${data.email}`,
       `Telefone: ${data.phone}`,
       `Data preferida: ${data.date}`,
+      data.time ? `Hora preferida: ${data.time}` : "",
       data.message ? `Mensagem: ${data.message}` : "",
     ]
       .filter(Boolean)
@@ -124,6 +134,70 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
     if (!res.ok) {
       console.error("Resend send failed", res.status, body);
       throw new Error(`Resend API call failed [${res.status}]: ${JSON.stringify(body)}`);
+    }
+
+    // Send confirmation email to the customer (best-effort, non-blocking failure)
+    try {
+      const customerSubject =
+        data.itemType === "experiencia"
+          ? `Reserva confirmada — ${data.itemName}`
+          : `Reserva confirmada — ${data.itemName}`;
+      const itemLabel = data.itemType === "experiencia" ? "experiência" : "peça";
+      const timeLine = data.time
+        ? `<p style="margin:0 0 12px;"><strong>Hora:</strong> ${escapeHtml(data.time)}</p>`
+        : "";
+      const customerHtml = `
+        <div style="font-family: Arial, sans-serif; color:#1a1a1a; max-width:560px; line-height:1.55;">
+          <h2 style="margin:0 0 16px; font-weight:normal;">Olá ${escapeHtml(data.name.split(" ")[0] || data.name)},</h2>
+          <p style="margin:0 0 16px;">Recebemos a tua reserva para a ${itemLabel} <strong>${escapeHtml(data.itemName)}</strong>. Estamos muito felizes por te receber em breve.</p>
+          <div style="margin:20px 0; padding:16px 20px; background:#faf6f1; border-radius:12px;">
+            <p style="margin:0 0 12px;"><strong>${escapeHtml(data.itemName)}</strong></p>
+            <p style="margin:0 0 12px;"><strong>Data:</strong> ${escapeHtml(data.date)}</p>
+            ${timeLine}
+          </div>
+          <p style="margin:0 0 16px;">A nossa equipa entrará em contacto contigo para confirmar todos os detalhes. Se precisares de alterar alguma coisa, basta responder a este email.</p>
+          <p style="margin:24px 0 4px;">Com carinho,</p>
+          <p style="margin:0; font-style:italic;">Equipa Boutique Antónia Lage</p>
+        </div>
+      `;
+      const customerText = [
+        `Olá ${data.name.split(" ")[0] || data.name},`,
+        ``,
+        `Recebemos a tua reserva para a ${itemLabel} "${data.itemName}".`,
+        `Data: ${data.date}`,
+        data.time ? `Hora: ${data.time}` : "",
+        ``,
+        `A nossa equipa entrará em contacto contigo para confirmar todos os detalhes.`,
+        `Se precisares de alterar alguma coisa, basta responder a este email.`,
+        ``,
+        `Com carinho,`,
+        `Equipa Boutique Antónia Lage`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      const customerRes = await fetch(`${GATEWAY_URL}/emails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Connection-Api-Key": RESEND_API_KEY,
+        },
+        body: JSON.stringify({
+          from: FROM_ADDRESS,
+          to: [data.email],
+          reply_to: NOTIFY_TO,
+          subject: customerSubject,
+          html: customerHtml,
+          text: customerText,
+        }),
+      });
+      if (!customerRes.ok) {
+        const errBody = await customerRes.json().catch(() => ({}));
+        console.error("Customer confirmation email failed", customerRes.status, errBody);
+      }
+    } catch (err) {
+      console.error("Customer confirmation email threw", err);
     }
 
     return { ok: true };

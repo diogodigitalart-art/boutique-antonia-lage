@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import logoUrl from "@/assets/logo.svg";
 import { translateAuthError, validatePassword, PASSWORD_HINT } from "@/lib/auth-errors";
+import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/registo")({
   head: () => ({ meta: [{ title: "Criar conta | Boutique Antónia Lage" }] }),
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/registo")({
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,6 +88,19 @@ function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.history.back();
+            } else {
+              navigate({ to: "/" });
+            }
+          }}
+          className="mb-6 inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:text-foreground"
+        >
+          <ArrowLeft size={14} /> Voltar
+        </button>
         <Link to="/" className="mx-auto mb-10 flex justify-center">
           <img src={logoUrl} alt="Boutique Antónia Lage" className="h-10 w-auto" />
         </Link>
