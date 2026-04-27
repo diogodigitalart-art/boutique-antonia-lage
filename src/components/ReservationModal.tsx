@@ -145,6 +145,7 @@ export function ReservationModal({
           message: payload.message ?? null,
           status: "Confirmada",
           experience_details: experience_details ?? {},
+          occasion: payload.occasion ?? null,
         });
         if (error) console.error("Failed to save reservation", error);
 
