@@ -42,6 +42,15 @@ export type AdminUser = {
   }>;
   wishlist: Array<{ id: string; product_id: string; created_at: string }>;
   quiz: { answers: JsonValue; profile_description: string; created_at: string } | null;
+  feedback: Array<{
+    id: string;
+    reservation_id: string;
+    rating: number;
+    piece_match: string;
+    return_intent: string;
+    wish_list_text: string | null;
+    created_at: string;
+  }>;
   contactMessages: Array<{
     id: string;
     name: string;
@@ -78,7 +87,7 @@ export const getAdminData = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminPayload> => {
     await assertAdmin(data.token);
 
-    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes] = await Promise.all([
+    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes, feedbackRes] = await Promise.all([
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, phone, profile_details, created_at")
@@ -91,6 +100,10 @@ export const getAdminData = createServerFn({ method: "POST" })
         .from("blocked_slots")
         .select("id, blocked_date, blocked_time, reason, created_at")
         .order("blocked_date", { ascending: true }),
+      supabaseAdmin
+        .from("feedback")
+        .select("id, user_id, reservation_id, rating, piece_match, return_intent, wish_list_text, created_at")
+        .order("created_at", { ascending: false }),
     ]);
 
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -99,6 +112,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (quizRes.error) throw new Error(quizRes.error.message);
     if (contactsRes.error) throw new Error(contactsRes.error.message);
     if (blockedRes.error) throw new Error(blockedRes.error.message);
+    if (feedbackRes.error) throw new Error(feedbackRes.error.message);
 
     const profiles = profilesRes.data ?? [];
     const reservations = reservationsRes.data ?? [];
@@ -106,6 +120,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     const quiz = quizRes.data ?? [];
     const contacts = contactsRes.data ?? [];
     const blockedSlots = blockedRes.data ?? [];
+    const feedback = feedbackRes.data ?? [];
 
     const users: AdminUser[] = profiles.map((p) => {
       const userReservations = reservations
@@ -138,6 +153,17 @@ export const getAdminData = createServerFn({ method: "POST" })
           message: c.message,
           created_at: c.created_at,
         }));
+      const userFeedback = feedback
+        .filter((f) => f.user_id === p.id)
+        .map((f) => ({
+          id: f.id,
+          reservation_id: f.reservation_id,
+          rating: f.rating as number,
+          piece_match: f.piece_match as string,
+          return_intent: f.return_intent as string,
+          wish_list_text: f.wish_list_text as string | null,
+          created_at: f.created_at,
+        }));
       return {
         id: p.id,
         full_name: p.full_name,
@@ -154,6 +180,7 @@ export const getAdminData = createServerFn({ method: "POST" })
               created_at: userQuiz.created_at,
             }
           : null,
+        feedback: userFeedback,
         contactMessages: userContacts,
       };
     });
