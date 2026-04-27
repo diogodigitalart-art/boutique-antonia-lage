@@ -152,8 +152,18 @@ export function ReservationModal({
           status: "Confirmada",
           experience_details: experience_details ?? {},
           occasion: payload.occasion ?? null,
-        });
+          product_id: productUuid ?? null,
+          product_size: selectedSize ?? null,
+        } as never);
         if (error) console.error("Failed to save reservation", error);
+
+        if (productUuid && selectedSize) {
+          const { error: rpcErr } = await supabase.rpc(
+            "adjust_product_reservation" as never,
+            { _product_id: productUuid, _size: selectedSize, _delta: 1 } as never,
+          );
+          if (rpcErr) console.error("Failed to reserve stock", rpcErr);
+        }
 
         // Auto-save phone to profile if not already set
         if (payload.phone && !profile?.phone) {
