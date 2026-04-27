@@ -26,6 +26,7 @@ import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -113,6 +114,11 @@ const AdminProdutosRoute = AdminProdutosRouteImport.update({
   path: '/admin/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/admin_/configuracoes',
+  path: '/admin/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksSendFollowupsRoute =
   ApiPublicHooksSendFollowupsRouteImport.update({
     id: '/api/public/hooks/send-followups',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/produtos': typeof AdminProdutosRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin/configuracoes'
     | '/admin/produtos'
     | '/auth/callback'
     | '/feedback/$id'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin/configuracoes'
     | '/admin/produtos'
     | '/auth/callback'
     | '/feedback/$id'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin_/configuracoes'
     | '/admin_/produtos'
     | '/auth/callback'
     | '/feedback/$id'
@@ -258,6 +270,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
   WishlistRoute: typeof WishlistRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/configuracoes': {
+      id: '/admin_/configuracoes'
+      path: '/admin/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/send-followups': {
       id: '/api/public/hooks/send-followups'
       path: '/api/public/hooks/send-followups'
@@ -410,6 +430,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
   WishlistRoute: WishlistRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   FeedbackIdRoute: FeedbackIdRoute,
