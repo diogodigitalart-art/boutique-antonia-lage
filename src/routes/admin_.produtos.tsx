@@ -54,6 +54,7 @@ type ProductRow = {
   category: string;
   reference: string;
   season: string | null;
+  discount_percent: number | null;
   images: string[];
   sizes: ProductSize[];
   is_active: boolean;
@@ -284,6 +285,7 @@ function Content() {
           brandOptions={allBrandNames}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
+          onAdjusted={refresh}
         />
       )}
     </div>
@@ -382,6 +384,7 @@ type FormState = {
   description: string;
   price: string;
   original_price: string;
+  discount_percent: string;
   category: string;
   season: string;
   is_active: boolean;
@@ -396,11 +399,13 @@ function ProductForm({
   brandOptions,
   onClose,
   onSaved,
+  onAdjusted,
 }: {
   row: ProductRow | null;
   brandOptions: string[];
   onClose: () => void;
   onSaved: () => void;
+  onAdjusted?: () => void;
 }) {
   const isEdit = !!row;
   const upsertFn = useServerFn(adminUpsertProduct);
@@ -423,6 +428,7 @@ function ProductForm({
     description: row?.description ?? "",
     price: row ? String(row.price) : "",
     original_price: row?.original_price != null ? String(row.original_price) : "",
+    discount_percent: row?.discount_percent != null ? String(row.discount_percent) : "",
     category: row?.category ?? "colecção",
     season: row?.season ?? "",
     is_active: row?.is_active ?? true,
@@ -503,6 +509,7 @@ function ProductForm({
             description: form.description.trim(),
             price: Number(form.price),
             original_price: form.original_price ? Number(form.original_price) : null,
+            discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
             season: form.season.trim() || null,
             images: form.images,
@@ -532,6 +539,8 @@ function ProductForm({
             : s,
         ),
       );
+      onAdjusted?.();
+      toast.success(delta > 0 ? "Marcado como reservado" : "Reserva libertada");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     }
