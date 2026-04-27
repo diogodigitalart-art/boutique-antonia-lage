@@ -28,7 +28,7 @@ import {
   adminListBrands,
   adminAddBrand,
   adminDeleteBrand,
-  adminAdjustReservation,
+  adminListSeasons,
 } from "@/server/products";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
@@ -97,9 +97,11 @@ function Content() {
   const deleteFn = useServerFn(adminDeleteProduct);
   const toggleFn = useServerFn(adminToggleProductActive);
   const listBrandsFn = useServerFn(adminListBrands);
+  const listSeasonsFn = useServerFn(adminListSeasons);
 
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [seasons, setSeasons] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -110,18 +112,20 @@ function Content() {
   const refresh = useCallback(async () => {
     try {
       const token = await getToken();
-      const [p, b] = await Promise.all([
+      const [p, b, sRes] = await Promise.all([
         listFn({ data: { token } }),
         listBrandsFn({ data: { token } }),
+        listSeasonsFn({ data: { token } }),
       ]);
       setRows((p.rows as unknown) as ProductRow[]);
       setBrands((b.rows as unknown) as BrandRow[]);
+      setSeasons((sRes.rows as unknown) as BrandRow[]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar");
     } finally {
       setLoading(false);
     }
-  }, [listFn, listBrandsFn]);
+  }, [listFn, listBrandsFn, listSeasonsFn]);
 
   useEffect(() => {
     refresh();
@@ -170,6 +174,8 @@ function Content() {
     brands.forEach((b) => set.add(b.name));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [brands]);
+
+  const seasonNames = useMemo(() => seasons.map((s) => s.name), [seasons]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
@@ -283,9 +289,9 @@ function Content() {
         <ProductForm
           row={editing}
           brandOptions={allBrandNames}
+          seasonOptions={seasonNames}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
-          onAdjusted={refresh}
         />
       )}
     </div>
@@ -397,20 +403,19 @@ type FormState = {
 function ProductForm({
   row,
   brandOptions,
+  seasonOptions,
   onClose,
   onSaved,
-  onAdjusted,
 }: {
   row: ProductRow | null;
   brandOptions: string[];
+  seasonOptions: string[];
   onClose: () => void;
   onSaved: () => void;
-  onAdjusted?: () => void;
 }) {
   const isEdit = !!row;
   const upsertFn = useServerFn(adminUpsertProduct);
   const uploadFn = useServerFn(adminUploadProductImage);
-  const adjustFn = useServerFn(adminAdjustReservation);
 
   const initialSizes: Record<string, number> = {};
   SIZE_OPTIONS.forEach((s) => { initialSizes[s] = 0; });
@@ -439,7 +444,7 @@ function ProductForm({
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // Live local copy of reservations for in-modal manual marking
+  // Local copy of reservations for in-modal manual marking — persisted on save
   const [liveSizes, setLiveSizes] = useState<ProductSize[]>(existingSizes);
 
   const fileToBase64 = (file: File): Promise<{ base64: string; type: string }> =>
@@ -484,14 +489,18 @@ function ProductForm({
 
     let sizesPayload: ProductSize[];
     if (form.oneSize) {
-      const existingU = existingSizes.find((x) => x.size === "U");
-      sizesPayload = [{ size: "U", stock: Math.max(1, form.oneSizeStock || 1), reserved: existingU?.reserved ?? 0 }];
+      const liveU = liveSizes.find((x) => x.size === "U");
+      sizesPayload = [{
+        size: "U",
+        stock: Math.max(1, form.oneSizeStock || 1),
+        reserved: liveU?.reserved ?? 0,
+      }];
     } else {
       sizesPayload = SIZE_OPTIONS
         .filter((s) => form.sizes[s] > 0)
         .map((s) => {
-          const existing = existingSizes.find((x) => x.size === s);
-          return { size: s, stock: form.sizes[s], reserved: existing?.reserved ?? 0 };
+          const live = liveSizes.find((x) => x.size === s);
+          return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
         });
     }
 
@@ -527,23 +536,15 @@ function ProductForm({
     }
   };
 
-  const adjust = async (size: string, delta: 1 | -1) => {
-    if (!row) return;
-    try {
-      const token = await getToken();
-      await adjustFn({ data: { token, productId: row.id, size, delta } });
-      setLiveSizes((prev) =>
-        prev.map((s) =>
-          s.size === size
-            ? { ...s, reserved: Math.max(0, Math.min(s.stock, s.reserved + delta)) }
-            : s,
-        ),
-      );
-      onAdjusted?.();
-      toast.success(delta > 0 ? "Marcado como reservado" : "Reserva libertada");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro");
-    }
+  // Local-only: only persisted to Supabase when admin clicks "Guardar"
+  const adjust = (size: string, delta: 1 | -1) => {
+    setLiveSizes((prev) =>
+      prev.map((s) =>
+        s.size === size
+          ? { ...s, reserved: Math.max(0, Math.min(s.stock, s.reserved + delta)) }
+          : s,
+      ),
+    );
   };
 
   return (
@@ -576,7 +577,22 @@ function ProductForm({
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">Season</label>
-            <input value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} placeholder="AW25, SS26…" className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
+            <select
+              value={form.season}
+              onChange={(e) => setForm({ ...form, season: e.target.value })}
+              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+            >
+              <option value="">— Sem season —</option>
+              {seasonOptions.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              {form.season && !seasonOptions.includes(form.season) && (
+                <option value={form.season}>{form.season} (legado)</option>
+              )}
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Gerir seasons em <span className="underline">Configurações</span>.
+            </p>
           </div>
           <div className="flex items-end gap-2">
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm">

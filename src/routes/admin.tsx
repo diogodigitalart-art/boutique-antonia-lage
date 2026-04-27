@@ -26,6 +26,7 @@ import {
   Plus,
   Star,
   Package,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TIME_SLOTS, STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
@@ -169,13 +170,22 @@ function AdminContent() {
           <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Painel</p>
           <h1 className="mt-2 font-display text-3xl italic text-foreground md:text-4xl">Admin</h1>
         </div>
-        <Link
-          to="/admin/produtos"
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs uppercase tracking-[0.18em] text-foreground transition hover:bg-muted"
-        >
-          <Package size={14} />
-          Gestão de Produtos
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/admin/produtos"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs uppercase tracking-[0.18em] text-foreground transition hover:bg-muted"
+          >
+            <Package size={14} />
+            Gestão de Produtos
+          </Link>
+          <Link
+            to="/admin/configuracoes"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs uppercase tracking-[0.18em] text-foreground transition hover:bg-muted"
+          >
+            <Settings size={14} />
+            Configurações
+          </Link>
+        </div>
       </header>
 
       {/* Stats */}
@@ -425,7 +435,10 @@ function UserDetail({
         <NotificationPreferenceView
           details={user.profile_details}
           phone={user.phone}
-          wishlistIds={user.wishlist.map((w) => w.product_id)}
+          wishlistItems={user.wishlist.map((w) => ({
+            id: w.product_id,
+            label: w.product_label || productLabel(w.product_id),
+          }))}
         />
       </Section>
 
@@ -555,11 +568,11 @@ function ProfileDetailsView({
 function NotificationPreferenceView({
   details,
   phone,
-  wishlistIds,
+  wishlistItems,
 }: {
   details: AdminUser["profile_details"];
   phone: string | null;
-  wishlistIds: string[];
+  wishlistItems: Array<{ id: string; label: string }>;
 }) {
   const d = (details && typeof details === "object" && !Array.isArray(details)
     ? (details as Record<string, unknown>)
@@ -574,7 +587,7 @@ function NotificationPreferenceView({
 
   const isWhatsapp = pref.channel === "whatsapp";
   const whatsappNumber = pref.whatsapp || phone || "—";
-  const topThree = wishlistIds.slice(0, 3);
+  const topThree = wishlistItems.slice(0, 3);
 
   return (
     <div className="space-y-3 rounded-xl bg-muted/40 p-4">
@@ -598,9 +611,9 @@ function NotificationPreferenceView({
           <p className="mt-1 text-xs text-muted-foreground">Wishlist vazia.</p>
         ) : (
           <ul className="mt-1.5 space-y-1">
-            {topThree.map((id) => (
-              <li key={id} className="text-sm text-foreground">
-                · {productLabel(id)}
+            {topThree.map((it) => (
+              <li key={it.id} className="text-sm text-foreground">
+                · {it.label}
               </li>
             ))}
           </ul>
