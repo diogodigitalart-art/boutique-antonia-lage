@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EditProfileModal } from "@/components/EditProfileModal";
+import { statusBadgeClasses } from "@/lib/reservations";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -230,7 +231,7 @@ function ProfileContent() {
                       </p>
                     </div>
                   </div>
-                  <span className="self-start rounded-full bg-success-soft px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-success md:self-auto">
+                  <span className={`${statusBadgeClasses(r.status ?? "Confirmada")} self-start md:self-auto`}>
                     {r.status ?? "Confirmada"}
                   </span>
                 </div>
