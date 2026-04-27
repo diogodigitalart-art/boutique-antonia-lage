@@ -28,6 +28,11 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
+          {product.fullyReserved && (
+            <span className="absolute left-3 top-3 rounded-full bg-amber-500/95 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white shadow-sm">
+              Reservado
+            </span>
+          )}
         </div>
       </Link>
       <button

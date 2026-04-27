@@ -213,11 +213,40 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
+
+    // Fetch current reservation to detect status transition and capture product info
+    const { data: existing, error: fetchErr } = await supabaseAdmin
+      .from("reservations")
+      .select("status, product_id, product_size")
+      .eq("id", data.reservationId)
+      .maybeSingle();
+    if (fetchErr) throw new Error(fetchErr.message);
+    if (!existing) throw new Error("Reservation not found");
+
     const { error } = await supabaseAdmin
       .from("reservations")
       .update({ status: data.status })
       .eq("id", data.reservationId);
     if (error) throw new Error(error.message);
+
+    // Auto-release reserved stock when transitioning into "Cancelada"
+    if (
+      data.status === "Cancelada" &&
+      existing.status !== "Cancelada" &&
+      existing.product_id &&
+      existing.product_size
+    ) {
+      const { error: rpcErr } = await supabaseAdmin.rpc("adjust_product_reservation", {
+        _product_id: existing.product_id,
+        _size: existing.product_size,
+        _delta: -1,
+      });
+      if (rpcErr) {
+        // Log but don't fail status update — stock can be adjusted manually
+        console.error("Failed to release product reservation:", rpcErr.message);
+      }
+    }
+
     return { ok: true };
   });
 
