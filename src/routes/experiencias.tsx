@@ -106,6 +106,7 @@ function ExperiencesPage() {
         contextLabel="Experiência"
         itemName={selected?.title ?? ""}
         itemType="experiencia"
+        collectExperienceDetails={selected?.title === "Boutique Privada"}
       />
     </Layout>
   );
