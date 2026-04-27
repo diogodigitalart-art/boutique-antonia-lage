@@ -13,6 +13,7 @@ export type ReservationInput = {
   date: string;
   time?: string;
   message?: string;
+  occasion?: string;
   experienceDetails?: {
     brands_request?: string;
     special_occasion?: string;
@@ -56,6 +57,9 @@ function validate(input: unknown): ReservationInput {
   if (i.time !== undefined && (typeof i.time !== "string" || i.time.length > 20)) {
     throw new Error("Invalid time");
   }
+  if (i.occasion !== undefined && (typeof i.occasion !== "string" || i.occasion.length > 500)) {
+    throw new Error("Invalid occasion");
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email)) {
     throw new Error("Invalid email");
   }
@@ -84,6 +88,7 @@ function validate(input: unknown): ReservationInput {
     date: i.date,
     time: typeof i.time === "string" && i.time.length > 0 ? i.time : undefined,
     message: typeof i.message === "string" ? i.message : undefined,
+    occasion: typeof i.occasion === "string" && i.occasion.length > 0 ? i.occasion : undefined,
     experienceDetails,
   };
 }
@@ -105,6 +110,9 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
       : "";
     const timeRow = data.time
       ? `<tr><td style="padding:8px 0;color:#666;">Hora preferida</td><td style="padding:8px 0;">${escapeHtml(data.time)}</td></tr>`
+      : "";
+    const occasionRow = data.occasion
+      ? `<tr><td style="padding:8px 0;color:#666;">Ocasião especial</td><td style="padding:8px 0;">${escapeHtml(data.occasion)}</td></tr>`
       : "";
 
     const ed = data.experienceDetails;
@@ -141,6 +149,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
           <tr><td style="padding:8px 0;color:#666;">Telefone</td><td style="padding:8px 0;">${escapeHtml(data.phone)}</td></tr>
           <tr><td style="padding:8px 0;color:#666;">Data preferida</td><td style="padding:8px 0;">${escapeHtml(data.date)}</td></tr>
           ${timeRow}
+          ${occasionRow}
           ${edRows}
         </table>
         ${messageHtml}
@@ -156,6 +165,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
       `Telefone: ${data.phone}`,
       `Data preferida: ${data.date}`,
       data.time ? `Hora preferida: ${data.time}` : "",
+      data.occasion ? `Ocasião especial: ${data.occasion}` : "",
       ed?.brands_request ? `Marcas/peças desejadas: ${ed.brands_request}` : "",
       ed?.special_occasion ? `Ocasião especial: ${ed.special_occasion}` : "",
       ed?.ambience ? `Ambiente: ${ed.ambience}` : "",
