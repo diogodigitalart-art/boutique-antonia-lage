@@ -13,6 +13,8 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
   const navigate = useNavigate();
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
+  const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
+  const showStrikethrough = hasDiscount || isArchive;
 
   return (
     <div className="group relative flex h-full w-full flex-col">
@@ -31,6 +33,11 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           {product.fullyReserved && (
             <span className="absolute left-3 top-3 rounded-full bg-amber-500/95 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white shadow-sm">
               Reservado
+            </span>
+          )}
+          {hasDiscount && !product.fullyReserved && (
+            <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white shadow-sm">
+              −{product.discountPercent}%
             </span>
           )}
         </div>
@@ -68,15 +75,17 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
         <h3 className="mt-1.5 font-display text-lg font-light italic leading-tight text-foreground md:text-xl">
           {product.name}
         </h3>
-        {isArchive ? (
+        {showStrikethrough ? (
           <div className="mt-1.5 flex items-baseline gap-2">
             <span className="text-sm font-light text-muted-foreground line-through">
               €{product.originalPrice}
             </span>
             <span className="text-sm font-light text-primary">€{product.price}</span>
-            <span className="ml-auto text-[10px] font-light uppercase tracking-[0.15em] text-primary">
-              {t("archive_price")}
-            </span>
+            {isArchive && !hasDiscount && (
+              <span className="ml-auto text-[10px] font-light uppercase tracking-[0.15em] text-primary">
+                {t("archive_price")}
+              </span>
+            )}
           </div>
         ) : (
           <p className="mt-1.5 text-sm font-light text-foreground">€{product.price}</p>
