@@ -4,7 +4,7 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { PRODUCTS } from "@/lib/data";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -40,6 +40,8 @@ const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
   style: { label: "Estilo", icon: Sparkles },
   piece: { label: "Peça favorita", icon: Shirt },
   budget: { label: "Orçamento", icon: Wallet },
+  music: { label: "Música", icon: Music },
+  week: { label: "Semana típica", icon: CalendarDays },
 };
 
 function ProfilePage() {
