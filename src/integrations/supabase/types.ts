@@ -112,6 +112,57 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          brand: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          is_active: boolean
+          legacy_id: string | null
+          name: string
+          original_price: number | null
+          price: number
+          reference: string
+          sizes: Json
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          legacy_id?: string | null
+          name: string
+          original_price?: number | null
+          price?: number
+          reference: string
+          sizes?: Json
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          legacy_id?: string | null
+          name?: string
+          original_price?: number | null
+          price?: number
+          reference?: string
+          sizes?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -313,7 +364,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      adjust_product_reservation: {
+        Args: { _delta: number; _product_id: string; _size: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
