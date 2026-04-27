@@ -28,7 +28,7 @@ import {
   adminListBrands,
   adminAddBrand,
   adminDeleteBrand,
-  adminAdjustReservation,
+  adminListSeasons,
 } from "@/server/products";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
