@@ -24,6 +24,8 @@ export type AdminUser = {
   full_name: string | null;
   email: string | null;
   created_at: string;
+  phone: string | null;
+  profile_details: JsonValue;
   reservations: Array<{
     id: string;
     item_name: string;
@@ -52,6 +54,13 @@ export type AdminUser = {
 
 export type AdminPayload = {
   users: AdminUser[];
+  blockedSlots: Array<{
+    id: string;
+    blocked_date: string;
+    blocked_time: string | null;
+    reason: string | null;
+    created_at: string;
+  }>;
   stats: {
     totalUsers: number;
     totalReservations: number;
@@ -69,12 +78,19 @@ export const getAdminData = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminPayload> => {
     await assertAdmin(data.token);
 
-    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id, full_name, email, created_at").order("created_at", { ascending: false }),
+    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email, phone, profile_details, created_at")
+        .order("created_at", { ascending: false }),
       supabaseAdmin.from("reservations").select("*").order("created_at", { ascending: false }),
       supabaseAdmin.from("wishlists").select("id, user_id, product_id, created_at"),
       supabaseAdmin.from("quiz_results").select("user_id, answers, profile_description, created_at"),
       supabaseAdmin.from("contact_messages").select("*").order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("blocked_slots")
+        .select("id, blocked_date, blocked_time, reason, created_at")
+        .order("blocked_date", { ascending: true }),
     ]);
 
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -82,12 +98,14 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (wishlistRes.error) throw new Error(wishlistRes.error.message);
     if (quizRes.error) throw new Error(quizRes.error.message);
     if (contactsRes.error) throw new Error(contactsRes.error.message);
+    if (blockedRes.error) throw new Error(blockedRes.error.message);
 
     const profiles = profilesRes.data ?? [];
     const reservations = reservationsRes.data ?? [];
     const wishlist = wishlistRes.data ?? [];
     const quiz = quizRes.data ?? [];
     const contacts = contactsRes.data ?? [];
+    const blockedSlots = blockedRes.data ?? [];
 
     const users: AdminUser[] = profiles.map((p) => {
       const userReservations = reservations
@@ -125,6 +143,8 @@ export const getAdminData = createServerFn({ method: "POST" })
         full_name: p.full_name,
         email: p.email,
         created_at: p.created_at,
+        phone: (p as { phone?: string | null }).phone ?? null,
+        profile_details: ((p as { profile_details?: JsonValue }).profile_details as JsonValue) ?? null,
         reservations: userReservations,
         wishlist: userWishlist,
         quiz: userQuiz
@@ -140,6 +160,7 @@ export const getAdminData = createServerFn({ method: "POST" })
 
     return {
       users,
+      blockedSlots,
       stats: {
         totalUsers: profiles.length,
         totalReservations: reservations.length,
@@ -169,6 +190,54 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
       .from("reservations")
       .update({ status: data.status })
       .eq("id", data.reservationId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const addBlockedSlot = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    if (!input || typeof input !== "object") throw new Error("Invalid payload");
+    const i = input as Record<string, unknown>;
+    if (!isStr(i.token)) throw new Error("Missing token");
+    if (!isStr(i.date)) throw new Error("Missing date");
+    const date = i.date as string;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Invalid date");
+    const time =
+      typeof i.time === "string" && i.time.length > 0 && i.time.length <= 10
+        ? (i.time as string)
+        : null;
+    const reason =
+      typeof i.reason === "string" && i.reason.length <= 500
+        ? (i.reason as string)
+        : null;
+    return { token: i.token, date, time, reason };
+  })
+  .handler(async ({ data }) => {
+    const userId = await assertAdmin(data.token);
+    const { error } = await supabaseAdmin.from("blocked_slots").insert({
+      blocked_date: data.date,
+      blocked_time: data.time,
+      reason: data.reason,
+      created_by: userId,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteBlockedSlot = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    if (!input || typeof input !== "object") throw new Error("Invalid payload");
+    const i = input as Record<string, unknown>;
+    if (!isStr(i.token)) throw new Error("Missing token");
+    if (!isStr(i.id)) throw new Error("Missing id");
+    return { token: i.token, id: i.id };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { error } = await supabaseAdmin
+      .from("blocked_slots")
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
