@@ -1,8 +1,9 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart, ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { getProduct, PRODUCTS } from "@/lib/data";
+import { useProducts } from "@/lib/products";
+import type { Product } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/ProductCard";
@@ -13,25 +14,8 @@ import { toast } from "sonner";
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
 export const Route = createFileRoute("/produto/$id")({
-  loader: ({ params }) => {
-    const product = getProduct(params.id);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.brand} — ${loaderData.product.name} | Antónia Lage` },
-          { name: "description", content: loaderData.product.description },
-          {
-            property: "og:title",
-            content: `${loaderData.product.brand} — ${loaderData.product.name}`,
-          },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-          { name: "twitter:image", content: loaderData.product.image },
-        ]
-      : [],
+  head: () => ({
+    meta: [{ title: "Peça | Boutique Antónia Lage" }],
   }),
   component: ProductPage,
   notFoundComponent: () => (
@@ -47,15 +31,38 @@ export const Route = createFileRoute("/produto/$id")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { byId, products, loading } = useProducts();
+  const product: Product | undefined = byId(id);
   const router = useRouter();
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const { session } = useAuth();
   const [size, setSize] = useState<string | null>(null);
   const [reserveOpen, setReserveOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="px-4 py-20 text-center text-sm text-muted-foreground">A carregar…</div>
+      </Layout>
+    );
+  }
+  if (!product) {
+    return (
+      <Layout>
+        <div className="px-4 py-16 text-center">
+          <p className="text-muted-foreground">Peça não encontrada.</p>
+          <Link to="/" className="mt-4 inline-block text-primary">
+            Voltar
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
   const liked = has(product.id);
   const isArchive = product.category === "archive" && product.originalPrice;
+  const availableSet = new Set(product.availableSizes ?? product.sizes);
 
   const requireAuth = (next: () => void) => {
     if (!session) {
@@ -66,7 +73,7 @@ function ProductPage() {
     next();
   };
 
-  const related = PRODUCTS.filter((p) => p.id !== product.id && p.brand === product.brand).slice(
+  const related = products.filter((p) => p.id !== product.id && p.brand === product.brand).slice(
     0,
     4,
   );
@@ -133,7 +140,8 @@ function ProductPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {ALL_SIZES.map((s) => {
-                const available = product.sizes.includes(s);
+                const inProduct = product.sizes.includes(s);
+                const available = inProduct && availableSet.has(s);
                 const selected = size === s;
                 return (
                   <button
@@ -153,6 +161,11 @@ function ProductPage() {
                 );
               })}
             </div>
+            {product.fullyReserved && (
+              <p className="mt-3 text-xs uppercase tracking-wider text-destructive">
+                Esgotado — todas as peças estão reservadas.
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -223,6 +236,8 @@ function ProductPage() {
         contextLabel={product.brand}
         itemName={`${product.brand} — ${product.name}`}
         itemType="produto"
+        productUuid={product.uuid}
+        size={size}
       />
     </Layout>
   );

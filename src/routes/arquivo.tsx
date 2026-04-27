@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
-import { PRODUCTS } from "@/lib/data";
+import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/arquivo")({
@@ -25,7 +25,8 @@ export const Route = createFileRoute("/arquivo")({
 
 function ArquivoPage() {
   const { t } = useI18n();
-  const items = PRODUCTS.filter((p) => p.category === "archive");
+  const { products } = useProducts();
+  const items = products.filter((p) => p.category === "archive");
   return (
     <Layout>
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-8 md:pt-14">

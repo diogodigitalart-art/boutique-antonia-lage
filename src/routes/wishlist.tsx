@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
-import { PRODUCTS } from "@/lib/data";
+import { useProducts } from "@/lib/products";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { Heart } from "lucide-react";
@@ -27,8 +27,9 @@ function WishlistPage() {
 
 function WishlistContent() {
   const { ids } = useWishlist();
+  const { products } = useProducts();
   const { t } = useI18n();
-  const items = PRODUCTS.filter((p) => ids.includes(p.id));
+  const items = products.filter((p) => ids.includes(p.id));
 
   return (
     <Layout>

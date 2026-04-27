@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
-import { PRODUCTS } from "@/lib/data";
+import { useProducts } from "@/lib/products";
 import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
@@ -56,6 +56,7 @@ function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
   const { user, profile, signOut } = useAuth();
+  const { products } = useProducts();
   const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -100,7 +101,7 @@ function ProfileContent() {
     })();
   }, [user]);
 
-  const wishItems = PRODUCTS.filter((p) => ids.includes(p.id)).slice(0, 4);
+  const wishItems = products.filter((p) => ids.includes(p.id)).slice(0, 4);
 
   const formatDate = (iso: string) => {
     if (!iso) return "";

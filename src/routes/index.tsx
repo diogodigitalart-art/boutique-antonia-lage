@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
-import { BRANDS, PRODUCTS, EXPERIENCES } from "@/lib/data";
+import { BRANDS, EXPERIENCES } from "@/lib/data";
+import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -27,11 +28,12 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { t } = useI18n();
+  const { products } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
-  const newArrivals = PRODUCTS.filter((p) => p.category === "new").filter(
+  const newArrivals = products.filter((p) => p.category === "new").filter(
     (p) => activeBrand === "Todas" || p.brand === activeBrand,
   );
-  const archive = PRODUCTS.filter((p) => p.category === "archive");
+  const archive = products.filter((p) => p.category === "archive");
 
   return (
     <Layout>
