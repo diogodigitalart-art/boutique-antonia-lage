@@ -59,6 +59,18 @@ export type AdminUser = {
     message: string;
     created_at: string;
   }>;
+  cart: Array<{
+    id: string;
+    product_id: string;
+    product_uuid: string | null;
+    product_label: string;
+    product_image: string | null;
+    product_price: number;
+    size: string;
+    quantity: number;
+    line_total: number;
+    added_at: string;
+  }>;
 };
 
 export type AdminPayload = {
@@ -89,7 +101,7 @@ export const getAdminData = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminPayload> => {
     await assertAdmin(data.token);
 
-    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes, feedbackRes, ordersRes] = await Promise.all([
+    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes, feedbackRes, ordersRes, cartRes] = await Promise.all([
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, phone, profile_details, created_at")
@@ -109,6 +121,10 @@ export const getAdminData = createServerFn({ method: "POST" })
       supabaseAdmin
         .from("orders")
         .select("id, total, created_at, status"),
+      supabaseAdmin
+        .from("cart_items")
+        .select("id, user_id, product_id, product_uuid, size, quantity, added_at")
+        .order("added_at", { ascending: false }),
     ]);
 
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -119,6 +135,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (blockedRes.error) throw new Error(blockedRes.error.message);
     if (feedbackRes.error) throw new Error(feedbackRes.error.message);
     if (ordersRes.error) throw new Error(ordersRes.error.message);
+    if (cartRes.error) throw new Error(cartRes.error.message);
 
     const profiles = profilesRes.data ?? [];
     const reservations = reservationsRes.data ?? [];
@@ -128,6 +145,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     const blockedSlots = blockedRes.data ?? [];
     const feedback = feedbackRes.data ?? [];
     const orders = ordersRes.data ?? [];
+    const cartItems = cartRes.data ?? [];
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -142,12 +160,25 @@ export const getAdminData = createServerFn({ method: "POST" })
     // Build a product lookup so wishlist UUIDs / legacy IDs resolve to labels.
     const { data: productsData } = await supabaseAdmin
       .from("products")
-      .select("id, legacy_id, brand, name");
+      .select("id, legacy_id, brand, name, price, images");
     const productMap = new Map<string, string>();
+    type ProductMeta = { label: string; image: string | null; price: number };
+    const productMeta = new Map<string, ProductMeta>();
     (productsData ?? []).forEach((p) => {
       const label = `${p.brand} — ${p.name}`;
-      if (p.id) productMap.set(p.id, label);
-      if (p.legacy_id) productMap.set(p.legacy_id, label);
+      const meta: ProductMeta = {
+        label,
+        image: Array.isArray(p.images) && p.images.length > 0 ? String(p.images[0]) : null,
+        price: Number(p.price ?? 0),
+      };
+      if (p.id) {
+        productMap.set(p.id, label);
+        productMeta.set(p.id, meta);
+      }
+      if (p.legacy_id) {
+        productMap.set(p.legacy_id, label);
+        productMeta.set(p.legacy_id, meta);
+      }
     });
 
     const users: AdminUser[] = profiles.map((p) => {
@@ -197,6 +228,28 @@ export const getAdminData = createServerFn({ method: "POST" })
           wish_list_text: f.wish_list_text as string | null,
           created_at: f.created_at,
         }));
+      const userCart = cartItems
+        .filter((c) => c.user_id === p.id)
+        .map((c) => {
+          const meta =
+            (c.product_uuid ? productMeta.get(c.product_uuid) : null) ||
+            productMeta.get(c.product_id) ||
+            null;
+          const qty = Number(c.quantity ?? 1);
+          const price = meta?.price ?? 0;
+          return {
+            id: c.id,
+            product_id: c.product_id,
+            product_uuid: c.product_uuid,
+            product_label: meta?.label || c.product_id,
+            product_image: meta?.image || null,
+            product_price: price,
+            size: c.size,
+            quantity: qty,
+            line_total: price * qty,
+            added_at: c.added_at,
+          };
+        });
       return {
         id: p.id,
         full_name: p.full_name,
@@ -215,6 +268,7 @@ export const getAdminData = createServerFn({ method: "POST" })
           : null,
         feedback: userFeedback,
         contactMessages: userContacts,
+        cart: userCart,
       };
     });
 
