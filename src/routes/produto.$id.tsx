@@ -11,6 +11,7 @@ import { ReservationModal } from "@/components/ReservationModal";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
+import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
@@ -44,6 +45,7 @@ function ProductPage() {
     !!product && product.sizes.length === 1 && product.sizes[0] === "U";
   const [size, setSize] = useState<string | null>(isOneSize ? "U" : null);
   const [reserveOpen, setReserveOpen] = useState(false);
+  const [addedOpen, setAddedOpen] = useState(false);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
@@ -102,12 +104,7 @@ function ProductPage() {
       size,
       quantity: 1,
     });
-    toast.success("Adicionado ao carrinho", {
-      action: {
-        label: "Ver carrinho",
-        onClick: () => router.navigate({ to: "/carrinho" }),
-      },
-    });
+    setAddedOpen(true);
   };
 
   const related = products.filter((p) => p.id !== product.id && p.brand === product.brand).slice(
@@ -291,6 +288,12 @@ function ProductPage() {
         itemName={`${product.brand} — ${product.name}`}
         itemType="produto"
         productUuid={product.uuid}
+        size={size}
+      />
+      <AddedToCartDrawer
+        open={addedOpen}
+        onClose={() => setAddedOpen(false)}
+        productId={product.id}
         size={size}
       />
     </Layout>

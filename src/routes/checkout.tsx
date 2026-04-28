@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/products";
@@ -7,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Lock } from "lucide-react";
+import { createOrder } from "@/server/orders";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Boutique Antónia Lage" }] }),
@@ -20,7 +22,44 @@ const STEPS = [
 ] as const;
 
 const FREE_SHIPPING_THRESHOLD = 150;
-const SHIPPING_COST = 8;
+
+// Zone-based shipping
+type Zone = "PT_CONT" | "PT_ILHAS" | "EU" | "WORLD";
+const ZONE_COST: Record<Zone, number> = {
+  PT_CONT: 5,
+  PT_ILHAS: 12,
+  EU: 15,
+  WORLD: 25,
+};
+const COUNTRIES: Array<{ code: string; label: string; zone: Zone }> = [
+  { code: "PT", label: "Portugal Continental", zone: "PT_CONT" },
+  { code: "PT-AC", label: "Portugal — Açores", zone: "PT_ILHAS" },
+  { code: "PT-MA", label: "Portugal — Madeira", zone: "PT_ILHAS" },
+  { code: "ES", label: "Espanha", zone: "EU" },
+  { code: "FR", label: "França", zone: "EU" },
+  { code: "IT", label: "Itália", zone: "EU" },
+  { code: "DE", label: "Alemanha", zone: "EU" },
+  { code: "NL", label: "Países Baixos", zone: "EU" },
+  { code: "BE", label: "Bélgica", zone: "EU" },
+  { code: "LU", label: "Luxemburgo", zone: "EU" },
+  { code: "IE", label: "Irlanda", zone: "EU" },
+  { code: "AT", label: "Áustria", zone: "EU" },
+  { code: "DK", label: "Dinamarca", zone: "EU" },
+  { code: "SE", label: "Suécia", zone: "EU" },
+  { code: "FI", label: "Finlândia", zone: "EU" },
+  { code: "PL", label: "Polónia", zone: "EU" },
+  { code: "GB", label: "Reino Unido", zone: "EU" },
+  { code: "US", label: "Estados Unidos", zone: "WORLD" },
+  { code: "BR", label: "Brasil", zone: "WORLD" },
+  { code: "CA", label: "Canadá", zone: "WORLD" },
+  { code: "OTHER", label: "Outro país", zone: "WORLD" },
+];
+
+function shippingForZone(subtotal: number, zone: Zone): number {
+  if (subtotal === 0) return 0;
+  if (zone === "PT_CONT" && subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
+  return ZONE_COST[zone];
+}
 
 type Address = {
   full_name: string;
@@ -30,7 +69,8 @@ type Address = {
   address2: string;
   city: string;
   postal_code: string;
-  country: string;
+  country: string;        // country code
+  country_label: string;  // display
 };
 
 function CheckoutPage() {
@@ -38,6 +78,7 @@ function CheckoutPage() {
   const { items, loading, clear } = useCart();
   const { byId } = useProducts();
   const { user, profile, session, loading: authLoading } = useAuth();
+  const createOrderFn = useServerFn(createOrder);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [address, setAddress] = useState<Address>({
@@ -48,7 +89,8 @@ function CheckoutPage() {
     address2: "",
     city: "",
     postal_code: "",
-    country: "Portugal",
+    country: "PT",
+    country_label: "Portugal Continental",
   });
 
   // Prefill from profile
@@ -82,7 +124,9 @@ function CheckoutPage() {
   );
 
   const subtotal = enriched.reduce((s, e) => s + e.lineTotal, 0);
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_COST;
+  const zone: Zone =
+    COUNTRIES.find((c) => c.code === address.country)?.zone ?? "PT_CONT";
+  const shipping = shippingForZone(subtotal, zone);
   const total = subtotal + shipping;
 
   const canSubmitAddress =
@@ -96,36 +140,48 @@ function CheckoutPage() {
 
   const handleConfirmPay = async () => {
     if (!user) return;
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) {
+      toast.error("Sessão expirada.");
+      return;
+    }
     const itemsPayload = enriched.map((e) => ({
       product_id: e.product_id,
       product_uuid: e.product_uuid,
       brand: e.product?.brand ?? null,
       name: e.product?.name ?? null,
-      image: e.product?.image ?? null,
       size: e.size,
       quantity: e.quantity,
       unit_price: e.unitPrice,
       line_total: e.lineTotal,
     }));
-    const { error } = await supabase.from("orders" as never).insert({
-      user_id: user.id,
-      customer_name: address.full_name,
-      customer_email: address.email,
-      customer_phone: address.phone,
-      items: itemsPayload,
-      shipping_address: address,
-      subtotal,
-      shipping_cost: shipping,
-      total,
-      status: "Pendente",
-    } as never);
-    if (error) {
-      toast.error("Não foi possível registar a encomenda.");
-      return;
+    try {
+      await createOrderFn({
+        data: {
+          token,
+          items: itemsPayload,
+          address: {
+            full_name: address.full_name,
+            email: address.email,
+            phone: address.phone,
+            address1: address.address1,
+            address2: address.address2,
+            city: address.city,
+            postal_code: address.postal_code,
+            country: address.country_label,
+          },
+          subtotal,
+          shipping_cost: shipping,
+          total,
+        },
+      });
+      await clear();
+      toast.success("Encomenda registada. Entraremos em contacto.");
+      router.navigate({ to: "/perfil" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível registar a encomenda.");
     }
-    await clear();
-    toast.success("Encomenda registada. Entraremos em contacto.");
-    router.navigate({ to: "/perfil" });
   };
 
   if (loading) {
@@ -240,7 +296,28 @@ function CheckoutPage() {
                   <Field label="Morada (linha 2)" value={address.address2} onChange={(v) => setAddress({ ...address, address2: v })} className="sm:col-span-2" optional />
                   <Field label="Cidade" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} />
                   <Field label="Código postal" value={address.postal_code} onChange={(v) => setAddress({ ...address, postal_code: v })} />
-                  <Field label="País" value={address.country} onChange={(v) => setAddress({ ...address, country: v })} className="sm:col-span-2" />
+                  <label className="flex flex-col gap-1.5 sm:col-span-2">
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">País</span>
+                    <select
+                      value={address.country}
+                      onChange={(e) => {
+                        const c = COUNTRIES.find((x) => x.code === e.target.value);
+                        setAddress({
+                          ...address,
+                          country: e.target.value,
+                          country_label: c?.label ?? e.target.value,
+                        });
+                      }}
+                      className="h-11 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                    >
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.label}</option>
+                      ))}
+                    </select>
+                    <span className="text-[11px] text-muted-foreground">
+                      Envio para esta zona: {shipping === 0 ? "grátis" : `€${shipping.toFixed(2)}`}
+                    </span>
+                  </label>
                 </div>
               </section>
             )}
@@ -305,7 +382,7 @@ function CheckoutPage() {
                   <dt>Envio</dt>
                   <dd>{shipping === 0 ? "Grátis" : `€${shipping.toFixed(2)}`}</dd>
                 </div>
-                {shipping > 0 && (
+                {zone === "PT_CONT" && shipping > 0 && (
                   <p className="text-[11px] text-muted-foreground">
                     Envio grátis em encomendas acima de €{FREE_SHIPPING_THRESHOLD}.
                   </p>

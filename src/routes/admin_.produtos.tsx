@@ -15,6 +15,9 @@ import {
   ChevronDown,
   ChevronUp,
   Minus,
+  LayoutGrid,
+  List as ListIcon,
+  ImageOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -83,6 +86,8 @@ function Content() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
+  const [filterBrand, setFilterBrand] = useState<string>("all");
+  const [view, setView] = useState<"grid" | "list">("grid");
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
@@ -113,6 +118,7 @@ function Content() {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (filterCat !== "all" && r.category !== filterCat) return false;
+      if (filterBrand !== "all" && r.brand !== filterBrand) return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -120,7 +126,7 @@ function Content() {
         (r.reference || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, filterCat]);
+  }, [rows, search, filterCat, filterBrand]);
 
   const toggleActive = async (r: ProductRow) => {
     try {
@@ -188,20 +194,60 @@ function Content() {
             className="w-full rounded-full border border-border bg-card py-2.5 pl-9 pr-4 text-sm outline-none focus:border-primary"
           />
         </div>
-        <select
-          value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value)}
-          className="rounded-full border border-border bg-card px-4 py-2.5 text-sm"
-        >
-          <option value="all">Todas as categorias</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <div className="inline-flex rounded-full border border-border bg-card p-1">
+          <button
+            onClick={() => setView("grid")}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <LayoutGrid size={14} /> Grelha
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <ListIcon size={14} /> Lista
+          </button>
+        </div>
+      </div>
+
+      {/* Filter pills */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Categoria:</span>
+        <FilterPill active={filterCat === "all"} onClick={() => setFilterCat("all")}>Todas</FilterPill>
+        {CATEGORIES.map((c) => (
+          <FilterPill key={c.value} active={filterCat === c.value} onClick={() => setFilterCat(c.value)}>
+            {c.label}
+          </FilterPill>
+        ))}
+        <span className="ml-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Marca:</span>
+        <FilterPill active={filterBrand === "all"} onClick={() => setFilterBrand("all")}>Todas</FilterPill>
+        {allBrandNames.map((b) => (
+          <FilterPill key={b} active={filterBrand === b} onClick={() => setFilterBrand(b)}>
+            {b}
+          </FilterPill>
+        ))}
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin" /></div>
+      ) : view === "grid" ? (
+        filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card py-16 text-center text-xs text-muted-foreground">
+            Sem produtos.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {filtered.map((r) => (
+              <ProductCardAdmin
+                key={r.id}
+                row={r}
+                onEdit={() => setEditing(r)}
+                onDelete={() => remove(r)}
+                onToggleActive={() => toggleActive(r)}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border bg-card">
           <table className="w-full text-sm">
@@ -270,6 +316,69 @@ function Content() {
           onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
         />
       )}
+    </div>
+  );
+}
+
+function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-xs transition ${
+        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:border-primary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ProductCardAdmin({
+  row,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: {
+  row: ProductRow;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleActive: () => void;
+}) {
+  const sizes = Array.isArray(row.sizes) ? row.sizes : [];
+  const stockSummary = sizes.map((s) => `${s.size}:${s.stock - s.reserved}`).join(" · ") || "—";
+  const cover = row.images?.[0];
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="relative aspect-[4/5] bg-muted">
+        {cover ? (
+          <img src={cover} alt={row.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+            <ImageOff size={28} strokeWidth={1.5} />
+          </div>
+        )}
+        <button
+          onClick={onToggleActive}
+          className={`absolute left-2 top-2 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider backdrop-blur ${
+            row.is_active ? "bg-primary/90 text-primary-foreground" : "bg-muted/90 text-muted-foreground"
+          }`}
+        >
+          {row.is_active ? "Activo" : "Inactivo"}
+        </button>
+        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
+          <button onClick={onEdit} aria-label="Editar" className="rounded-full bg-background/90 p-2 text-foreground hover:bg-background"><Pencil size={14} /></button>
+          <button onClick={onDelete} aria-label="Remover" className="rounded-full bg-background/90 p-2 text-destructive hover:bg-background"><Trash2 size={14} /></button>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{row.brand}</p>
+        <p className="line-clamp-1 font-display text-base italic text-foreground">{row.name}</p>
+        <p className="font-mono text-[10px] text-muted-foreground">{row.reference}</p>
+        <div className="mt-auto flex items-center justify-between pt-2">
+          <p className="text-sm font-medium">€{row.price}</p>
+          <p className="text-[10px] text-muted-foreground">{stockSummary}</p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -32,6 +32,7 @@ function ReservasContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tab, setTab] = useState<"produto" | "experiencia">("produto");
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
@@ -67,6 +68,7 @@ function ReservasContent() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return reservations.filter((r) => {
+      if ((r.item_type || "produto") !== tab) return false;
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (!q) return true;
       return (
@@ -75,7 +77,17 @@ function ReservasContent() {
         (r.customer_email || "").toLowerCase().includes(q)
       );
     });
-  }, [reservations, search, statusFilter]);
+  }, [reservations, search, statusFilter, tab]);
+
+  const counts = useMemo(() => {
+    let p = 0, e = 0;
+    for (const r of reservations) {
+      if (r.status === "Cancelada") continue;
+      if ((r.item_type || "produto") === "experiencia") e++;
+      else p++;
+    }
+    return { produto: p, experiencia: e };
+  }, [reservations]);
 
   const handleStatusChange = async (id: string, status: string) => {
     const { data: sess } = await supabase.auth.getSession();
@@ -104,6 +116,33 @@ function ReservasContent() {
         <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Admin</p>
         <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Reservas</h1>
       </header>
+
+      <div className="mb-4 inline-flex rounded-full border border-border bg-card p-1">
+        {([
+          { key: "produto", label: "Produtos", count: counts.produto },
+          { key: "experiencia", label: "Experiências", count: counts.experiencia },
+        ] as const).map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
+                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              <span
+                className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] ${
+                  active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground"
+                }`}
+              >
+                {t.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
