@@ -82,8 +82,12 @@ function DashboardContent() {
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Users} label="Clientes" value={data?.stats.totalUsers ?? 0} />
         <StatCard icon={Calendar} label="Reservas" value={data?.stats.totalReservations ?? 0} />
-        <StatCard icon={ShoppingBag} label="Encomendas" value={0} />
-        <StatCard icon={Euro} label="Receita (mês)" value="0 €" />
+        <StatCard icon={ShoppingBag} label="Encomendas" value={data?.stats.totalOrders ?? 0} />
+        <StatCard
+          icon={Euro}
+          label="Receita (mês)"
+          value={`€${(data?.stats.revenueMonth ?? 0).toFixed(0)}`}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
