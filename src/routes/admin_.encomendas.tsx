@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag } from "lucide-react";
@@ -133,7 +133,7 @@ function OrdersPage() {
               {orders.map((o) => {
                 const open = openId === o.id;
                 return (
-                  <FragmentRows key={o.id}>
+                  <Fragment key={o.id}>
                     <tr className="border-b border-border last:border-0">
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         #{o.id.slice(0, 8)}
@@ -214,7 +214,7 @@ function OrdersPage() {
                         </td>
                       </tr>
                     )}
-                  </FragmentRows>
+                  </Fragment>
                 );
               })}
             </tbody>
