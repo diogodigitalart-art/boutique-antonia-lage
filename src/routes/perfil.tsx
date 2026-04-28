@@ -4,7 +4,7 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { useProducts } from "@/lib/products";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays, Package } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -35,6 +35,30 @@ type Reservation = {
   status?: string;
 };
 
+type OrderItem = {
+  product_id?: string;
+  brand?: string | null;
+  name?: string | null;
+  size?: string;
+  quantity?: number;
+  line_total?: number;
+};
+type ShipAddr = {
+  address1?: string;
+  address2?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
+};
+type OrderRow = {
+  id: string;
+  created_at: string;
+  total: number;
+  status: string;
+  items: OrderItem[];
+  shipping_address: ShipAddr;
+};
+
 const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
   occasion: { label: "Ocasião", icon: Calendar },
   style: { label: "Estilo", icon: Sparkles },
@@ -59,6 +83,7 @@ function ProfileContent() {
   const { products } = useProducts();
   const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
   const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
@@ -98,6 +123,13 @@ function ProfileContent() {
           createdAt: r.created_at,
         })),
       );
+
+      const { data: ord } = await supabase
+        .from("orders" as never)
+        .select("id, created_at, total, status, items, shipping_address")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      setOrders(((ord ?? []) as unknown) as OrderRow[]);
     })();
   }, [user]);
 
@@ -247,6 +279,69 @@ function ProfileContent() {
               icon={Calendar}
               title="Ainda não tens reservas"
               body="Reserva uma peça para experimentar ou uma experiência na boutique."
+              ctaLabel="Ver colecção"
+              ctaTo="/"
+            />
+          )}
+        </div>
+
+        {/* Compras */}
+        <div>
+          <SectionHeader eyebrow="Compras" title="As minhas compras" />
+          {orders.length > 0 ? (
+            <div className="space-y-4">
+              {orders.map((o) => (
+                <div key={o.id} className="overflow-hidden rounded-3xl border border-border bg-card">
+                  <div className="flex flex-col gap-2 border-b border-border bg-muted/30 px-6 py-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                        Encomenda #{o.id.slice(0, 8).toUpperCase()} · {formatDate(o.created_at)}
+                      </p>
+                      <p className="mt-1 font-display text-xl italic text-foreground">
+                        Total €{Number(o.total).toFixed(2)}
+                      </p>
+                    </div>
+                    <span className={`${statusBadgeClasses(o.status)} self-start md:self-auto`}>
+                      {o.status}
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-border">
+                    {(o.items ?? []).map((it, idx) => (
+                      <li key={idx} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                            {it.brand ?? "—"}
+                          </p>
+                          <p className="font-display text-base italic text-foreground">{it.name ?? "Peça"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
+                          </p>
+                        </div>
+                        <p className="text-sm">€{Number(it.line_total ?? 0).toFixed(2)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                  {o.shipping_address && (
+                    <div className="border-t border-border px-6 py-4 text-xs text-muted-foreground">
+                      <p className="text-[10px] uppercase tracking-[0.2em]">Morada de envio</p>
+                      <p className="mt-1 text-foreground">
+                        {[o.shipping_address.address1, o.shipping_address.address2].filter(Boolean).join(", ")}
+                      </p>
+                      <p>
+                        {[o.shipping_address.postal_code, o.shipping_address.city, o.shipping_address.country]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyCard
+              icon={Package}
+              title="Ainda não tens compras"
+              body="Quando finalizares uma encomenda aparece aqui o histórico."
               ctaLabel="Ver colecção"
               ctaTo="/"
             />
