@@ -26,6 +26,7 @@ import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
+import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
@@ -117,6 +118,11 @@ const AdminReservasRoute = AdminReservasRouteImport.update({
   path: '/admin/reservas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
+  id: '/admin_/relatorios',
+  path: '/admin/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminProdutosRoute = AdminProdutosRouteImport.update({
   id: '/admin_/produtos',
   path: '/admin/produtos',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/encomendas': typeof AdminEncomendasRoute
   '/admin_/produtos': typeof AdminProdutosRoute
+  '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/feedback/$id': typeof FeedbackIdRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/encomendas'
     | '/admin/produtos'
+    | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
     | '/feedback/$id'
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/encomendas'
     | '/admin/produtos'
+    | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
     | '/feedback/$id'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin_/configuracoes'
     | '/admin_/encomendas'
     | '/admin_/produtos'
+    | '/admin_/relatorios'
     | '/admin_/reservas'
     | '/auth/callback'
     | '/feedback/$id'
@@ -310,6 +322,7 @@ export interface RootRouteChildren {
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminEncomendasRoute: typeof AdminEncomendasRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
+  AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
@@ -438,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReservasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/relatorios': {
+      id: '/admin_/relatorios'
+      path: '/admin/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AdminRelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/produtos': {
       id: '/admin_/produtos'
       path: '/admin/produtos'
@@ -494,6 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminEncomendasRoute: AdminEncomendasRoute,
   AdminProdutosRoute: AdminProdutosRoute,
+  AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminReservasRoute: AdminReservasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   FeedbackIdRoute: FeedbackIdRoute,
