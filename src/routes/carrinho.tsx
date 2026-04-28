@@ -121,7 +121,7 @@ function CartPage() {
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <dt>Envio</dt>
-                    <dd>Calculado no checkout</dd>
+                    <dd>Envio calculado no checkout</dd>
                   </div>
                 </dl>
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
