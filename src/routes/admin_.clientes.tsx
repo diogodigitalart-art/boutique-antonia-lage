@@ -18,6 +18,7 @@ import {
   Sparkles,
   Loader2,
   Star,
+  ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
@@ -312,6 +313,48 @@ function UserDetail({
                 {w.product_label || productLabel(w.product_id)}
               </li>
             ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section icon={ShoppingBag} title={`Carrinho actual (${user.cart.length})`}>
+        {user.cart.length === 0 ? (
+          <Empty>Carrinho vazio.</Empty>
+        ) : (
+          <ul className="space-y-2">
+            {user.cart.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-3 rounded-xl border border-border bg-background p-3"
+              >
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                  {c.product_image ? (
+                    <img
+                      src={c.product_image}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {c.product_label}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Tamanho {c.size} · Qtd {c.quantity} · €{c.product_price.toFixed(2)} cada
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-medium text-foreground">
+                  €{c.line_total.toFixed(2)}
+                </p>
+              </li>
+            ))}
+            <li className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-2.5 text-sm">
+              <span className="text-muted-foreground">Total carrinho</span>
+              <span className="font-medium text-foreground">
+                €{user.cart.reduce((s, c) => s + c.line_total, 0).toFixed(2)}
+              </span>
+            </li>
           </ul>
         )}
       </Section>
