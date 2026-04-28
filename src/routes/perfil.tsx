@@ -453,3 +453,133 @@ function EmptyCard({
     </div>
   );
 }
+
+function OrderCard({
+  order,
+  byId,
+  formatDate,
+}: {
+  order: OrderRow;
+  byId: (id: string) => { image?: string } | undefined;
+  formatDate: (iso: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const items = order.items ?? [];
+  const totalQty = items.reduce((s, it) => s + (it.quantity ?? 1), 0);
+  const thumbs = items
+    .map((it) => (it.product_id ? byId(it.product_id)?.image : undefined))
+    .filter(Boolean) as string[];
+  const visibleThumbs = thumbs.slice(0, 3);
+  const extra = thumbs.length > 3 ? thumbs.length - 3 : 0;
+  const badgeColor =
+    ORDER_STATUS_COLOR[order.status] ?? "bg-muted text-foreground border-border";
+  const short = order.id.slice(0, 8).toUpperCase();
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-border bg-card transition hover:border-foreground/20">
+      <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-6">
+        <div className="flex items-center gap-3">
+          {visibleThumbs.length > 0 ? (
+            <div className="flex -space-x-3">
+              {visibleThumbs.map((src, i) => (
+                <div
+                  key={i}
+                  className="h-16 w-14 overflow-hidden rounded-lg border-2 border-card bg-muted"
+                >
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </div>
+              ))}
+              {extra > 0 && (
+                <div className="flex h-16 w-14 items-center justify-center rounded-lg border-2 border-card bg-muted text-xs font-medium text-foreground">
+                  +{extra}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex h-16 w-14 items-center justify-center rounded-lg bg-muted">
+              <Package className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 md:px-4">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            #{short}
+          </p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {totalQty} {totalQty === 1 ? "peça" : "peças"}
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-4 md:flex-col md:items-end">
+          <span className={`rounded-full border px-3 py-1 text-[11px] font-medium ${badgeColor}`}>
+            {order.status}
+          </span>
+          <p className="font-display text-2xl italic text-foreground">
+            €{Number(order.total).toFixed(2)}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-center gap-1.5 border-t border-border px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
+      >
+        {open ? "Esconder detalhes" : "Ver detalhes"}
+        <ChevronDown
+          size={13}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-border bg-muted/20">
+          <ul className="divide-y divide-border">
+            {items.map((it, idx) => {
+              const p = it.product_id ? byId(it.product_id) : undefined;
+              return (
+                <li key={idx} className="flex items-center gap-4 px-6 py-4">
+                  <div className="h-16 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    {p?.image && (
+                      <img src={p.image} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      {it.brand ?? "—"}
+                    </p>
+                    <p className="truncate font-display text-base italic text-foreground">
+                      {it.name ?? "Peça"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
+                    </p>
+                  </div>
+                  <p className="text-sm font-medium">
+                    €{Number(it.line_total ?? 0).toFixed(2)}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+          {order.shipping_address && (
+            <div className="border-t border-border px-6 py-4 text-xs text-muted-foreground">
+              <p className="text-[10px] uppercase tracking-[0.2em]">Morada de envio</p>
+              <p className="mt-1 text-foreground">
+                {[order.shipping_address.address1, order.shipping_address.address2]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+              <p>
+                {[
+                  order.shipping_address.postal_code,
+                  order.shipping_address.city,
+                  order.shipping_address.country,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
