@@ -59,6 +59,15 @@ type OrderRow = {
   shipping_address: ShipAddr;
 };
 
+const ORDER_STATUS_COLOR: Record<string, string> = {
+  Pendente: "bg-amber-100 text-amber-800 border-amber-200",
+  Confirmada: "bg-blue-100 text-blue-800 border-blue-200",
+  "Em preparação": "bg-violet-100 text-violet-800 border-violet-200",
+  Enviada: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  Entregue: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  Cancelada: "bg-rose-100 text-rose-800 border-rose-200",
+};
+
 const QUIZ_META: Record<string, { label: string; icon: typeof Calendar }> = {
   occasion: { label: "Ocasião", icon: Calendar },
   style: { label: "Estilo", icon: Sparkles },
@@ -80,7 +89,7 @@ function ProfileContent() {
   const { t, lang, setLang } = useI18n();
   const { ids } = useWishlist();
   const { user, profile, signOut } = useAuth();
-  const { products } = useProducts();
+  const { products, byId } = useProducts();
   const [styleProfile, setStyleProfile] = useState<Record<string, string> | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -291,50 +300,7 @@ function ProfileContent() {
           {orders.length > 0 ? (
             <div className="space-y-4">
               {orders.map((o) => (
-                <div key={o.id} className="overflow-hidden rounded-3xl border border-border bg-card">
-                  <div className="flex flex-col gap-2 border-b border-border bg-muted/30 px-6 py-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                        Encomenda #{o.id.slice(0, 8).toUpperCase()} · {formatDate(o.created_at)}
-                      </p>
-                      <p className="mt-1 font-display text-xl italic text-foreground">
-                        Total €{Number(o.total).toFixed(2)}
-                      </p>
-                    </div>
-                    <span className={`${statusBadgeClasses(o.status)} self-start md:self-auto`}>
-                      {o.status}
-                    </span>
-                  </div>
-                  <ul className="divide-y divide-border">
-                    {(o.items ?? []).map((it, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-3 px-6 py-3 text-sm">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                            {it.brand ?? "—"}
-                          </p>
-                          <p className="font-display text-base italic text-foreground">{it.name ?? "Peça"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
-                          </p>
-                        </div>
-                        <p className="text-sm">€{Number(it.line_total ?? 0).toFixed(2)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                  {o.shipping_address && (
-                    <div className="border-t border-border px-6 py-4 text-xs text-muted-foreground">
-                      <p className="text-[10px] uppercase tracking-[0.2em]">Morada de envio</p>
-                      <p className="mt-1 text-foreground">
-                        {[o.shipping_address.address1, o.shipping_address.address2].filter(Boolean).join(", ")}
-                      </p>
-                      <p>
-                        {[o.shipping_address.postal_code, o.shipping_address.city, o.shipping_address.country]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <OrderCard key={o.id} order={o} byId={byId} formatDate={formatDate} />
               ))}
             </div>
           ) : (
