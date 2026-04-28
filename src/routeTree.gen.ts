@@ -27,6 +27,7 @@ import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
+import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
@@ -121,6 +122,11 @@ const AdminProdutosRoute = AdminProdutosRouteImport.update({
   path: '/admin/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEncomendasRoute = AdminEncomendasRouteImport.update({
+  id: '/admin_/encomendas',
+  path: '/admin/encomendas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   id: '/admin_/configuracoes',
   path: '/admin/configuracoes',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/wishlist': typeof WishlistRoute
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin_/encomendas': typeof AdminEncomendasRoute
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/encomendas'
     | '/admin/produtos'
     | '/admin/reservas'
     | '/auth/callback'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/encomendas'
     | '/admin/produtos'
     | '/admin/reservas'
     | '/auth/callback'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin_/clientes'
     | '/admin_/configuracoes'
+    | '/admin_/encomendas'
     | '/admin_/produtos'
     | '/admin_/reservas'
     | '/auth/callback'
@@ -296,6 +308,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminEncomendasRoute: typeof AdminEncomendasRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/encomendas': {
+      id: '/admin_/encomendas'
+      path: '/admin/encomendas'
+      fullPath: '/admin/encomendas'
+      preLoaderRoute: typeof AdminEncomendasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/configuracoes': {
       id: '/admin_/configuracoes'
       path: '/admin/configuracoes'
@@ -472,6 +492,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminEncomendasRoute: AdminEncomendasRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminReservasRoute: AdminReservasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
