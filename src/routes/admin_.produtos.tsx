@@ -15,8 +15,6 @@ import {
   ChevronDown,
   ChevronUp,
   Minus,
-  LayoutGrid,
-  List as ListIcon,
   ImageOff,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -87,10 +85,12 @@ function Content() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
   const [filterBrand, setFilterBrand] = useState<string>("all");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [filterSeason, setFilterSeason] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     try {
@@ -119,6 +119,9 @@ function Content() {
     return rows.filter((r) => {
       if (filterCat !== "all" && r.category !== filterCat) return false;
       if (filterBrand !== "all" && r.brand !== filterBrand) return false;
+      if (filterSeason !== "all" && (r.season || "") !== filterSeason) return false;
+      if (filterStatus === "active" && !r.is_active) return false;
+      if (filterStatus === "inactive" && r.is_active) return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -126,13 +129,12 @@ function Content() {
         (r.reference || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, filterCat, filterBrand]);
+  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus]);
 
   const toggleActive = async (r: ProductRow) => {
     try {
       const token = await getToken();
       await toggleFn({ data: { token, id: r.id, is_active: !r.is_active } });
-      toast.success(r.is_active ? "Desactivado" : "Activado");
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
@@ -151,22 +153,52 @@ function Content() {
     }
   };
 
-  // Merged brand list (hardcoded + custom)
+  const bulkSetActive = async (active: boolean) => {
+    if (selected.size === 0) return;
+    try {
+      const token = await getToken();
+      await Promise.all(
+        Array.from(selected).map((id) => toggleFn({ data: { token, id, is_active: active } })),
+      );
+      toast.success(active ? "Produtos activados" : "Produtos desactivados");
+      setSelected(new Set());
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    }
+  };
+
   const allBrandNames = useMemo(() => {
     const set = new Set<string>();
     BRANDS.filter((b) => b !== "Todas").forEach((b) => set.add(b));
     brands.forEach((b) => set.add(b.name));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [brands]);
-
   const seasonNames = useMemo(() => seasons.map((s) => s.name), [seasons]);
 
+  const allChecked = filtered.length > 0 && filtered.every((r) => selected.has(r.id));
+  const toggleAll = () => {
+    if (allChecked) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((r) => r.id)));
+    }
+  };
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Admin</p>
-          <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Produtos</h1>
+    <div className="mx-auto max-w-[1400px] px-4 py-6 md:px-6 md:py-8">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-3">
+          <h1 className="font-display text-2xl italic md:text-3xl">Produtos</h1>
+          <span className="text-xs text-muted-foreground">{filtered.length} produtos</span>
         </div>
         <button
           onClick={() => setCreating(true)}
@@ -183,127 +215,200 @@ function Content() {
         onChanged={refresh}
       />
 
-      <div className="mb-4 mt-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      {/* Filter bar */}
+      <div className="mb-3 mt-4 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Procurar por marca, nome ou referência…"
-            className="w-full rounded-full border border-border bg-card py-2.5 pl-9 pr-4 text-sm outline-none focus:border-primary"
+            className="h-9 w-full rounded-md border border-border bg-card pl-8 pr-3 text-[13px] outline-none focus:border-primary"
           />
         </div>
-        <div className="inline-flex rounded-full border border-border bg-card p-1">
+        <FilterSelect
+          value={filterCat}
+          onChange={setFilterCat}
+          options={[{ value: "all", label: "Todas categorias" }, ...CATEGORIES]}
+        />
+        <FilterSelect
+          value={filterBrand}
+          onChange={setFilterBrand}
+          options={[
+            { value: "all", label: "Todas marcas" },
+            ...allBrandNames.map((b) => ({ value: b, label: b })),
+          ]}
+        />
+        <FilterSelect
+          value={filterSeason}
+          onChange={setFilterSeason}
+          options={[
+            { value: "all", label: "Todas seasons" },
+            ...seasonNames.map((s) => ({ value: s, label: s })),
+          ]}
+        />
+        <FilterSelect
+          value={filterStatus}
+          onChange={(v) => setFilterStatus(v as "all" | "active" | "inactive")}
+          options={[
+            { value: "all", label: "Todos estados" },
+            { value: "active", label: "Activo" },
+            { value: "inactive", label: "Inactivo" },
+          ]}
+        />
+      </div>
+
+      {/* Bulk actions */}
+      {selected.size > 0 && (
+        <div className="mb-3 flex items-center gap-3 rounded-md border border-primary/30 bg-primary-soft/40 px-3 py-2 text-[13px]">
+          <span className="text-foreground">{selected.size} selecionado(s)</span>
           <button
-            onClick={() => setView("grid")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider ${view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            onClick={() => bulkSetActive(true)}
+            className="rounded-md border border-border bg-background px-3 py-1 text-xs hover:bg-muted"
           >
-            <LayoutGrid size={14} /> Grelha
+            Activar seleccionados
           </button>
           <button
-            onClick={() => setView("list")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs uppercase tracking-wider ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            onClick={() => bulkSetActive(false)}
+            className="rounded-md border border-border bg-background px-3 py-1 text-xs hover:bg-muted"
           >
-            <ListIcon size={14} /> Lista
+            Desactivar seleccionados
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          >
+            Limpar selecção
           </button>
         </div>
-      </div>
-
-      {/* Filter pills */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Categoria:</span>
-        <FilterPill active={filterCat === "all"} onClick={() => setFilterCat("all")}>Todas</FilterPill>
-        {CATEGORIES.map((c) => (
-          <FilterPill key={c.value} active={filterCat === c.value} onClick={() => setFilterCat(c.value)}>
-            {c.label}
-          </FilterPill>
-        ))}
-        <span className="ml-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Marca:</span>
-        <FilterPill active={filterBrand === "all"} onClick={() => setFilterBrand("all")}>Todas</FilterPill>
-        {allBrandNames.map((b) => (
-          <FilterPill key={b} active={filterBrand === b} onClick={() => setFilterBrand(b)}>
-            {b}
-          </FilterPill>
-        ))}
-      </div>
+      )}
 
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin" /></div>
-      ) : view === "grid" ? (
-        filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card py-16 text-center text-xs text-muted-foreground">
-            Sem produtos.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((r) => (
-              <ProductCardAdmin
-                key={r.id}
-                row={r}
-                onEdit={() => setEditing(r)}
-                onDelete={() => remove(r)}
-                onToggleActive={() => toggleActive(r)}
-              />
-            ))}
-          </div>
-        )
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-muted/40 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Ref.</th>
-                <th className="px-4 py-3">Marca</th>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Season</th>
-                <th className="px-4 py-3">Categoria</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3">Stock</th>
-                <th className="px-4 py-3">Activo</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => {
-                const sizes = Array.isArray(r.sizes) ? r.sizes : [];
-                const totalStock = sizes.reduce((a, s) => a + (s.stock - s.reserved), 0);
-                return (
-                  <tr key={r.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{r.reference}</td>
-                    <td className="px-4 py-3">{r.brand}</td>
-                    <td className="px-4 py-3 font-medium">{r.name}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{r.season || "—"}</td>
-                    <td className="px-4 py-3 capitalize text-muted-foreground">{r.category}</td>
-                    <td className="px-4 py-3">€{r.price}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {sizes.map((s) => `${s.size}:${s.stock - s.reserved}`).join(" · ") || "—"}
-                      <span className="ml-2 text-foreground">({totalStock})</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleActive(r)}
-                        className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-wider ${
-                          r.is_active ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground"
-                        }`}
+        <div className="overflow-hidden rounded-md border border-border bg-card">
+          <div className="max-h-[calc(100vh-320px)] overflow-auto">
+            <table className="w-full border-collapse text-[13px]">
+              <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
+                <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="w-10 px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      onChange={toggleAll}
+                      className="h-3.5 w-3.5 cursor-pointer"
+                    />
+                  </th>
+                  <th className="w-12 px-2 py-2.5"></th>
+                  <th className="px-3 py-2.5">Marca</th>
+                  <th className="px-3 py-2.5">Nome</th>
+                  <th className="px-3 py-2.5">Ref.</th>
+                  <th className="px-3 py-2.5">Season</th>
+                  <th className="px-3 py-2.5">Categoria</th>
+                  <th className="px-3 py-2.5 text-right">Preço</th>
+                  <th className="px-3 py-2.5 text-right">Stock</th>
+                  <th className="px-3 py-2.5">Estado</th>
+                  <th className="w-12 px-3 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => {
+                  const sizes = Array.isArray(r.sizes) ? r.sizes : [];
+                  const totalStock = sizes.reduce(
+                    (a, s) => a + Math.max(0, s.stock - s.reserved),
+                    0,
+                  );
+                  const cover = r.images?.[0];
+                  const isSel = selected.has(r.id);
+                  return (
+                    <tr
+                      key={r.id}
+                      onClick={() => setEditing(r)}
+                      className={`cursor-pointer border-b border-border/60 transition hover:bg-muted/40 ${
+                        isSel ? "bg-primary-soft/30" : ""
+                      }`}
+                    >
+                      <td
+                        className="px-3 py-2"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {r.is_active ? "Sim" : "Não"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => setEditing(r)} className="rounded p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Pencil size={14} /></button>
-                        <button onClick={() => remove(r)} className="rounded p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 size={14} /></button>
-                      </div>
+                        <input
+                          type="checkbox"
+                          checked={isSel}
+                          onChange={() => toggleOne(r.id)}
+                          className="h-3.5 w-3.5 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="h-9 w-9 overflow-hidden rounded-md bg-muted">
+                          {cover ? (
+                            <img
+                              src={cover}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                              <ImageOff size={14} strokeWidth={1.5} />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-foreground">{r.brand}</td>
+                      <td className="px-3 py-2 font-medium text-foreground">{r.name}</td>
+                      <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                        {r.reference}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {r.season || "—"}
+                      </td>
+                      <td className="px-3 py-2 capitalize text-muted-foreground">
+                        {r.category}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">€{r.price}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {totalStock}
+                      </td>
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => toggleActive(r)}
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] uppercase tracking-wider ${
+                            r.is_active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {r.is_active ? "Activo" : "Inactivo"}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setEditing(r)}
+                          aria-label="Editar"
+                          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={11}
+                      className="px-4 py-12 text-center text-xs text-muted-foreground"
+                    >
+                      Sem produtos.
                     </td>
                   </tr>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-10 text-center text-xs text-muted-foreground">Sem produtos.</td></tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -312,74 +417,51 @@ function Content() {
           row={editing}
           brandOptions={allBrandNames}
           seasonOptions={seasonNames}
-          onClose={() => { setEditing(null); setCreating(false); }}
-          onSaved={() => { refresh(); setEditing(null); setCreating(false); }}
+          onClose={() => {
+            setEditing(null);
+            setCreating(false);
+          }}
+          onSaved={(addAnother) => {
+            refresh();
+            setEditing(null);
+            if (addAnother) {
+              setCreating(true);
+            } else {
+              setCreating(false);
+            }
+          }}
+          onDelete={async () => {
+            if (!editing) return;
+            await remove(editing);
+            setEditing(null);
+          }}
         />
       )}
     </div>
   );
 }
 
-function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs transition ${
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:border-primary"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ProductCardAdmin({
-  row,
-  onEdit,
-  onDelete,
-  onToggleActive,
+function FilterSelect({
+  value,
+  onChange,
+  options,
 }: {
-  row: ProductRow;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleActive: () => void;
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ value: string; label: string }>;
 }) {
-  const sizes = Array.isArray(row.sizes) ? row.sizes : [];
-  const stockSummary = sizes.map((s) => `${s.size}:${s.stock - s.reserved}`).join(" · ") || "—";
-  const cover = row.images?.[0];
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="relative aspect-[4/5] bg-muted">
-        {cover ? (
-          <img src={cover} alt={row.name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <ImageOff size={28} strokeWidth={1.5} />
-          </div>
-        )}
-        <button
-          onClick={onToggleActive}
-          className={`absolute left-2 top-2 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-wider backdrop-blur ${
-            row.is_active ? "bg-primary/90 text-primary-foreground" : "bg-muted/90 text-muted-foreground"
-          }`}
-        >
-          {row.is_active ? "Activo" : "Inactivo"}
-        </button>
-        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
-          <button onClick={onEdit} aria-label="Editar" className="rounded-full bg-background/90 p-2 text-foreground hover:bg-background"><Pencil size={14} /></button>
-          <button onClick={onDelete} aria-label="Remover" className="rounded-full bg-background/90 p-2 text-destructive hover:bg-background"><Trash2 size={14} /></button>
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{row.brand}</p>
-        <p className="line-clamp-1 font-display text-base italic text-foreground">{row.name}</p>
-        <p className="font-mono text-[10px] text-muted-foreground">{row.reference}</p>
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <p className="text-sm font-medium">€{row.price}</p>
-          <p className="text-[10px] text-muted-foreground">{stockSummary}</p>
-        </div>
-      </div>
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 rounded-md border border-border bg-card px-3 text-[13px] outline-none focus:border-primary"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -425,13 +507,13 @@ function BrandsSection({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card">
+    <div className="rounded-md border border-border bg-card">
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-[13px] font-medium"
       >
         <span>Marcas ({customBrands.length} personalizadas)</span>
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
       {open && (
         <div className="border-t border-border p-4">
@@ -440,19 +522,29 @@ function BrandsSection({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nova marca…"
-              className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm"
+              className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-[13px]"
               onKeyDown={(e) => e.key === "Enter" && add()}
             />
-            <button onClick={add} disabled={busy} className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+            <button
+              onClick={add}
+              disabled={busy}
+              className="rounded-md bg-primary px-4 py-1.5 text-[13px] text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
               Adicionar
             </button>
           </div>
           {customBrands.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {customBrands.map((b) => (
-                <span key={b.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs">
+                <span
+                  key={b.id}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs"
+                >
                   {b.name}
-                  <button onClick={() => remove(b.id)} className="text-muted-foreground hover:text-destructive">
+                  <button
+                    onClick={() => remove(b.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
                     <X size={12} />
                   </button>
                 </span>
@@ -485,51 +577,81 @@ type FormState = {
   images: string[];
 };
 
+function emptyForm(brandOptions: string[]): FormState {
+  const sizes: Record<string, number> = {};
+  SIZE_OPTIONS.forEach((s) => (sizes[s] = 0));
+  return {
+    brand: brandOptions[0] ?? "",
+    name: "",
+    reference: "",
+    description: "",
+    price: "",
+    original_price: "",
+    discount_percent: "",
+    category: "colecção",
+    season: "",
+    is_active: true,
+    oneSize: false,
+    sizes,
+    oneSizeStock: 1,
+    images: [],
+  };
+}
+
 function ProductForm({
   row,
   brandOptions,
   seasonOptions,
   onClose,
   onSaved,
+  onDelete,
 }: {
   row: ProductRow | null;
   brandOptions: string[];
   seasonOptions: string[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (addAnother: boolean) => void;
+  onDelete: () => void;
 }) {
   const isEdit = !!row;
   const upsertFn = useServerFn(adminUpsertProduct);
   const uploadFn = useServerFn(adminUploadProductImage);
 
   const initialSizes: Record<string, number> = {};
-  SIZE_OPTIONS.forEach((s) => { initialSizes[s] = 0; });
+  SIZE_OPTIONS.forEach((s) => {
+    initialSizes[s] = 0;
+  });
   const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
-  existingSizes.forEach((s) => { if (SIZE_OPTIONS.includes(s.size as never)) initialSizes[s.size] = s.stock; });
+  existingSizes.forEach((s) => {
+    if (SIZE_OPTIONS.includes(s.size as never)) initialSizes[s.size] = s.stock;
+  });
 
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
   const oneSizeStock = isOneSize ? existingSizes[0].stock : 1;
 
   const knownBrand = !row || brandOptions.includes(row.brand);
-  const [form, setForm] = useState<FormState>({
-    brand: knownBrand ? (row?.brand ?? brandOptions[0] ?? "") : row!.brand,
-    name: row?.name ?? "",
-    reference: row?.reference ?? "",
-    description: row?.description ?? "",
-    price: row ? String(row.price) : "",
-    original_price: row?.original_price != null ? String(row.original_price) : "",
-    discount_percent: row?.discount_percent != null ? String(row.discount_percent) : "",
-    category: row?.category ?? "colecção",
-    season: row?.season ?? "",
-    is_active: row?.is_active ?? true,
-    oneSize: isOneSize,
-    sizes: initialSizes,
-    oneSizeStock,
-    images: row?.images ?? [],
-  });
+  const [form, setForm] = useState<FormState>(
+    row
+      ? {
+          brand: knownBrand ? row.brand : row.brand,
+          name: row.name,
+          reference: row.reference,
+          description: row.description,
+          price: String(row.price),
+          original_price: row.original_price != null ? String(row.original_price) : "",
+          discount_percent: row.discount_percent != null ? String(row.discount_percent) : "",
+          category: row.category,
+          season: row.season ?? "",
+          is_active: row.is_active,
+          oneSize: isOneSize,
+          sizes: initialSizes,
+          oneSizeStock,
+          images: row.images ?? [],
+        }
+      : emptyForm(brandOptions),
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // Local copy of reservations for in-modal manual marking — persisted on save
   const [liveSizes, setLiveSizes] = useState<ProductSize[]>(existingSizes);
 
   const fileToBase64 = (file: File): Promise<{ base64: string; type: string }> =>
@@ -566,7 +688,7 @@ function ProductForm({
     }
   };
 
-  const submit = async () => {
+  const submit = async (addAnother: boolean) => {
     if (!form.brand.trim()) return toast.error("Indica a marca.");
     if (!form.name.trim()) return toast.error("Indica o nome.");
     if (!form.reference.trim()) return toast.error("Indica a referência.");
@@ -575,18 +697,18 @@ function ProductForm({
     let sizesPayload: ProductSize[];
     if (form.oneSize) {
       const liveU = liveSizes.find((x) => x.size === "U");
-      sizesPayload = [{
-        size: "U",
-        stock: Math.max(1, form.oneSizeStock || 1),
-        reserved: liveU?.reserved ?? 0,
-      }];
+      sizesPayload = [
+        {
+          size: "U",
+          stock: Math.max(1, form.oneSizeStock || 1),
+          reserved: liveU?.reserved ?? 0,
+        },
+      ];
     } else {
-      sizesPayload = SIZE_OPTIONS
-        .filter((s) => form.sizes[s] > 0)
-        .map((s) => {
-          const live = liveSizes.find((x) => x.size === s);
-          return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
-        });
+      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] > 0).map((s) => {
+        const live = liveSizes.find((x) => x.size === s);
+        return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
+      });
     }
 
     setSaving(true);
@@ -613,7 +735,7 @@ function ProductForm({
         },
       });
       toast.success(isEdit ? "Produto actualizado" : "Produto criado");
-      onSaved();
+      onSaved(addAnother);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -621,7 +743,6 @@ function ProductForm({
     }
   };
 
-  // Local-only: only persisted to Supabase when admin clicks "Guardar"
   const adjust = (size: string, delta: 1 | -1) => {
     setLiveSizes((prev) =>
       prev.map((s) =>
@@ -632,190 +753,456 @@ function ProductForm({
     );
   };
 
+  // Live preview pricing
+  const previewPrice = (() => {
+    const base = Number(form.price) || 0;
+    const pct = form.discount_percent ? Number(form.discount_percent) : 0;
+    if (pct > 0) return Math.round(base * (1 - pct / 100) * 100) / 100;
+    return base;
+  })();
+  const previewOriginal = (() => {
+    const pct = form.discount_percent ? Number(form.discount_percent) : 0;
+    if (pct > 0) return Number(form.price) || 0;
+    return form.original_price ? Number(form.original_price) : null;
+  })();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="relative max-h-[92vh] w-full overflow-y-auto bg-background p-6 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-8">
-        <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-2 text-muted-foreground hover:bg-muted"><X size={18} /></button>
-        <h2 className="font-display text-2xl italic">{isEdit ? "Editar produto" : "Novo produto"}</h2>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
+      <div className="flex-1 bg-foreground/40" />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative flex h-full w-full max-w-[1100px] flex-col bg-background shadow-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Marca</label>
-            <select value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm">
-              {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
-              {!brandOptions.includes(form.brand) && form.brand && <option value={form.brand}>{form.brand}</option>}
-            </select>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              {isEdit ? "Editar" : "Novo"}
+            </p>
+            <h2 className="font-display text-xl italic">
+              {isEdit ? row!.name : "Novo produto"}
+            </h2>
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Categoria</label>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm">
-              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</label>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Referência</label>
-            <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm font-mono" />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Season</label>
-            <select
-              value={form.season}
-              onChange={(e) => setForm({ ...form, season: e.target.value })}
-              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
+          <div className="flex items-center gap-2">
+            {isEdit && (
+              <button
+                onClick={onDelete}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-[13px] text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 size={13} /> Eliminar
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="rounded-md p-2 text-muted-foreground hover:bg-muted"
             >
-              <option value="">— Sem season —</option>
-              {seasonOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-              {form.season && !seasonOptions.includes(form.season) && (
-                <option value={form.season}>{form.season} (legado)</option>
-              )}
-            </select>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Gerir seasons em <span className="underline">Configurações</span>.
-            </p>
+              <X size={18} />
+            </button>
           </div>
-          <div className="flex items-end gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
-              Activo
-            </label>
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Preço (€)</label>
-            <input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Preço original (opcional)</label>
-            <input type="number" min="0" step="0.01" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm" />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Desconto (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={form.discount_percent}
-              onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
-              placeholder="ex: 20"
-              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm"
-            />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Quando definido, mostra preço com desconto e badge −X%.
-            </p>
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm" />
-          </div>
+        </div>
 
-          <div className="sm:col-span-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.oneSize}
-                onChange={(e) => setForm({ ...form, oneSize: e.target.checked })}
-              />
-              Tamanho único
-            </label>
-            {form.oneSize ? (
-              <div className="mt-2">
-                <label className="text-xs uppercase tracking-wider text-muted-foreground">Stock</label>
+        {/* Body — two columns */}
+        <div className="grid flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 lg:grid-cols-[1fr_380px]">
+          {/* Left column */}
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Marca">
+                <select
+                  value={form.brand}
+                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                >
+                  {brandOptions.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                  {!brandOptions.includes(form.brand) && form.brand && (
+                    <option value={form.brand}>{form.brand}</option>
+                  )}
+                </select>
+              </Field>
+              <Field label="Categoria">
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Nome" className="sm:col-span-2">
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Referência">
+                <input
+                  value={form.reference}
+                  onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                />
+              </Field>
+              <Field label="Season">
+                <select
+                  value={form.season}
+                  onChange={(e) => setForm({ ...form, season: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                >
+                  <option value="">— Sem season —</option>
+                  {seasonOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                  {form.season && !seasonOptions.includes(form.season) && (
+                    <option value={form.season}>{form.season} (legado)</option>
+                  )}
+                </select>
+              </Field>
+              <Field label="Preço (€)">
                 <input
                   type="number"
-                  min="1"
-                  value={form.oneSizeStock}
-                  onChange={(e) => setForm({ ...form, oneSizeStock: Math.max(1, Number(e.target.value) || 1) })}
-                  className="mt-1 h-11 w-32 rounded-md border border-border bg-card px-3 text-sm"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
                 />
-              </div>
-            ) : (
-              <>
-                <label className="mt-2 block text-xs uppercase tracking-wider text-muted-foreground">Stock por tamanho</label>
-                <div className="mt-2 grid grid-cols-5 gap-2">
-                  {SIZE_OPTIONS.map((s) => (
-                    <div key={s} className="flex flex-col items-center rounded-md border border-border bg-card p-2">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s}</span>
-                      <input type="number" min="0" value={form.sizes[s]} onChange={(e) => setForm({ ...form, sizes: { ...form.sizes, [s]: Math.max(0, Number(e.target.value) || 0) } })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-center text-sm" />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+              </Field>
+              <Field label="Preço original (opcional)">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.original_price}
+                  onChange={(e) => setForm({ ...form, original_price: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Desconto (%)">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={form.discount_percent}
+                  onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+                  placeholder="ex: 20"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Descrição" className="sm:col-span-2">
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={4}
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
+                />
+              </Field>
+            </div>
           </div>
 
-          {isEdit && liveSizes.length > 0 && (
-            <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-4">
-              <label className="text-xs uppercase tracking-wider text-muted-foreground">Reservas manuais</label>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Marca como reservado para reservas presenciais (cria FOMO no site).
+          {/* Right column */}
+          <div className="space-y-5">
+            {/* Live preview card */}
+            <div>
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Pré-visualização
               </p>
-              <div className="mt-3 space-y-2">
-                {liveSizes.map((s) => {
-                  const available = s.stock - s.reserved;
-                  return (
-                    <div key={s.size} className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 font-medium">{s.size}</span>
-                        <span className="text-xs text-muted-foreground">
-                          stock {s.stock} · reservado {s.reserved} · livre {available}
-                        </span>
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => adjust(s.size, -1)}
-                          disabled={s.reserved <= 0}
-                          className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs hover:bg-muted disabled:opacity-40"
-                        >
-                          <Minus size={12} /> Libertar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => adjust(s.size, 1)}
-                          disabled={available <= 0}
-                          className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-                        >
-                          <Plus size={12} /> Marcar reservado
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <PreviewCard
+                brand={form.brand}
+                name={form.name}
+                price={previewPrice}
+                originalPrice={previewOriginal}
+                discountPercent={form.discount_percent ? Number(form.discount_percent) : 0}
+                image={form.images[0] || null}
+                season={form.season}
+              />
             </div>
-          )}
 
-          <div className="sm:col-span-2">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">Imagens (até 6)</label>
-            <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {form.images.map((url, i) => (
-                <div key={url} className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                  <button onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"><X size={12} /></button>
+            <div className="rounded-md border border-border bg-card p-4">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                />
+                Produto activo (visível no site)
+              </label>
+            </div>
+
+            <div className="rounded-md border border-border bg-card p-4">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={form.oneSize}
+                  onChange={(e) => setForm({ ...form, oneSize: e.target.checked })}
+                />
+                Tamanho único
+              </label>
+              {form.oneSize ? (
+                <div className="mt-3">
+                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Stock
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.oneSizeStock}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        oneSizeStock: Math.max(1, Number(e.target.value) || 1),
+                      })
+                    }
+                    className="mt-1 h-10 w-32 rounded-md border border-border bg-background px-3 text-[13px]"
+                  />
                 </div>
-              ))}
-              {form.images.length < 6 && (
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-card text-xs text-muted-foreground hover:border-primary">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload size={16} /><span className="mt-1">Carregar</span></>}
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
-                </label>
+              ) : (
+                <>
+                  <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Stock por tamanho
+                  </p>
+                  <div className="mt-2 grid grid-cols-5 gap-2">
+                    {SIZE_OPTIONS.map((s) => (
+                      <div
+                        key={s}
+                        className="flex flex-col items-center rounded-md border border-border bg-background p-2"
+                      >
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {s}
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.sizes[s]}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              sizes: {
+                                ...form.sizes,
+                                [s]: Math.max(0, Number(e.target.value) || 0),
+                              },
+                            })
+                          }
+                          className="mt-1 w-full rounded border border-border bg-background px-1 py-1 text-center text-[13px]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
+            </div>
+
+            {isEdit && liveSizes.length > 0 && (
+              <div className="rounded-md border border-border bg-muted/30 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Reservas manuais
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Marca como reservado para reservas presenciais.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {liveSizes.map((s) => {
+                    const available = s.stock - s.reserved;
+                    return (
+                      <div
+                        key={s.size}
+                        className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 font-medium">{s.size}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            stock {s.stock} · reservado {s.reserved} · livre {available}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => adjust(s.size, -1)}
+                            disabled={s.reserved <= 0}
+                            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-40"
+                          >
+                            <Minus size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => adjust(s.size, 1)}
+                            disabled={available <= 0}
+                            className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+                          >
+                            <Plus size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Imagens (até 6)
+              </p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {form.images.map((url, i) => (
+                  <div
+                    key={url}
+                    className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                  >
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          images: form.images.filter((_, idx) => idx !== i),
+                        })
+                      }
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+                {form.images.length < 6 && (
+                  <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border bg-card text-[11px] text-muted-foreground hover:border-primary">
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload size={14} />
+                        <span className="mt-1">Carregar</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => upload(e.target.files)}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={onClose} className="rounded-full px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground">Cancelar</button>
-          <button onClick={submit} disabled={saving} className="rounded-full bg-primary px-6 py-2.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-full px-5 py-2 text-[13px] text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          {!isEdit && (
+            <button
+              onClick={() => submit(true)}
+              disabled={saving}
+              className="rounded-full border border-border bg-background px-5 py-2 text-[13px] text-foreground hover:bg-muted disabled:opacity-60"
+            >
+              Guardar e adicionar outro
+            </button>
+          )}
+          <button
+            onClick={() => submit(false)}
+            disabled={saving}
+            className="rounded-full bg-primary px-6 py-2 text-[13px] text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
             {saving ? "A guardar…" : "Guardar"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </label>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+function PreviewCard({
+  brand,
+  name,
+  price,
+  originalPrice,
+  discountPercent,
+  image,
+  season,
+}: {
+  brand: string;
+  name: string;
+  price: number;
+  originalPrice: number | null;
+  discountPercent: number;
+  image: string | null;
+  season: string;
+}) {
+  const hasDiscount = discountPercent > 0;
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="relative aspect-[4/5] w-full bg-muted">
+        {image ? (
+          <img src={image} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+            <ImageOff size={28} strokeWidth={1.5} />
+          </div>
+        )}
+        {hasDiscount && (
+          <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white">
+            −{discountPercent}%
+          </span>
+        )}
+      </div>
+      <div className="p-3">
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
+            {brand || "Marca"}
+          </p>
+          {season && (
+            <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
+              {season}
+            </span>
+          )}
+        </div>
+        <h3 className="mt-1.5 font-display text-base font-light italic leading-tight text-foreground">
+          {name || "Nome do produto"}
+        </h3>
+        {originalPrice != null && originalPrice !== price ? (
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-sm font-light text-muted-foreground line-through">
+              €{originalPrice}
+            </span>
+            <span className="text-sm font-light text-primary">€{price}</span>
+          </div>
+        ) : (
+          <p className="mt-1.5 text-sm font-light text-foreground">€{price || 0}</p>
+        )}
       </div>
     </div>
   );
