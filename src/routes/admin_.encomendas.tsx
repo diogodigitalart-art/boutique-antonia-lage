@@ -133,8 +133,8 @@ function OrdersPage() {
               {orders.map((o) => {
                 const open = openId === o.id;
                 return (
-                  <>
-                    <tr key={o.id} className="border-b border-border last:border-0">
+                  <FragmentRows key={o.id}>
+                    <tr className="border-b border-border last:border-0">
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         #{o.id.slice(0, 8)}
                       </td>
@@ -214,7 +214,7 @@ function OrdersPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </FragmentRows>
                 );
               })}
             </tbody>
