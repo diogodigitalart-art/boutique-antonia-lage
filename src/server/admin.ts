@@ -74,6 +74,8 @@ export type AdminPayload = {
     totalUsers: number;
     totalReservations: number;
     totalContactMessages: number;
+    totalOrders: number;
+    revenueMonth: number;
   };
 };
 
@@ -87,7 +89,7 @@ export const getAdminData = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminPayload> => {
     await assertAdmin(data.token);
 
-    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes, feedbackRes] = await Promise.all([
+    const [profilesRes, reservationsRes, wishlistRes, quizRes, contactsRes, blockedRes, feedbackRes, ordersRes] = await Promise.all([
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, phone, profile_details, created_at")
@@ -104,6 +106,9 @@ export const getAdminData = createServerFn({ method: "POST" })
         .from("feedback")
         .select("id, user_id, reservation_id, rating, piece_match, return_intent, wish_list_text, created_at")
         .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("orders")
+        .select("id, total, created_at, status"),
     ]);
 
     if (profilesRes.error) throw new Error(profilesRes.error.message);
@@ -113,6 +118,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     if (contactsRes.error) throw new Error(contactsRes.error.message);
     if (blockedRes.error) throw new Error(blockedRes.error.message);
     if (feedbackRes.error) throw new Error(feedbackRes.error.message);
+    if (ordersRes.error) throw new Error(ordersRes.error.message);
 
     const profiles = profilesRes.data ?? [];
     const reservations = reservationsRes.data ?? [];
@@ -121,6 +127,17 @@ export const getAdminData = createServerFn({ method: "POST" })
     const contacts = contactsRes.data ?? [];
     const blockedSlots = blockedRes.data ?? [];
     const feedback = feedbackRes.data ?? [];
+    const orders = ordersRes.data ?? [];
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const revenueMonth = orders
+      .filter((o) => {
+        if (o.status === "Cancelada") return false;
+        const d = new Date(o.created_at);
+        return d >= monthStart;
+      })
+      .reduce((s, o) => s + Number(o.total ?? 0), 0);
 
     // Build a product lookup so wishlist UUIDs / legacy IDs resolve to labels.
     const { data: productsData } = await supabaseAdmin
@@ -208,6 +225,8 @@ export const getAdminData = createServerFn({ method: "POST" })
         totalUsers: profiles.length,
         totalReservations: reservations.length,
         totalContactMessages: contacts.length,
+        totalOrders: orders.length,
+        revenueMonth,
       },
     };
   });

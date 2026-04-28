@@ -127,7 +127,9 @@ function CheckoutPage() {
   const zone: Zone =
     COUNTRIES.find((c) => c.code === address.country)?.zone ?? "PT_CONT";
   const shipping = shippingForZone(subtotal, zone);
-  const total = subtotal + shipping;
+  // Shipping is only "known" once user reaches the address step
+  const shippingKnown = step >= 2;
+  const total = subtotal + (shippingKnown ? shipping : 0);
 
   const canSubmitAddress =
     address.full_name.trim().length > 1 &&
@@ -157,7 +159,7 @@ function CheckoutPage() {
       line_total: e.lineTotal,
     }));
     try {
-      await createOrderFn({
+      const result = await createOrderFn({
         data: {
           token,
           items: itemsPayload,
@@ -178,7 +180,10 @@ function CheckoutPage() {
       });
       await clear();
       toast.success("Encomenda registada. Entraremos em contacto.");
-      router.navigate({ to: "/perfil" });
+      router.navigate({
+        to: "/encomenda-confirmada/$orderId",
+        params: { orderId: result.orderId },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível registar a encomenda.");
     }
@@ -380,16 +385,24 @@ function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <dt>Envio</dt>
-                  <dd>{shipping === 0 ? "Grátis" : `€${shipping.toFixed(2)}`}</dd>
+                  <dd>
+                    {!shippingKnown
+                      ? "Calculado no próximo passo"
+                      : shipping === 0
+                        ? "Grátis"
+                        : `€${shipping.toFixed(2)}`}
+                  </dd>
                 </div>
-                {zone === "PT_CONT" && shipping > 0 && (
+                {shippingKnown && zone === "PT_CONT" && shipping > 0 && (
                   <p className="text-[11px] text-muted-foreground">
                     Envio grátis em encomendas acima de €{FREE_SHIPPING_THRESHOLD}.
                   </p>
                 )}
               </dl>
               <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                <span className="text-sm uppercase tracking-wider text-muted-foreground">Total</span>
+                <span className="text-sm uppercase tracking-wider text-muted-foreground">
+                  {shippingKnown ? "Total" : "Subtotal"}
+                </span>
                 <span className="font-display text-2xl italic">€{total.toFixed(2)}</span>
               </div>
             </div>

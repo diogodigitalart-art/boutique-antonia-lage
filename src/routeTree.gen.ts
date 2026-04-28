@@ -26,6 +26,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
+import { Route as EncomendaConfirmadaOrderIdRouteImport } from './routes/encomenda-confirmada.$orderId'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
@@ -120,6 +121,12 @@ const FeedbackIdRoute = FeedbackIdRouteImport.update({
   path: '/feedback/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EncomendaConfirmadaOrderIdRoute =
+  EncomendaConfirmadaOrderIdRouteImport.update({
+    id: '/encomenda-confirmada/$orderId',
+    path: '/encomenda-confirmada/$orderId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
@@ -212,6 +220,7 @@ export interface FileRoutesByTo {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
@@ -240,6 +249,7 @@ export interface FileRoutesById {
   '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
+    | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
     | '/api/public/hooks/send-followups'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
+    | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
     | '/api/public/hooks/send-followups'
@@ -323,6 +335,7 @@ export interface FileRouteTypes {
     | '/admin_/relatorios'
     | '/admin_/reservas'
     | '/auth/callback'
+    | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
     | '/api/public/hooks/send-followups'
@@ -351,6 +364,7 @@ export interface RootRouteChildren {
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  EncomendaConfirmadaOrderIdRoute: typeof EncomendaConfirmadaOrderIdRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiPublicHooksSendFollowupsRoute: typeof ApiPublicHooksSendFollowupsRoute
@@ -477,6 +491,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedbackIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/encomenda-confirmada/$orderId': {
+      id: '/encomenda-confirmada/$orderId'
+      path: '/encomenda-confirmada/$orderId'
+      fullPath: '/encomenda-confirmada/$orderId'
+      preLoaderRoute: typeof EncomendaConfirmadaOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -559,6 +580,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminReservasRoute: AdminReservasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  EncomendaConfirmadaOrderIdRoute: EncomendaConfirmadaOrderIdRoute,
   FeedbackIdRoute: FeedbackIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiPublicHooksSendFollowupsRoute: ApiPublicHooksSendFollowupsRoute,
