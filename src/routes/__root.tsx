@@ -5,6 +5,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { WishlistProvider } from "@/lib/wishlist";
 import { AuthProvider } from "@/lib/auth";
 import { ProductsProvider } from "@/lib/products";
+import { CartProvider } from "@/lib/cart";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -87,8 +88,10 @@ function RootComponent() {
       <AuthProvider>
         <ProductsProvider>
           <WishlistProvider>
-            <Outlet />
-            <Toaster position="top-center" />
+            <CartProvider>
+              <Outlet />
+              <Toaster position="top-center" />
+            </CartProvider>
           </WishlistProvider>
         </ProductsProvider>
       </AuthProvider>

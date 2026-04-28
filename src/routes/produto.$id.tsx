@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ReservationModal } from "@/components/ReservationModal";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { useCart } from "@/lib/cart";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
@@ -38,6 +39,7 @@ function ProductPage() {
   const { has, toggle } = useWishlist();
   const { t } = useI18n();
   const { session } = useAuth();
+  const { add: addToCart } = useCart();
   const isOneSize =
     !!product && product.sizes.length === 1 && product.sizes[0] === "U";
   const [size, setSize] = useState<string | null>(isOneSize ? "U" : null);
@@ -87,6 +89,25 @@ function ProductPage() {
       return;
     }
     next();
+  };
+
+  const handleBuy = async () => {
+    if (!size) {
+      toast.error("Por favor selecciona um tamanho.");
+      return;
+    }
+    await addToCart({
+      product_id: product.id,
+      product_uuid: product.uuid ?? null,
+      size,
+      quantity: 1,
+    });
+    toast.success("Adicionado ao carrinho", {
+      action: {
+        label: "Ver carrinho",
+        onClick: () => router.navigate({ to: "/carrinho" }),
+      },
+    });
   };
 
   const related = products.filter((p) => p.id !== product.id && p.brand === product.brand).slice(
@@ -211,7 +232,7 @@ function ProductPage() {
           {/* Actions — stacked full-width, Comprar primary first */}
           <div className="mt-8 flex flex-col gap-3">
             <button
-              onClick={() => requireAuth(() => setReserveOpen(true))}
+              onClick={() => void handleBuy()}
               className="flex h-14 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground transition hover:bg-primary/90"
             >
               Comprar

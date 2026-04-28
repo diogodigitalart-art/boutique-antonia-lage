@@ -1,12 +1,14 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Search, User, Heart } from "lucide-react";
+import { Search, User, Heart, ShoppingBag } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
+import { useCart } from "@/lib/cart";
 import { Logo } from "./Logo";
 
 export function TopNav() {
   const { lang, setLang, t } = useI18n();
   const { ids } = useWishlist();
+  const { count: cartCount } = useCart();
   const loc = useLocation();
   const hasWish = ids.length > 0;
 
@@ -68,6 +70,18 @@ export function TopNav() {
             <Heart size={19} strokeWidth={1.5} />
             {hasWish && (
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+            )}
+          </Link>
+          <Link
+            to="/carrinho"
+            aria-label="Carrinho"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted"
+          >
+            <ShoppingBag size={19} strokeWidth={1.5} />
+            {cartCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-medium text-primary-foreground ring-2 ring-background">
+                {cartCount}
+              </span>
             )}
           </Link>
           <Link
