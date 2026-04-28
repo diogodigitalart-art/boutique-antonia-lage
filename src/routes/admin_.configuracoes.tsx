@@ -1,10 +1,9 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Layout } from "@/components/Layout";
-import { useAuth } from "@/lib/auth";
+import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   adminListBrands,
@@ -15,37 +14,16 @@ import {
   adminDeleteSeason,
 } from "@/server/products";
 
-const ADMIN_EMAIL = "diogodigitalart@gmail.com";
-
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),
-  component: AdminSettingsPage,
+  component: () => (
+    <AdminLayout>
+      <Content />
+    </AdminLayout>
+  ),
 });
 
 type Row = { id: string; name: string };
-
-function AdminSettingsPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (loading) return;
-    if (!user || (user.email || "").toLowerCase() !== ADMIN_EMAIL) {
-      navigate({ to: "/", replace: true });
-    }
-  }, [user, loading, navigate]);
-  if (loading || !user || (user.email || "").toLowerCase() !== ADMIN_EMAIL) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-  return (
-    <Layout>
-      <Content />
-    </Layout>
-  );
-}
 
 async function getToken(): Promise<string> {
   const { data } = await supabase.auth.getSession();
@@ -56,13 +34,11 @@ async function getToken(): Promise<string> {
 
 function Content() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 md:py-16">
-      <div className="mb-8">
-        <Link to="/admin" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={14} /> Admin
-        </Link>
-        <h1 className="mt-2 font-display text-3xl italic md:text-4xl">Configurações</h1>
-      </div>
+    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8 md:py-10">
+      <header className="mb-8">
+        <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Admin</p>
+        <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Configurações</h1>
+      </header>
 
       <div className="space-y-8">
         <ManagedList

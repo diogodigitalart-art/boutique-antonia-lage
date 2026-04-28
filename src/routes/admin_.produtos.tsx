@@ -1,8 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Layout } from "@/components/Layout";
-import { useAuth } from "@/lib/auth";
+import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { BRANDS } from "@/lib/data";
 import {
@@ -11,7 +10,6 @@ import {
   Pencil,
   Trash2,
   Search,
-  ArrowLeft,
   Upload,
   X,
   ChevronDown,
@@ -31,7 +29,6 @@ import {
   adminListSeasons,
 } from "@/server/products";
 
-const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
 const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "colecção", label: "Colecção" },
@@ -40,7 +37,11 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
 
 export const Route = createFileRoute("/admin_/produtos")({
   head: () => ({ meta: [{ title: "Gestão de produtos | Admin" }] }),
-  component: AdminProductsPage,
+  component: () => (
+    <AdminLayout>
+      <Content />
+    </AdminLayout>
+  ),
 });
 
 type ProductSize = { size: string; stock: number; reserved: number };
@@ -61,29 +62,6 @@ type ProductRow = {
   created_at: string;
 };
 type BrandRow = { id: string; name: string };
-
-function AdminProductsPage() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (loading) return;
-    if (!user || (user.email || "").toLowerCase() !== ADMIN_EMAIL) {
-      navigate({ to: "/", replace: true });
-    }
-  }, [user, loading, navigate]);
-  if (loading || !user || (user.email || "").toLowerCase() !== ADMIN_EMAIL) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-  return (
-    <Layout>
-      <Content />
-    </Layout>
-  );
-}
 
 async function getToken(): Promise<string> {
   const { data } = await supabase.auth.getSession();
@@ -178,13 +156,11 @@ function Content() {
   const seasonNames = useMemo(() => seasons.map((s) => s.name), [seasons]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
+    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <Link to="/admin" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <ArrowLeft size={14} /> Admin
-          </Link>
-          <h1 className="mt-2 font-display text-3xl italic md:text-4xl">Produtos</h1>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Admin</p>
+          <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Produtos</h1>
         </div>
         <button
           onClick={() => setCreating(true)}
