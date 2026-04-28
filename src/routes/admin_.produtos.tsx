@@ -156,13 +156,11 @@ function Content() {
   const seasonNames = useMemo(() => seasons.map((s) => s.name), [seasons]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 md:py-16">
+    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <Link to="/admin" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <ArrowLeft size={14} /> Admin
-          </Link>
-          <h1 className="mt-2 font-display text-3xl italic md:text-4xl">Produtos</h1>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Admin</p>
+          <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Produtos</h1>
         </div>
         <button
           onClick={() => setCreating(true)}
