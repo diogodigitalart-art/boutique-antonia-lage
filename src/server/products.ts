@@ -15,6 +15,17 @@ function s(v: unknown): v is string {
   return typeof v === "string";
 }
 
+function normalizeBarcodeServer(raw: unknown): string | null {
+  if (raw == null) return null;
+  const v = String(raw).trim();
+  if (!v) return null;
+  if (/e[+-]?\d+/i.test(v)) {
+    const n = Number(v.replace(",", "."));
+    if (Number.isFinite(n)) return Math.round(n).toLocaleString("fullwide", { useGrouping: false });
+  }
+  return v;
+}
+
 export type AdminProductSize = { size: string; stock: number; reserved: number };
 
 export type AdminProductPayload = {
@@ -66,7 +77,7 @@ function parsePayload(input: unknown): AdminProductPayload {
     images,
     sizes,
     is_active: Boolean(i.is_active),
-    barcode: s(i.barcode) && (i.barcode as string).trim() ? (i.barcode as string).trim() : null,
+    barcode: normalizeBarcodeServer(i.barcode),
     cost_price:
       i.cost_price == null || i.cost_price === "" ? null : Number(i.cost_price),
   };
