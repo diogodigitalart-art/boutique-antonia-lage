@@ -215,6 +215,22 @@ function ReservasContent() {
                           </option>
                         ))}
                       </select>
+                      {r.status === "Em visita" && r.product_id && r.product_size && (
+                        <button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Marcar "${r.item_name}" (${r.product_size}) como vendido? Isto retira a peça do inventário.`,
+                              )
+                            ) {
+                              handleStatusChange(r.id, "Vendida");
+                            }
+                          }}
+                          className="ml-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-emerald-700 hover:bg-emerald-100"
+                        >
+                          Marcar como vendido
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
