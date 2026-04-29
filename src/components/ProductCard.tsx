@@ -21,7 +21,7 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
       <Link
         to="/produto/$id"
         params={{ id: product.id }}
-        className="block overflow-hidden rounded-2xl bg-cream ring-[0.5px] ring-black/5"
+        className="block overflow-hidden rounded-2xl bg-photo-bg ring-[0.5px] ring-black/5"
       >
         <div className="relative aspect-[4/5] w-full overflow-hidden">
           <img
