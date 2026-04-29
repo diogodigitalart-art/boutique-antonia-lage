@@ -358,7 +358,7 @@ function Content() {
                   <th className="px-3 py-2.5">Season</th>
                   <th className="px-3 py-2.5">Categoria</th>
                   <th className="px-3 py-2.5 text-right">Preço</th>
-                  <th className="px-3 py-2.5 text-right">Stock</th>
+                  <th className="px-3 py-2.5">Tamanhos / Stock</th>
                   <th className="px-3 py-2.5">Estado</th>
                   <th className="w-12 px-3 py-2.5"></th>
                 </tr>
@@ -366,10 +366,15 @@ function Content() {
               <tbody>
                 {filtered.map((r) => {
                   const sizes = Array.isArray(r.sizes) ? r.sizes : [];
-                  const totalStock = sizes.reduce(
-                    (a, s) => a + Math.max(0, s.stock - s.reserved),
-                    0,
-                  );
+                  const sizesSummary =
+                    sizes.length > 0
+                      ? sizes
+                          .map(
+                            (s) =>
+                              `${s.size}:${Math.max(0, s.stock - s.reserved)}`,
+                          )
+                          .join(" ")
+                      : "—";
                   const cover = r.images?.[0];
                   const isSel = selected.has(r.id);
                   return (
@@ -418,8 +423,8 @@ function Content() {
                         {r.category}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">€{r.price}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                        {totalStock}
+                      <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                        {sizesSummary}
                       </td>
                       <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                         <button
