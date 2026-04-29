@@ -688,16 +688,11 @@ function ProductForm({
   const upsertFn = useServerFn(adminUpsertProduct);
   const uploadFn = useServerFn(adminUploadProductImage);
 
-  const initialSizes: Record<string, number> = {};
-  SIZE_OPTIONS.forEach((s) => {
-    initialSizes[s] = 0;
-  });
   const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
-  existingSizes.forEach((s) => {
-    if (SIZE_OPTIONS.includes(s.size as never)) initialSizes[s.size] = s.stock;
-  });
-
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
+  const initialSizesList: Array<{ size: string; stock: number }> = isOneSize
+    ? []
+    : existingSizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 }));
   const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
 
   const knownBrand = !row || brandOptions.includes(row.brand);
@@ -717,7 +712,7 @@ function ProductForm({
           season: row.season ?? "",
           is_active: row.is_active,
           oneSize: isOneSize,
-          sizes: initialSizes,
+          sizes: initialSizesList,
           oneSizeStock,
           images: row.images ?? [],
         }
