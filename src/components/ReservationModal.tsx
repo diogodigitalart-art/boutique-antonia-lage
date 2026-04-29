@@ -111,6 +111,10 @@ export function ReservationModal({
       toast.error("Selecciona uma data.");
       return;
     }
+    if (itemType === "experiencia" && payload.date < minDate) {
+      toast.error("As experiências requerem 3 dias de antecedência.");
+      return;
+    }
     if (isSunday(payload.date)) {
       toast.error("A boutique está fechada ao Domingo.");
       return;
