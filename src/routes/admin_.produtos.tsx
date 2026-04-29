@@ -35,11 +35,37 @@ import {
   adminAdjustStockByBarcode,
 } from "@/server/products";
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
 const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "colecção", label: "Colecção" },
   { value: "arquivo", label: "Arquivo" },
 ];
+
+const SIZE_PRESETS: Array<{ label: string; sizes: string[] }> = [
+  { label: "XS S M L XL", sizes: ["XS", "S", "M", "L", "XL"] },
+  { label: "XXS XS S M L XL XXL", sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL"] },
+  { label: "34 36 38 40 42 44 46", sizes: ["34", "36", "38", "40", "42", "44", "46"] },
+  { label: "36 38 40 42 44 46 48 50", sizes: ["36", "38", "40", "42", "44", "46", "48", "50"] },
+  { label: "4 6 8 10 12 14 16 18", sizes: ["4", "6", "8", "10", "12", "14", "16", "18"] },
+  { label: "00 0 2 4 6 8 10 12 14 16", sizes: ["00", "0", "2", "4", "6", "8", "10", "12", "14", "16"] },
+];
+
+// Convert values like "5,05994E+12" or "5.05994E+12" to a plain integer string.
+// Returns the original trimmed string when it's already a plain non-scientific value.
+export function normalizeBarcode(raw: string | null | undefined): string {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  // Detect scientific notation (with comma or dot decimal)
+  if (/e[+-]?\d+/i.test(s)) {
+    const normalized = s.replace(",", ".");
+    const n = Number(normalized);
+    if (Number.isFinite(n)) {
+      // Use toFixed(0) to avoid scientific notation in the result
+      return Math.round(n).toLocaleString("fullwide", { useGrouping: false });
+    }
+  }
+  return s;
+}
 
 export const Route = createFileRoute("/admin_/produtos")({
   head: () => ({ meta: [{ title: "Gestão de produtos | Admin" }] }),
