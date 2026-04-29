@@ -201,18 +201,20 @@ function Content() {
           <h1 className="font-display text-2xl italic md:text-3xl">Produtos</h1>
           <span className="text-xs text-muted-foreground">{filtered.length} produtos</span>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus size={16} /> Adicionar produto
-        </button>
-        <button
-          onClick={() => setImporting(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
-        >
-          <FileSpreadsheet size={16} /> Importar produtos
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setImporting(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
+          >
+            <FileSpreadsheet size={16} /> Importar produtos
+          </button>
+          <button
+            onClick={() => setCreating(true)}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus size={16} /> Adicionar produto
+          </button>
+        </div>
       </div>
 
       <BrandsSection
