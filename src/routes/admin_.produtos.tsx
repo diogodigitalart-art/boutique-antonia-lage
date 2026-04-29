@@ -1830,6 +1830,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const manualInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<unknown>(null);
   const lastScanRef = useRef<{ code: string; ts: number }>({ code: "", ts: 0 });
@@ -1953,6 +1954,9 @@ function ScanModal({ onClose }: { onClose: () => void }) {
     if (!code) return;
     submitBarcode(code);
     setManual("");
+    // Re-focus so physical scanners (which act as keyboards and send Enter)
+    // can chain multiple scans without the user touching the input.
+    setTimeout(() => manualInputRef.current?.focus(), 0);
   };
 
   return (
