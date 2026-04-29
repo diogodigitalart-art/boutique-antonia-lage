@@ -31,6 +31,8 @@ export type AdminUser = {
     item_name: string;
     item_type: string;
     product_name: string;
+    product_id: string | null;
+    product_size: string | null;
     customer_name: string;
     customer_email: string;
     customer_phone: string;
@@ -195,6 +197,8 @@ export const getAdminData = createServerFn({ method: "POST" })
           item_name: r.item_name,
           item_type: r.item_type,
           product_name: r.product_name,
+          product_id: (r as { product_id?: string | null }).product_id ?? null,
+          product_size: (r as { product_size?: string | null }).product_size ?? null,
           customer_name: r.customer_name,
           customer_email: r.customer_email,
           customer_phone: r.customer_phone,
