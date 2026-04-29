@@ -702,7 +702,7 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
-          barcode: row.barcode ?? "",
+          barcode: normalizeBarcode(row.barcode ?? ""),
           description: row.description,
           price: String(row.price),
           cost_price: row.cost_price != null ? String(row.cost_price) : "",
