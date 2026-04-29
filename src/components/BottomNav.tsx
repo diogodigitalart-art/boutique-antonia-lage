@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Compass, Heart, User } from "lucide-react";
+import { Home, ShoppingBag, Compass, Heart, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 export function BottomNav() {
@@ -7,6 +7,7 @@ export function BottomNav() {
   const { t } = useI18n();
   const items = [
     { to: "/", icon: Home, label: t("bottom_home") },
+    { to: "/coleccao", icon: ShoppingBag, label: t("tab_collection") },
     { to: "/experiencias", icon: Compass, label: t("bottom_explore") },
     { to: "/wishlist", icon: Heart, label: t("bottom_wishlist") },
     { to: "/perfil", icon: User, label: t("bottom_profile") },

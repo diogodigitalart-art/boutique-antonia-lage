@@ -73,6 +73,7 @@
   --color-ring: var(--ring);
   --color-cream: var(--cream);
   --color-ink: var(--ink);
+  --color-photo-bg: var(--photo-bg);
 }
 
 :root {
@@ -80,6 +81,7 @@
 
   /* Brand palette — warm cream + azulejo blue */
   --cream: oklch(0.965 0.012 85);            /* #F7F4F0 */
+  --photo-bg: oklch(0.935 0.008 80);          /* #F0EDE8 */
   --ink: oklch(0.18 0 0);                     /* #1A1A1A */
   --background: oklch(0.965 0.012 85);
   --foreground: oklch(0.18 0 0);

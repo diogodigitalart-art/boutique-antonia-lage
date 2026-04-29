@@ -12,8 +12,8 @@ export function TopNav() {
   const loc = useLocation();
   const hasWish = ids.length > 0;
 
-  const tabs: { to: "/" | "/experiencias" | "/arquivo"; label: string; match: string; badge?: boolean }[] = [
-    { to: "/", label: t("tab_collection"), match: "/" },
+  const tabs: { to: "/" | "/coleccao" | "/experiencias" | "/arquivo"; label: string; match: string; badge?: boolean }[] = [
+    { to: "/coleccao", label: t("tab_collection"), match: "/coleccao" },
     { to: "/experiencias", label: t("tab_experiences"), match: "/experiencias", badge: true },
     { to: "/arquivo", label: t("tab_archive"), match: "/arquivo" },
   ];
