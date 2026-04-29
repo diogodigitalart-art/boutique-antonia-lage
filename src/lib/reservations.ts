@@ -33,7 +33,6 @@ export type ReservationStatus =
 export const STATUS_OPTIONS: ReservationStatus[] = [
   "Confirmada",
   "Em visita",
-  "Vendida",
   "Cancelada",
 ];
 
