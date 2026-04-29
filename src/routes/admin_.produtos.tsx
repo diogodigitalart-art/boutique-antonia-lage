@@ -2035,6 +2035,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
           <form onSubmit={onManualSubmit} className="mb-4 flex gap-2">
             <input
               autoFocus
+              ref={manualInputRef}
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               placeholder="Inserir código de barras manualmente…"
