@@ -749,12 +749,12 @@ function ProductForm({
       sizesPayload = [
         {
           size: "U",
-          stock: Math.max(1, form.oneSizeStock || 1),
+          stock: Math.max(0, form.oneSizeStock || 0),
           reserved: liveU?.reserved ?? 0,
         },
       ];
     } else {
-      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] > 0).map((s) => {
+      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] >= 0 && form.sizes[s] > 0).map((s) => {
         const live = liveSizes.find((x) => x.size === s);
         return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
       });
@@ -771,8 +771,10 @@ function ProductForm({
             brand: form.brand.trim(),
             name: form.name.trim(),
             reference: form.reference.trim(),
+            barcode: form.barcode.trim() || null,
             description: form.description.trim(),
             price: Number(form.price),
+            cost_price: form.cost_price ? Number(form.cost_price) : null,
             original_price: form.original_price ? Number(form.original_price) : null,
             discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
