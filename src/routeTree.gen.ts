@@ -19,6 +19,7 @@ import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
 import { Route as ContactosRouteImport } from './routes/contactos'
+import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as ArquivoRouteImport } from './routes/arquivo'
@@ -84,6 +85,11 @@ const ExperienciasRoute = ExperienciasRouteImport.update({
 const ContactosRoute = ContactosRouteImport.update({
   id: '/contactos',
   path: '/contactos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ColeccaoRoute = ColeccaoRouteImport.update({
+  id: '/coleccao',
+  path: '/coleccao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/arquivo'
     | '/carrinho'
     | '/checkout'
+    | '/coleccao'
     | '/contactos'
     | '/experiencias'
     | '/login'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/arquivo'
     | '/carrinho'
     | '/checkout'
+    | '/coleccao'
     | '/contactos'
     | '/experiencias'
     | '/login'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/arquivo'
     | '/carrinho'
     | '/checkout'
+    | '/coleccao'
     | '/contactos'
     | '/experiencias'
     | '/login'
@@ -347,6 +359,7 @@ export interface RootRouteChildren {
   ArquivoRoute: typeof ArquivoRoute
   CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
+  ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
@@ -440,6 +453,13 @@ declare module '@tanstack/react-router' {
       path: '/contactos'
       fullPath: '/contactos'
       preLoaderRoute: typeof ContactosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/coleccao': {
+      id: '/coleccao'
+      path: '/coleccao'
+      fullPath: '/coleccao'
+      preLoaderRoute: typeof ColeccaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -563,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArquivoRoute: ArquivoRoute,
   CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
+  ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,

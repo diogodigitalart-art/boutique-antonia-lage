@@ -30,9 +30,10 @@ function HomePage() {
   const { t } = useI18n();
   const { products } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
-  const newArrivals = products.filter((p) => p.category === "new").filter(
+  const newArrivalsAll = products.filter((p) => p.category === "new").filter(
     (p) => activeBrand === "Todas" || p.brand === activeBrand,
   );
+  const newArrivals = newArrivalsAll.slice(0, 8);
   const archive = products.filter((p) => p.category === "archive");
 
   return (
@@ -113,10 +114,10 @@ function HomePage() {
               {t("new_arrivals")}
             </h2>
             <Link
-              to="/arquivo"
+              to="/coleccao"
               className="hidden items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground md:flex"
             >
-              Ver tudo <ChevronRight size={16} />
+              Ver toda a colecção <ChevronRight size={16} />
             </Link>
           </div>
 
@@ -125,6 +126,14 @@ function HomePage() {
             {newArrivals.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
+          </div>
+          <div className="mt-10 flex justify-center md:hidden">
+            <Link
+              to="/coleccao"
+              className="inline-flex items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground"
+            >
+              Ver toda a colecção <ChevronRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
