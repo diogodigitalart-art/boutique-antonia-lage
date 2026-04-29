@@ -32,6 +32,7 @@ export type AdminProductPayload = {
   sizes: AdminProductSize[];
   is_active: boolean;
   barcode?: string | null;
+  cost_price?: number | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -66,6 +67,8 @@ function parsePayload(input: unknown): AdminProductPayload {
     sizes,
     is_active: Boolean(i.is_active),
     barcode: s(i.barcode) && (i.barcode as string).trim() ? (i.barcode as string).trim() : null,
+    cost_price:
+      i.cost_price == null || i.cost_price === "" ? null : Number(i.cost_price),
   };
 }
 
@@ -111,6 +114,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       sizes: p.sizes,
       is_active: p.is_active,
       barcode: p.barcode ?? null,
+      cost_price: p.cost_price ?? null,
     };
     if (p.id) {
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
