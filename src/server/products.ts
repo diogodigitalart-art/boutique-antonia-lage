@@ -31,6 +31,7 @@ export type AdminProductPayload = {
   images: string[];
   sizes: AdminProductSize[];
   is_active: boolean;
+  barcode?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -64,6 +65,7 @@ function parsePayload(input: unknown): AdminProductPayload {
     images,
     sizes,
     is_active: Boolean(i.is_active),
+    barcode: s(i.barcode) && (i.barcode as string).trim() ? (i.barcode as string).trim() : null,
   };
 }
 
@@ -108,6 +110,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       images: p.images,
       sizes: p.sizes,
       is_active: p.is_active,
+      barcode: p.barcode ?? null,
     };
     if (p.id) {
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);

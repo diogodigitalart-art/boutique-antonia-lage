@@ -1243,14 +1243,19 @@ type ParsedRow = {
   season: string | null;
   description: string;
   sizes: ProductSize[];
+  barcodes: string[];
   _error?: string;
 };
 
+// Farfetch-style export: semicolon-separated, one row per SKU (size).
+// Multiple sizes of the same product share the same "Brand product ID".
 const CSV_TEMPLATE =
-  "brand,name,reference,price,original_price,category,season,description,size_xs,size_s,size_m,size_l,size_xl\n" +
-  "Self-Portrait,Vestido midi,SP-001,420,,colecção,SS26,Vestido em renda,0,1,2,1,0\n";
+  "Brand;Brand product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
+  "Self-Portrait;SP-001;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
+  "Self-Portrait;SP-001;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
+  "Self-Portrait;SP-001;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
 
-function parseCsv(text: string): string[][] {
+function parseCsv(text: string, delimiter: string = ";"): string[][] {
   const rows: string[][] = [];
   let cur = "";
   let row: string[] = [];
@@ -1268,7 +1273,7 @@ function parseCsv(text: string): string[][] {
       }
     } else {
       if (ch === '"') inQuotes = true;
-      else if (ch === ",") {
+      else if (ch === delimiter) {
         row.push(cur);
         cur = "";
       } else if (ch === "\n" || ch === "\r") {
@@ -1287,51 +1292,85 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
+function detectDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/, 1)[0] || "";
+  const sc = (firstLine.match(/;/g) || []).length;
+  const cm = (firstLine.match(/,/g) || []).length;
+  return sc >= cm ? ";" : ",";
+}
+
+function categoryLabel(raw: string): string {
+  if (!raw) return "";
+  const parts = raw.split(">").map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return parts.slice(-2).join(" - ");
+}
+
 function rowsToProducts(matrix: string[][]): ParsedRow[] {
   if (matrix.length < 2) return [];
   const header = matrix[0].map((h) => h.trim().toLowerCase());
-  const idx = (k: string) => header.indexOf(k);
-  const out: ParsedRow[] = [];
+  const findIdx = (...keys: string[]) => {
+    for (const k of keys) {
+      const j = header.indexOf(k.toLowerCase());
+      if (j >= 0) return j;
+    }
+    return -1;
+  };
+  const iBrand = findIdx("brand");
+  const iRef = findIdx("brand product id", "reference");
+  const iSeason = findIdx("season");
+  const iPrice = findIdx("local market price", "price");
+  const iStock = findIdx("stock available", "stock");
+  const iSize = findIdx("size");
+  const iCat = findIdx("category");
+  const iBarcode = findIdx("partner barcode", "barcode");
+
+  const grouped = new Map<string, ParsedRow>();
   for (let i = 1; i < matrix.length; i++) {
     const r = matrix[i];
-    const get = (k: string) => {
-      const j = idx(k);
-      return j >= 0 ? (r[j] ?? "").trim() : "";
-    };
-    const brand = get("brand");
-    const name = get("name");
-    const reference = get("reference");
-    const priceStr = get("price");
-    const originalStr = get("original_price");
-    const category = (get("category") || "colecção").toLowerCase();
-    const season = get("season");
-    const description = get("description");
-    const sizes: ProductSize[] = [];
-    (["xs", "s", "m", "l", "xl"] as const).forEach((s) => {
-      const v = Number(get(`size_${s}`));
-      if (Number.isFinite(v) && v > 0) {
-        sizes.push({ size: s.toUpperCase(), stock: Math.floor(v), reserved: 0 });
-      }
-    });
+    const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
+    const brand = cell(iBrand);
+    const reference = cell(iRef);
+    if (!brand && !reference) continue;
+    const priceStr = cell(iPrice).replace(",", ".");
+    const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
+    const size = cell(iSize).toUpperCase();
+    const season = cell(iSeason);
+    const catLabel = categoryLabel(cell(iCat));
+    const barcode = cell(iBarcode);
+
+    const key = reference || `${brand}::${i}`;
+    let row = grouped.get(key);
+    if (!row) {
+      row = {
+        brand,
+        name: reference || brand,
+        reference,
+        price: Number(priceStr) || 0,
+        original_price: null,
+        category: "colecção",
+        season: season || null,
+        description: catLabel,
+        sizes: [],
+        barcodes: [],
+      };
+      grouped.set(key, row);
+    }
+    if (size && stock > 0) {
+      const existing = row.sizes.find((s) => s.size === size);
+      if (existing) existing.stock += stock;
+      else row.sizes.push({ size, stock, reserved: 0 });
+    }
+    if (barcode && !row.barcodes.includes(barcode)) row.barcodes.push(barcode);
+  }
+
+  const out: ParsedRow[] = [];
+  for (const row of grouped.values()) {
     let _error: string | undefined;
-    if (!brand) _error = "marca em falta";
-    else if (!name) _error = "nome em falta";
-    else if (!reference) _error = "referência em falta";
-    else if (!priceStr || !Number.isFinite(Number(priceStr))) _error = "preço inválido";
-    else if (category !== "colecção" && category !== "arquivo")
-      _error = "categoria inválida (colecção/arquivo)";
-    out.push({
-      brand,
-      name,
-      reference,
-      price: Number(priceStr) || 0,
-      original_price: originalStr ? Number(originalStr) : null,
-      category,
-      season: season || null,
-      description,
-      sizes,
-      _error,
-    });
+    if (!row.brand) _error = "marca em falta";
+    else if (!row.reference) _error = "referência em falta";
+    else if (!Number.isFinite(row.price) || row.price <= 0) _error = "preço inválido";
+    out.push({ ...row, _error });
   }
   return out;
 }
@@ -1353,7 +1392,8 @@ function ImportProductsModal({
   const onFile = async (file: File) => {
     setFileName(file.name);
     const text = await file.text();
-    const matrix = parseCsv(text);
+    const delim = detectDelimiter(text);
+    const matrix = parseCsv(text, delim);
     setRows(rowsToProducts(matrix));
     setProgress({ done: 0, ok: 0, err: 0 });
   };
@@ -1387,6 +1427,7 @@ function ImportProductsModal({
                 images: [],
                 sizes: r.sizes,
                 is_active: true,
+                barcode: r.barcodes[0] || null,
               },
             },
           });
@@ -1405,11 +1446,11 @@ function ImportProductsModal({
   };
 
   const downloadTemplate = () => {
-    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "produtos-template.csv";
+    a.download = "produtos-farfetch-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1453,10 +1494,16 @@ function ImportProductsModal({
             {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
           </div>
 
-          <p className="mb-4 text-[12px] text-muted-foreground">
-            Colunas: <code>brand, name, reference, price, original_price, category, season, description, size_xs, size_s, size_m, size_l, size_xl</code>.
-            A categoria deve ser <code>colecção</code> ou <code>arquivo</code>. Os tamanhos indicam stock por tamanho.
-          </p>
+          <div className="mb-4 space-y-2 text-[12px] text-muted-foreground">
+            <p>
+              Formato Farfetch (separador <code>;</code>). Colunas reconhecidas:{" "}
+              <code>Brand, Brand product ID, Season, Local Market Price, Stock Available, Size, Category, Partner barcode</code>.
+              Linhas com o mesmo <code>Brand product ID</code> são agrupadas como tamanhos do mesmo produto.
+            </p>
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-800">
+              Nome do produto não incluído no ficheiro — será necessário editar cada produto após importação para adicionar o nome correcto.
+            </p>
+          </div>
 
           {rows.length === 0 ? (
             <div className="rounded-md border border-dashed border-border bg-muted/20 p-10 text-center text-[13px] text-muted-foreground">
@@ -1479,26 +1526,26 @@ function ImportProductsModal({
                   <table className="w-full text-[12px]">
                     <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                       <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="px-3 py-2">Marca</th>
-                        <th className="px-3 py-2">Nome</th>
                         <th className="px-3 py-2">Ref.</th>
+                        <th className="px-3 py-2">Marca</th>
+                        <th className="px-3 py-2">Época</th>
                         <th className="px-3 py-2 text-right">Preço</th>
-                        <th className="px-3 py-2">Categoria</th>
                         <th className="px-3 py-2">Tamanhos</th>
+                        <th className="px-3 py-2">Categoria</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((r, i) => (
                         <tr key={i} className="border-t border-border">
-                          <td className="px-3 py-1.5">{r.brand}</td>
-                          <td className="px-3 py-1.5">{r.name}</td>
                           <td className="px-3 py-1.5 font-mono">{r.reference}</td>
+                          <td className="px-3 py-1.5">{r.brand}</td>
+                          <td className="px-3 py-1.5">{r.season || "—"}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">€{r.price}</td>
-                          <td className="px-3 py-1.5">{r.category}</td>
                           <td className="px-3 py-1.5 text-muted-foreground">
                             {r.sizes.map((s) => `${s.size}:${s.stock}`).join(" ") || "—"}
                           </td>
+                          <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
                             {r._error ? (
                               <span className="text-red-600">{r._error}</span>
