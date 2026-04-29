@@ -17,6 +17,9 @@ import {
   Minus,
   ImageOff,
   FileSpreadsheet,
+  ScanLine,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -29,6 +32,7 @@ import {
   adminAddBrand,
   adminDeleteBrand,
   adminListSeasons,
+  adminAdjustStockByBarcode,
 } from "@/server/products";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
@@ -62,6 +66,8 @@ type ProductRow = {
   sizes: ProductSize[];
   is_active: boolean;
   created_at: string;
+  barcode?: string | null;
+  cost_price?: number | null;
 };
 type BrandRow = { id: string; name: string };
 
