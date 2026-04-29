@@ -1243,14 +1243,19 @@ type ParsedRow = {
   season: string | null;
   description: string;
   sizes: ProductSize[];
+  barcodes: string[];
   _error?: string;
 };
 
+// Farfetch-style export: semicolon-separated, one row per SKU (size).
+// Multiple sizes of the same product share the same "Brand product ID".
 const CSV_TEMPLATE =
-  "brand,name,reference,price,original_price,category,season,description,size_xs,size_s,size_m,size_l,size_xl\n" +
-  "Self-Portrait,Vestido midi,SP-001,420,,colecção,SS26,Vestido em renda,0,1,2,1,0\n";
+  "Brand;Brand product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
+  "Self-Portrait;SP-001;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
+  "Self-Portrait;SP-001;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
+  "Self-Portrait;SP-001;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
 
-function parseCsv(text: string): string[][] {
+function parseCsv(text: string, delimiter: string = ";"): string[][] {
   const rows: string[][] = [];
   let cur = "";
   let row: string[] = [];
@@ -1268,7 +1273,7 @@ function parseCsv(text: string): string[][] {
       }
     } else {
       if (ch === '"') inQuotes = true;
-      else if (ch === ",") {
+      else if (ch === delimiter) {
         row.push(cur);
         cur = "";
       } else if (ch === "\n" || ch === "\r") {
@@ -1287,51 +1292,85 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
+function detectDelimiter(text: string): string {
+  const firstLine = text.split(/\r?\n/, 1)[0] || "";
+  const sc = (firstLine.match(/;/g) || []).length;
+  const cm = (firstLine.match(/,/g) || []).length;
+  return sc >= cm ? ";" : ",";
+}
+
+function categoryLabel(raw: string): string {
+  if (!raw) return "";
+  const parts = raw.split(">").map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return parts.slice(-2).join(" - ");
+}
+
 function rowsToProducts(matrix: string[][]): ParsedRow[] {
   if (matrix.length < 2) return [];
   const header = matrix[0].map((h) => h.trim().toLowerCase());
-  const idx = (k: string) => header.indexOf(k);
-  const out: ParsedRow[] = [];
+  const findIdx = (...keys: string[]) => {
+    for (const k of keys) {
+      const j = header.indexOf(k.toLowerCase());
+      if (j >= 0) return j;
+    }
+    return -1;
+  };
+  const iBrand = findIdx("brand");
+  const iRef = findIdx("brand product id", "reference");
+  const iSeason = findIdx("season");
+  const iPrice = findIdx("local market price", "price");
+  const iStock = findIdx("stock available", "stock");
+  const iSize = findIdx("size");
+  const iCat = findIdx("category");
+  const iBarcode = findIdx("partner barcode", "barcode");
+
+  const grouped = new Map<string, ParsedRow>();
   for (let i = 1; i < matrix.length; i++) {
     const r = matrix[i];
-    const get = (k: string) => {
-      const j = idx(k);
-      return j >= 0 ? (r[j] ?? "").trim() : "";
-    };
-    const brand = get("brand");
-    const name = get("name");
-    const reference = get("reference");
-    const priceStr = get("price");
-    const originalStr = get("original_price");
-    const category = (get("category") || "colecção").toLowerCase();
-    const season = get("season");
-    const description = get("description");
-    const sizes: ProductSize[] = [];
-    (["xs", "s", "m", "l", "xl"] as const).forEach((s) => {
-      const v = Number(get(`size_${s}`));
-      if (Number.isFinite(v) && v > 0) {
-        sizes.push({ size: s.toUpperCase(), stock: Math.floor(v), reserved: 0 });
-      }
-    });
+    const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
+    const brand = cell(iBrand);
+    const reference = cell(iRef);
+    if (!brand && !reference) continue;
+    const priceStr = cell(iPrice).replace(",", ".");
+    const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
+    const size = cell(iSize).toUpperCase();
+    const season = cell(iSeason);
+    const catLabel = categoryLabel(cell(iCat));
+    const barcode = cell(iBarcode);
+
+    const key = reference || `${brand}::${i}`;
+    let row = grouped.get(key);
+    if (!row) {
+      row = {
+        brand,
+        name: reference || brand,
+        reference,
+        price: Number(priceStr) || 0,
+        original_price: null,
+        category: "colecção",
+        season: season || null,
+        description: catLabel,
+        sizes: [],
+        barcodes: [],
+      };
+      grouped.set(key, row);
+    }
+    if (size && stock > 0) {
+      const existing = row.sizes.find((s) => s.size === size);
+      if (existing) existing.stock += stock;
+      else row.sizes.push({ size, stock, reserved: 0 });
+    }
+    if (barcode && !row.barcodes.includes(barcode)) row.barcodes.push(barcode);
+  }
+
+  const out: ParsedRow[] = [];
+  for (const row of grouped.values()) {
     let _error: string | undefined;
-    if (!brand) _error = "marca em falta";
-    else if (!name) _error = "nome em falta";
-    else if (!reference) _error = "referência em falta";
-    else if (!priceStr || !Number.isFinite(Number(priceStr))) _error = "preço inválido";
-    else if (category !== "colecção" && category !== "arquivo")
-      _error = "categoria inválida (colecção/arquivo)";
-    out.push({
-      brand,
-      name,
-      reference,
-      price: Number(priceStr) || 0,
-      original_price: originalStr ? Number(originalStr) : null,
-      category,
-      season: season || null,
-      description,
-      sizes,
-      _error,
-    });
+    if (!row.brand) _error = "marca em falta";
+    else if (!row.reference) _error = "referência em falta";
+    else if (!Number.isFinite(row.price) || row.price <= 0) _error = "preço inválido";
+    out.push({ ...row, _error });
   }
   return out;
 }
