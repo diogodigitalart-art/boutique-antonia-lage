@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
+import { SimplePagination } from "@/components/SimplePagination";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 
@@ -27,6 +29,11 @@ function ArquivoPage() {
   const { t } = useI18n();
   const { products } = useProducts();
   const items = products.filter((p) => p.category === "archive");
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   return (
     <Layout>
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-8 md:pt-14">
@@ -41,10 +48,11 @@ function ArquivoPage() {
 
       <section className="mx-auto mt-10 max-w-7xl px-4 pb-10 md:px-8">
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
-          {items.map((p) => (
+          {pageItems.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
+        <SimplePagination page={currentPage} totalPages={totalPages} onChange={setPage} />
       </section>
     </Layout>
   );
