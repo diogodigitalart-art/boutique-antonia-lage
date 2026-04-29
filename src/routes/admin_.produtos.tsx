@@ -1392,7 +1392,8 @@ function ImportProductsModal({
   const onFile = async (file: File) => {
     setFileName(file.name);
     const text = await file.text();
-    const matrix = parseCsv(text);
+    const delim = detectDelimiter(text);
+    const matrix = parseCsv(text, delim);
     setRows(rowsToProducts(matrix));
     setProgress({ done: 0, ok: 0, err: 0 });
   };
@@ -1426,6 +1427,7 @@ function ImportProductsModal({
                 images: [],
                 sizes: r.sizes,
                 is_active: true,
+                barcode: r.barcodes[0] || null,
               },
             },
           });
@@ -1444,11 +1446,11 @@ function ImportProductsModal({
   };
 
   const downloadTemplate = () => {
-    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "produtos-template.csv";
+    a.download = "produtos-farfetch-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1492,10 +1494,16 @@ function ImportProductsModal({
             {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
           </div>
 
-          <p className="mb-4 text-[12px] text-muted-foreground">
-            Colunas: <code>brand, name, reference, price, original_price, category, season, description, size_xs, size_s, size_m, size_l, size_xl</code>.
-            A categoria deve ser <code>colecção</code> ou <code>arquivo</code>. Os tamanhos indicam stock por tamanho.
-          </p>
+          <div className="mb-4 space-y-2 text-[12px] text-muted-foreground">
+            <p>
+              Formato Farfetch (separador <code>;</code>). Colunas reconhecidas:{" "}
+              <code>Brand, Brand product ID, Season, Local Market Price, Stock Available, Size, Category, Partner barcode</code>.
+              Linhas com o mesmo <code>Brand product ID</code> são agrupadas como tamanhos do mesmo produto.
+            </p>
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-800">
+              Nome do produto não incluído no ficheiro — será necessário editar cada produto após importação para adicionar o nome correcto.
+            </p>
+          </div>
 
           {rows.length === 0 ? (
             <div className="rounded-md border border-dashed border-border bg-muted/20 p-10 text-center text-[13px] text-muted-foreground">
@@ -1518,26 +1526,26 @@ function ImportProductsModal({
                   <table className="w-full text-[12px]">
                     <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                       <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="px-3 py-2">Marca</th>
-                        <th className="px-3 py-2">Nome</th>
                         <th className="px-3 py-2">Ref.</th>
+                        <th className="px-3 py-2">Marca</th>
+                        <th className="px-3 py-2">Época</th>
                         <th className="px-3 py-2 text-right">Preço</th>
-                        <th className="px-3 py-2">Categoria</th>
                         <th className="px-3 py-2">Tamanhos</th>
+                        <th className="px-3 py-2">Categoria</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((r, i) => (
                         <tr key={i} className="border-t border-border">
-                          <td className="px-3 py-1.5">{r.brand}</td>
-                          <td className="px-3 py-1.5">{r.name}</td>
                           <td className="px-3 py-1.5 font-mono">{r.reference}</td>
+                          <td className="px-3 py-1.5">{r.brand}</td>
+                          <td className="px-3 py-1.5">{r.season || "—"}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">€{r.price}</td>
-                          <td className="px-3 py-1.5">{r.category}</td>
                           <td className="px-3 py-1.5 text-muted-foreground">
                             {r.sizes.map((s) => `${s.size}:${s.stock}`).join(" ") || "—"}
                           </td>
+                          <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
                             {r._error ? (
                               <span className="text-red-600">{r._error}</span>
