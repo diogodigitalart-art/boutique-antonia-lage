@@ -299,3 +299,76 @@ export const adminAdjustReservation = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const adminFindProductByBarcode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    if (!s(i.barcode) || !(i.barcode as string).trim()) throw new Error("Missing barcode");
+    return { token: i.token as string, barcode: (i.barcode as string).trim() };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { data: rows, error } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .eq("barcode", data.barcode)
+      .limit(1);
+    if (error) throw new Error(error.message);
+    return { product: rows && rows.length > 0 ? rows[0] : null };
+  });
+
+export const adminAdjustStockByBarcode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    if (!s(i.barcode) || !(i.barcode as string).trim()) throw new Error("Missing barcode");
+    const delta = Number(i.delta);
+    if (delta !== 1 && delta !== -1) throw new Error("Invalid delta");
+    return { token: i.token as string, barcode: (i.barcode as string).trim(), delta };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    const { data: rows, error: e1 } = await supabaseAdmin
+      .from("products")
+      .select("id, name, brand, sizes")
+      .eq("barcode", data.barcode)
+      .limit(1);
+    if (e1) throw new Error(e1.message);
+    const product = rows && rows.length > 0 ? rows[0] : null;
+    if (!product) throw new Error("Produto não encontrado");
+    const sizes = Array.isArray(product.sizes) ? (product.sizes as AdminProductSize[]) : [];
+    if (sizes.length === 0) throw new Error("Produto sem tamanhos");
+    // Pick the size to adjust: for IN, the first one; for OUT, first one with available stock.
+    let idx = 0;
+    if (data.delta < 0) {
+      const found = sizes.findIndex(
+        (s) => Math.max(0, Number(s.stock) - Number(s.reserved)) > 0,
+      );
+      if (found < 0) throw new Error("Sem stock disponível");
+      idx = found;
+    }
+    const newSizes = sizes.map((s, i) => {
+      if (i !== idx) return s;
+      const newStock = Math.max(0, Number(s.stock) + data.delta);
+      const newReserved = Math.min(Number(s.reserved), newStock);
+      return { size: s.size, stock: newStock, reserved: newReserved };
+    });
+    const totalAvailable = newSizes.reduce(
+      (a, s) => a + Math.max(0, Number(s.stock) - Number(s.reserved)),
+      0,
+    );
+    const { error: e2 } = await supabaseAdmin
+      .from("products")
+      .update({ sizes: newSizes })
+      .eq("id", product.id);
+    if (e2) throw new Error(e2.message);
+    return {
+      ok: true,
+      productId: product.id,
+      productName: product.name,
+      brand: product.brand,
+      size: sizes[idx].size,
+      totalAvailable,
+    };
+  });
