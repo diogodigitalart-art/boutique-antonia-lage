@@ -24,11 +24,16 @@ export function isSunday(dateStr: string): boolean {
   return dt.getDay() === 0;
 }
 
-export type ReservationStatus = "Confirmada" | "Em visita" | "Cancelada";
+export type ReservationStatus =
+  | "Confirmada"
+  | "Em visita"
+  | "Cancelada"
+  | "Vendida";
 
 export const STATUS_OPTIONS: ReservationStatus[] = [
   "Confirmada",
   "Em visita",
+  "Vendida",
   "Cancelada",
 ];
 
@@ -41,6 +46,8 @@ export function statusBadgeClasses(status: string): string {
       return `${base} bg-warning-soft text-warning`;
     case "Cancelada":
       return `${base} bg-destructive-soft text-destructive`;
+    case "Vendida":
+      return `${base} bg-emerald-100 text-emerald-700`;
     case "Confirmada":
     default:
       return `${base} bg-success-soft text-success`;

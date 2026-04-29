@@ -16,6 +16,7 @@ import {
   ChevronUp,
   Minus,
   ImageOff,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -91,6 +92,7 @@ function Content() {
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -200,12 +202,20 @@ function Content() {
           <h1 className="font-display text-2xl italic md:text-3xl">Produtos</h1>
           <span className="text-xs text-muted-foreground">{filtered.length} produtos</span>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus size={16} /> Adicionar produto
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setImporting(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
+          >
+            <FileSpreadsheet size={16} /> Importar produtos
+          </button>
+          <button
+            onClick={() => setCreating(true)}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus size={16} /> Adicionar produto
+          </button>
+        </div>
       </div>
 
       <BrandsSection
@@ -434,6 +444,17 @@ function Content() {
             if (!editing) return;
             await remove(editing);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {importing && (
+        <ImportProductsModal
+          brandOptions={allBrandNames}
+          onClose={() => setImporting(false)}
+          onDone={() => {
+            setImporting(false);
+            refresh();
           }}
         />
       )}
@@ -1203,6 +1224,318 @@ function PreviewCard({
         ) : (
           <p className="mt-1.5 text-sm font-light text-foreground">€{price || 0}</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// CSV import
+// ============================================================
+
+type ParsedRow = {
+  brand: string;
+  name: string;
+  reference: string;
+  price: number;
+  original_price: number | null;
+  category: string;
+  season: string | null;
+  description: string;
+  sizes: ProductSize[];
+  _error?: string;
+};
+
+const CSV_TEMPLATE =
+  "brand,name,reference,price,original_price,category,season,description,size_xs,size_s,size_m,size_l,size_xl\n" +
+  "Self-Portrait,Vestido midi,SP-001,420,,colecção,SS26,Vestido em renda,0,1,2,1,0\n";
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let cur = "";
+  let row: string[] = [];
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ",") {
+        row.push(cur);
+        cur = "";
+      } else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cur);
+        cur = "";
+        if (row.some((c) => c.trim() !== "")) rows.push(row);
+        row = [];
+      } else cur += ch;
+    }
+  }
+  if (cur !== "" || row.length > 0) {
+    row.push(cur);
+    if (row.some((c) => c.trim() !== "")) rows.push(row);
+  }
+  return rows;
+}
+
+function rowsToProducts(matrix: string[][]): ParsedRow[] {
+  if (matrix.length < 2) return [];
+  const header = matrix[0].map((h) => h.trim().toLowerCase());
+  const idx = (k: string) => header.indexOf(k);
+  const out: ParsedRow[] = [];
+  for (let i = 1; i < matrix.length; i++) {
+    const r = matrix[i];
+    const get = (k: string) => {
+      const j = idx(k);
+      return j >= 0 ? (r[j] ?? "").trim() : "";
+    };
+    const brand = get("brand");
+    const name = get("name");
+    const reference = get("reference");
+    const priceStr = get("price");
+    const originalStr = get("original_price");
+    const category = (get("category") || "colecção").toLowerCase();
+    const season = get("season");
+    const description = get("description");
+    const sizes: ProductSize[] = [];
+    (["xs", "s", "m", "l", "xl"] as const).forEach((s) => {
+      const v = Number(get(`size_${s}`));
+      if (Number.isFinite(v) && v > 0) {
+        sizes.push({ size: s.toUpperCase(), stock: Math.floor(v), reserved: 0 });
+      }
+    });
+    let _error: string | undefined;
+    if (!brand) _error = "marca em falta";
+    else if (!name) _error = "nome em falta";
+    else if (!reference) _error = "referência em falta";
+    else if (!priceStr || !Number.isFinite(Number(priceStr))) _error = "preço inválido";
+    else if (category !== "colecção" && category !== "arquivo")
+      _error = "categoria inválida (colecção/arquivo)";
+    out.push({
+      brand,
+      name,
+      reference,
+      price: Number(priceStr) || 0,
+      original_price: originalStr ? Number(originalStr) : null,
+      category,
+      season: season || null,
+      description,
+      sizes,
+      _error,
+    });
+  }
+  return out;
+}
+
+function ImportProductsModal({
+  onClose,
+  onDone,
+}: {
+  brandOptions: string[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const upsertFn = useServerFn(adminUpsertProduct);
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [fileName, setFileName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
+
+  const onFile = async (file: File) => {
+    setFileName(file.name);
+    const text = await file.text();
+    const matrix = parseCsv(text);
+    setRows(rowsToProducts(matrix));
+    setProgress({ done: 0, ok: 0, err: 0 });
+  };
+
+  const valid = rows.filter((r) => !r._error);
+  const invalid = rows.length - valid.length;
+
+  const start = async () => {
+    if (valid.length === 0) return;
+    setImporting(true);
+    let ok = 0;
+    let err = 0;
+    try {
+      const token = await getToken();
+      for (let i = 0; i < valid.length; i++) {
+        const r = valid[i];
+        try {
+          await upsertFn({
+            data: {
+              token,
+              product: {
+                brand: r.brand,
+                name: r.name,
+                reference: r.reference,
+                description: r.description,
+                price: r.price,
+                original_price: r.original_price,
+                discount_percent: null,
+                category: r.category,
+                season: r.season,
+                images: [],
+                sizes: r.sizes,
+                is_active: true,
+              },
+            },
+          });
+          ok++;
+        } catch (e) {
+          console.error("import row failed", e);
+          err++;
+        }
+        setProgress({ done: i + 1, ok, err });
+      }
+      toast.success(`Importação concluída: ${ok} criado(s), ${err} erro(s)`);
+      if (ok > 0) onDone();
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "produtos-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-background shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">CSV</p>
+            <h2 className="font-display text-xl italic">Importar produtos</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-2 text-muted-foreground hover:bg-muted">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-[13px] hover:bg-muted">
+              <Upload size={14} /> Escolher CSV
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFile(f);
+                }}
+              />
+            </label>
+            <button
+              onClick={downloadTemplate}
+              className="text-[12px] text-primary underline-offset-2 hover:underline"
+            >
+              Descarregar template
+            </button>
+            {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
+          </div>
+
+          <p className="mb-4 text-[12px] text-muted-foreground">
+            Colunas: <code>brand, name, reference, price, original_price, category, season, description, size_xs, size_s, size_m, size_l, size_xl</code>.
+            A categoria deve ser <code>colecção</code> ou <code>arquivo</code>. Os tamanhos indicam stock por tamanho.
+          </p>
+
+          {rows.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/20 p-10 text-center text-[13px] text-muted-foreground">
+              Selecciona um ficheiro CSV para pré-visualizar os produtos.
+            </div>
+          ) : (
+            <>
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-[12px]">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                  {valid.length} válidos
+                </span>
+                {invalid > 0 && (
+                  <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">
+                    {invalid} com erros
+                  </span>
+                )}
+              </div>
+              <div className="overflow-hidden rounded-md border border-border">
+                <div className="max-h-[40vh] overflow-auto">
+                  <table className="w-full text-[12px]">
+                    <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                      <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <th className="px-3 py-2">Marca</th>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Ref.</th>
+                        <th className="px-3 py-2 text-right">Preço</th>
+                        <th className="px-3 py-2">Categoria</th>
+                        <th className="px-3 py-2">Tamanhos</th>
+                        <th className="px-3 py-2">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r, i) => (
+                        <tr key={i} className="border-t border-border">
+                          <td className="px-3 py-1.5">{r.brand}</td>
+                          <td className="px-3 py-1.5">{r.name}</td>
+                          <td className="px-3 py-1.5 font-mono">{r.reference}</td>
+                          <td className="px-3 py-1.5 text-right tabular-nums">€{r.price}</td>
+                          <td className="px-3 py-1.5">{r.category}</td>
+                          <td className="px-3 py-1.5 text-muted-foreground">
+                            {r.sizes.map((s) => `${s.size}:${s.stock}`).join(" ") || "—"}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            {r._error ? (
+                              <span className="text-red-600">{r._error}</span>
+                            ) : (
+                              <span className="text-emerald-700">OK</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {importing && (
+                <p className="mt-3 text-[12px] text-muted-foreground">
+                  A importar… {progress.done}/{valid.length} · {progress.ok} ok · {progress.err} erro(s)
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-full px-5 py-2 text-[13px] text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={start}
+            disabled={importing || valid.length === 0}
+            className="rounded-full bg-primary px-6 py-2 text-[13px] text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {importing ? "A importar…" : `Importar ${valid.length} produto(s)`}
+          </button>
+        </div>
       </div>
     </div>
   );

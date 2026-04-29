@@ -304,18 +304,32 @@ function UserDetail({
         {user.wishlist.length === 0 ? (
           <Empty>Wishlist vazia.</Empty>
         ) : (
-          <ul className="flex flex-wrap gap-2">
+          <ul className="space-y-2">
             {user.wishlist.map((w) => (
               <li
                 key={w.id}
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground"
+                className="flex items-center gap-3 rounded-xl border border-border bg-background p-3"
               >
-                {w.product_label || productLabel(w.product_id)}
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                  {w.product_image ? (
+                    <img src={w.product_image} alt="" className="h-full w-full object-cover" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {w.product_label || productLabel(w.product_id)}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Adicionado em {fmt(w.created_at)}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Section>
+
+      <div className="border-t border-border" />
 
       <Section icon={ShoppingBag} title={`Carrinho actual (${user.cart.length})`}>
         {user.cart.length === 0 ? (

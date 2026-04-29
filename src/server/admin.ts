@@ -31,6 +31,8 @@ export type AdminUser = {
     item_name: string;
     item_type: string;
     product_name: string;
+    product_id: string | null;
+    product_size: string | null;
     customer_name: string;
     customer_email: string;
     customer_phone: string;
@@ -40,7 +42,13 @@ export type AdminUser = {
     status: string;
     created_at: string;
   }>;
-  wishlist: Array<{ id: string; product_id: string; product_label: string; created_at: string }>;
+  wishlist: Array<{
+    id: string;
+    product_id: string;
+    product_label: string;
+    product_image: string | null;
+    created_at: string;
+  }>;
   quiz: { answers: JsonValue; profile_description: string; created_at: string } | null;
   feedback: Array<{
     id: string;
@@ -189,6 +197,8 @@ export const getAdminData = createServerFn({ method: "POST" })
           item_name: r.item_name,
           item_type: r.item_type,
           product_name: r.product_name,
+          product_id: (r as { product_id?: string | null }).product_id ?? null,
+          product_size: (r as { product_size?: string | null }).product_size ?? null,
           customer_name: r.customer_name,
           customer_email: r.customer_email,
           customer_phone: r.customer_phone,
@@ -200,12 +210,16 @@ export const getAdminData = createServerFn({ method: "POST" })
         }));
       const userWishlist = wishlist
         .filter((w) => w.user_id === p.id)
-        .map((w) => ({
-          id: w.id,
-          product_id: w.product_id,
-          product_label: productMap.get(w.product_id) || w.product_id,
-          created_at: w.created_at,
-        }));
+        .map((w) => {
+          const meta = productMeta.get(w.product_id) || null;
+          return {
+            id: w.id,
+            product_id: w.product_id,
+            product_label: meta?.label || productMap.get(w.product_id) || w.product_id,
+            product_image: meta?.image || null,
+            created_at: w.created_at,
+          };
+        });
       const userQuiz = quiz.find((q) => q.user_id === p.id);
       const userContacts = contacts
         .filter((c) => p.email && c.email.toLowerCase() === (p.email || "").toLowerCase())
@@ -292,12 +306,12 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (!isStr(i.token)) throw new Error("Missing token");
     if (!isStr(i.reservationId)) throw new Error("Missing reservationId");
     if (!isStr(i.status)) throw new Error("Missing status");
-    const allowed = ["Confirmada", "Em visita", "Cancelada"];
+    const allowed = ["Confirmada", "Em visita", "Cancelada", "Vendida"];
     if (!allowed.includes(i.status as string)) throw new Error("Invalid status");
     return {
       token: i.token,
       reservationId: i.reservationId,
-      status: i.status as "Confirmada" | "Em visita" | "Cancelada",
+      status: i.status as "Confirmada" | "Em visita" | "Cancelada" | "Vendida",
     };
   })
   .handler(async ({ data }) => {
@@ -312,6 +326,22 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (fetchErr) throw new Error(fetchErr.message);
     if (!existing) throw new Error("Reservation not found");
 
+    // "Vendida": permanently remove inventory (consumes one reserved unit + decrements stock)
+    if (
+      data.status === "Vendida" &&
+      existing.status !== "Vendida" &&
+      existing.product_id &&
+      existing.product_size
+    ) {
+      const { error: sellErr } = await supabaseAdmin.rpc("decrement_product_stock", {
+        _product_id: existing.product_id,
+        _size: existing.product_size,
+        _qty: 1,
+        _from_reserved: true,
+      });
+      if (sellErr) throw new Error(sellErr.message);
+    }
+
     const { error } = await supabaseAdmin
       .from("reservations")
       .update({ status: data.status })
@@ -322,6 +352,7 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (
       data.status === "Cancelada" &&
       existing.status !== "Cancelada" &&
+      existing.status !== "Vendida" &&
       existing.product_id &&
       existing.product_size
     ) {

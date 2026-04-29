@@ -55,6 +55,22 @@ export const createOrder = createServerFn({ method: "POST" })
     if (ue || !u?.user) throw new Error("Unauthorized");
     const userId = u.user.id;
 
+    // 0) Pre-validate stock for every line and decrement (atomic per-line via FOR UPDATE in RPC)
+    for (const it of data.items) {
+      if (!it.product_uuid || !it.size) continue;
+      const { error: stockErr } = await supabaseAdmin.rpc("decrement_product_stock", {
+        _product_id: it.product_uuid,
+        _size: it.size,
+        _qty: Math.max(1, it.quantity || 1),
+        _from_reserved: false,
+      });
+      if (stockErr) {
+        throw new Error(
+          `Stock insuficiente para ${it.brand ?? ""} ${it.name ?? ""} (tamanho ${it.size})`,
+        );
+      }
+    }
+
     // 1) Insert order
     const { data: order, error } = await supabaseAdmin
       .from("orders")

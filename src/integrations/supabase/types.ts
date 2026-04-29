@@ -497,6 +497,15 @@ export type Database = {
         Args: { _delta: number; _product_id: string; _size: string }
         Returns: undefined
       }
+      decrement_product_stock: {
+        Args: {
+          _from_reserved?: boolean
+          _product_id: string
+          _qty?: number
+          _size: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
