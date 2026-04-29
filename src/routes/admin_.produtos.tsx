@@ -1031,19 +1031,29 @@ function ProductForm({
                 />
                 Tamanho único
               </label>
+              {(() => {
+                const total = form.oneSize
+                  ? Math.max(0, form.oneSizeStock || 0)
+                  : SIZE_OPTIONS.reduce((a, s) => a + (form.sizes[s] || 0), 0);
+                return (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Total disponível: <span className="font-medium text-foreground">{total}</span> unidades
+                  </p>
+                );
+              })()}
               {form.oneSize ? (
                 <div className="mt-3">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock
+                    Stock disponível
                   </label>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     value={form.oneSizeStock}
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        oneSizeStock: Math.max(1, Number(e.target.value) || 1),
+                        oneSizeStock: Math.max(0, Number(e.target.value) || 0),
                       })
                     }
                     className="mt-1 h-10 w-32 rounded-md border border-border bg-background px-3 text-[13px]"
@@ -1086,50 +1096,7 @@ function ProductForm({
             </div>
 
             {isEdit && liveSizes.length > 0 && (
-              <div className="rounded-md border border-border bg-muted/30 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Reservas manuais
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Marca como reservado para reservas presenciais.
-                </p>
-                <div className="mt-3 space-y-2">
-                  {liveSizes.map((s) => {
-                    const available = s.stock - s.reserved;
-                    return (
-                      <div
-                        key={s.size}
-                        className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 font-medium">{s.size}</span>
-                          <span className="text-[11px] text-muted-foreground">
-                            stock {s.stock} · reservado {s.reserved} · livre {available}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => adjust(s.size, -1)}
-                            disabled={s.reserved <= 0}
-                            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-40"
-                          >
-                            <Minus size={11} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => adjust(s.size, 1)}
-                            disabled={available <= 0}
-                            className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-                          >
-                            <Plus size={11} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <InventoryAdjustments liveSizes={liveSizes} onAdjust={adjust} />
             )}
 
             <div>
