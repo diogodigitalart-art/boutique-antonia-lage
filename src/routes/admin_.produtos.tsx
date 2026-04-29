@@ -773,10 +773,16 @@ function ProductForm({
         },
       ];
     } else {
-      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] >= 0 && form.sizes[s] > 0).map((s) => {
-        const live = liveSizes.find((x) => x.size === s);
-        return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
-      });
+      sizesPayload = form.sizes
+        .filter((s) => s.size.trim() !== "")
+        .map((s) => {
+          const live = liveSizes.find((x) => x.size === s.size);
+          return {
+            size: s.size.trim(),
+            stock: Math.max(0, Number(s.stock) || 0),
+            reserved: live?.reserved ?? 0,
+          };
+        });
     }
 
     setSaving(true);
