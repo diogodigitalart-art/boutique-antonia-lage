@@ -292,12 +292,12 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (!isStr(i.token)) throw new Error("Missing token");
     if (!isStr(i.reservationId)) throw new Error("Missing reservationId");
     if (!isStr(i.status)) throw new Error("Missing status");
-    const allowed = ["Confirmada", "Em visita", "Cancelada"];
+    const allowed = ["Confirmada", "Em visita", "Cancelada", "Vendida"];
     if (!allowed.includes(i.status as string)) throw new Error("Invalid status");
     return {
       token: i.token,
       reservationId: i.reservationId,
-      status: i.status as "Confirmada" | "Em visita" | "Cancelada",
+      status: i.status as "Confirmada" | "Em visita" | "Cancelada" | "Vendida",
     };
   })
   .handler(async ({ data }) => {
@@ -312,6 +312,22 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (fetchErr) throw new Error(fetchErr.message);
     if (!existing) throw new Error("Reservation not found");
 
+    // "Vendida": permanently remove inventory (consumes one reserved unit + decrements stock)
+    if (
+      data.status === "Vendida" &&
+      existing.status !== "Vendida" &&
+      existing.product_id &&
+      existing.product_size
+    ) {
+      const { error: sellErr } = await supabaseAdmin.rpc("decrement_product_stock", {
+        _product_id: existing.product_id,
+        _size: existing.product_size,
+        _qty: 1,
+        _from_reserved: true,
+      });
+      if (sellErr) throw new Error(sellErr.message);
+    }
+
     const { error } = await supabaseAdmin
       .from("reservations")
       .update({ status: data.status })
@@ -322,6 +338,7 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (
       data.status === "Cancelada" &&
       existing.status !== "Cancelada" &&
+      existing.status !== "Vendida" &&
       existing.product_id &&
       existing.product_size
     ) {
