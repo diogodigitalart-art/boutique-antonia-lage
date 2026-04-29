@@ -48,10 +48,12 @@ function ProductPage() {
   const [reserveOpen, setReserveOpen] = useState(false);
   const [addedOpen, setAddedOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
     void refresh();
+    setActiveImage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -85,6 +87,9 @@ function ProductPage() {
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
   const availableSet = new Set(product.availableSizes ?? product.sizes);
+  const galleryImages =
+    product.images && product.images.length > 0 ? product.images : [product.image];
+  const currentImage = galleryImages[activeImage] ?? galleryImages[0];
 
   const requireAuth = (next: () => void) => {
     if (!session) {
@@ -133,20 +138,48 @@ function ProductPage() {
         </button>
       </div>
 
-      {/* 60/40 grid on desktop, stacked on mobile */}
       <div className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-5 md:px-8 md:py-6">
-        <button
-          type="button"
-          onClick={() => setLightboxOpen(true)}
-          className="overflow-hidden rounded-3xl bg-cream ring-[0.5px] ring-black/5 md:col-span-3 cursor-zoom-in"
-          aria-label="Ampliar fotografia"
-        >
-          <img
-            src={product.image}
-            alt={`${product.brand} ${product.name}`}
-            className="h-full w-full object-cover"
-          />
-        </button>
+        <div className="md:col-span-3">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block w-full overflow-hidden rounded-3xl bg-photo-bg ring-[0.5px] ring-black/5 cursor-zoom-in"
+            aria-label="Ampliar fotografia"
+          >
+            <img
+              src={currentImage}
+              alt={`${product.brand} ${product.name}`}
+              className="h-full w-full object-cover"
+            />
+          </button>
+          {galleryImages.length > 1 && (
+            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
+              {galleryImages.map((img, i) => {
+                const selected = i === activeImage;
+                return (
+                  <button
+                    key={`${img}-${i}`}
+                    type="button"
+                    onClick={() => setActiveImage(i)}
+                    aria-label={`Imagem ${i + 1}`}
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-md bg-photo-bg transition md:h-20 md:w-20 ${
+                      selected
+                        ? "ring-2 ring-primary"
+                        : "ring-1 ring-border hover:ring-foreground/30"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="md:col-span-2 md:py-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -306,7 +339,7 @@ function ProductPage() {
       <ImageLightbox
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
-        images={product.images && product.images.length > 0 ? product.images : [product.image]}
+        images={galleryImages}
         alt={`${product.brand} ${product.name}`}
       />
     </Layout>
