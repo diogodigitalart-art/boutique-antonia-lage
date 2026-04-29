@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
 
@@ -46,6 +47,7 @@ function ProductPage() {
   const [size, setSize] = useState<string | null>(isOneSize ? "U" : null);
   const [reserveOpen, setReserveOpen] = useState(false);
   const [addedOpen, setAddedOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
@@ -133,13 +135,18 @@ function ProductPage() {
 
       {/* 60/40 grid on desktop, stacked on mobile */}
       <div className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-5 md:px-8 md:py-6">
-        <div className="overflow-hidden rounded-3xl bg-muted md:col-span-3">
+        <button
+          type="button"
+          onClick={() => setLightboxOpen(true)}
+          className="overflow-hidden rounded-3xl bg-cream ring-[0.5px] ring-black/5 md:col-span-3 cursor-zoom-in"
+          aria-label="Ampliar fotografia"
+        >
           <img
             src={product.image}
             alt={`${product.brand} ${product.name}`}
             className="h-full w-full object-cover"
           />
-        </div>
+        </button>
 
         <div className="md:col-span-2 md:py-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -295,6 +302,12 @@ function ProductPage() {
         onClose={() => setAddedOpen(false)}
         productId={product.id}
         size={size}
+      />
+      <ImageLightbox
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        images={product.images && product.images.length > 0 ? product.images : [product.image]}
+        alt={`${product.brand} ${product.name}`}
       />
     </Layout>
   );
