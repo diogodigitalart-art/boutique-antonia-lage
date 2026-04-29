@@ -1775,28 +1775,6 @@ function ScanModal({ onClose }: { onClose: () => void }) {
     detectorRef.current = new Detector({
       formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "qr_code"],
     });
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setCameraOn(true);
-          loop();
-        }
-      } catch {
-        setCameraError("Câmara indisponível. Usa o campo manual.");
-      }
-    })();
-
     const loop = async () => {
       const detector = detectorRef.current as {
         detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>>;
@@ -1815,11 +1793,33 @@ function ScanModal({ onClose }: { onClose: () => void }) {
       rafRef.current = window.setTimeout(loop, 400) as unknown as number;
     };
 
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setCameraOn(true);
+          loop();
+        }
+      } catch {
+        setCameraError("Câmara indisponível. Usa o campo manual.");
+      }
+    })();
+
     return () => {
       cancelled = true;
       if (rafRef.current) clearTimeout(rafRef.current);
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         streamRef.current = null;
       }
     };
