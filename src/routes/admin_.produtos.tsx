@@ -35,11 +35,37 @@ import {
   adminAdjustStockByBarcode,
 } from "@/server/products";
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
 const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "colecção", label: "Colecção" },
   { value: "arquivo", label: "Arquivo" },
 ];
+
+const SIZE_PRESETS: Array<{ label: string; sizes: string[] }> = [
+  { label: "XS S M L XL", sizes: ["XS", "S", "M", "L", "XL"] },
+  { label: "XXS XS S M L XL XXL", sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL"] },
+  { label: "34 36 38 40 42 44 46", sizes: ["34", "36", "38", "40", "42", "44", "46"] },
+  { label: "36 38 40 42 44 46 48 50", sizes: ["36", "38", "40", "42", "44", "46", "48", "50"] },
+  { label: "4 6 8 10 12 14 16 18", sizes: ["4", "6", "8", "10", "12", "14", "16", "18"] },
+  { label: "00 0 2 4 6 8 10 12 14 16", sizes: ["00", "0", "2", "4", "6", "8", "10", "12", "14", "16"] },
+];
+
+// Convert values like "5,05994E+12" or "5.05994E+12" to a plain integer string.
+// Returns the original trimmed string when it's already a plain non-scientific value.
+export function normalizeBarcode(raw: string | null | undefined): string {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  // Detect scientific notation (with comma or dot decimal)
+  if (/e[+-]?\d+/i.test(s)) {
+    const normalized = s.replace(",", ".");
+    const n = Number(normalized);
+    if (Number.isFinite(n)) {
+      // Use toFixed(0) to avoid scientific notation in the result
+      return Math.round(n).toLocaleString("fullwide", { useGrouping: false });
+    }
+  }
+  return s;
+}
 
 export const Route = createFileRoute("/admin_/produtos")({
   head: () => ({ meta: [{ title: "Gestão de produtos | Admin" }] }),
@@ -332,7 +358,7 @@ function Content() {
                   <th className="px-3 py-2.5">Season</th>
                   <th className="px-3 py-2.5">Categoria</th>
                   <th className="px-3 py-2.5 text-right">Preço</th>
-                  <th className="px-3 py-2.5 text-right">Stock</th>
+                  <th className="px-3 py-2.5">Tamanhos / Stock</th>
                   <th className="px-3 py-2.5">Estado</th>
                   <th className="w-12 px-3 py-2.5"></th>
                 </tr>
@@ -340,10 +366,15 @@ function Content() {
               <tbody>
                 {filtered.map((r) => {
                   const sizes = Array.isArray(r.sizes) ? r.sizes : [];
-                  const totalStock = sizes.reduce(
-                    (a, s) => a + Math.max(0, s.stock - s.reserved),
-                    0,
-                  );
+                  const sizesSummary =
+                    sizes.length > 0
+                      ? sizes
+                          .map(
+                            (s) =>
+                              `${s.size}:${Math.max(0, s.stock - s.reserved)}`,
+                          )
+                          .join(" ")
+                      : "—";
                   const cover = r.images?.[0];
                   const isSel = selected.has(r.id);
                   return (
@@ -392,8 +423,8 @@ function Content() {
                         {r.category}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">€{r.price}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                        {totalStock}
+                      <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
+                        {sizesSummary}
                       </td>
                       <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -617,14 +648,12 @@ type FormState = {
   season: string;
   is_active: boolean;
   oneSize: boolean;
-  sizes: Record<string, number>;
+  sizes: Array<{ size: string; stock: number }>;
   oneSizeStock: number;
   images: string[];
 };
 
 function emptyForm(brandOptions: string[]): FormState {
-  const sizes: Record<string, number> = {};
-  SIZE_OPTIONS.forEach((s) => (sizes[s] = 0));
   return {
     brand: brandOptions[0] ?? "",
     name: "",
@@ -639,7 +668,7 @@ function emptyForm(brandOptions: string[]): FormState {
     season: "",
     is_active: true,
     oneSize: false,
-    sizes,
+    sizes: [],
     oneSizeStock: 0,
     images: [],
   };
@@ -664,16 +693,11 @@ function ProductForm({
   const upsertFn = useServerFn(adminUpsertProduct);
   const uploadFn = useServerFn(adminUploadProductImage);
 
-  const initialSizes: Record<string, number> = {};
-  SIZE_OPTIONS.forEach((s) => {
-    initialSizes[s] = 0;
-  });
   const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
-  existingSizes.forEach((s) => {
-    if (SIZE_OPTIONS.includes(s.size as never)) initialSizes[s.size] = s.stock;
-  });
-
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
+  const initialSizesList: Array<{ size: string; stock: number }> = isOneSize
+    ? []
+    : existingSizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 }));
   const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
 
   const knownBrand = !row || brandOptions.includes(row.brand);
@@ -683,7 +707,7 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
-          barcode: row.barcode ?? "",
+          barcode: normalizeBarcode(row.barcode ?? ""),
           description: row.description,
           price: String(row.price),
           cost_price: row.cost_price != null ? String(row.cost_price) : "",
@@ -693,7 +717,7 @@ function ProductForm({
           season: row.season ?? "",
           is_active: row.is_active,
           oneSize: isOneSize,
-          sizes: initialSizes,
+          sizes: initialSizesList,
           oneSizeStock,
           images: row.images ?? [],
         }
@@ -754,10 +778,16 @@ function ProductForm({
         },
       ];
     } else {
-      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] >= 0 && form.sizes[s] > 0).map((s) => {
-        const live = liveSizes.find((x) => x.size === s);
-        return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
-      });
+      sizesPayload = form.sizes
+        .filter((s) => s.size.trim() !== "")
+        .map((s) => {
+          const live = liveSizes.find((x) => x.size === s.size);
+          return {
+            size: s.size.trim(),
+            stock: Math.max(0, Number(s.stock) || 0),
+            reserved: live?.reserved ?? 0,
+          };
+        });
     }
 
     setSaving(true);
@@ -1034,7 +1064,7 @@ function ProductForm({
               {(() => {
                 const total = form.oneSize
                   ? Math.max(0, form.oneSizeStock || 0)
-                  : SIZE_OPTIONS.reduce((a, s) => a + (form.sizes[s] || 0), 0);
+                  : form.sizes.reduce((a, s) => a + (Number(s.stock) || 0), 0);
                 return (
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Total disponível: <span className="font-medium text-foreground">{total}</span> unidades
@@ -1044,7 +1074,7 @@ function ProductForm({
               {form.oneSize ? (
                 <div className="mt-3">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock disponível
+                    Stock disponível (U)
                   </label>
                   <input
                     type="number"
@@ -1060,38 +1090,10 @@ function ProductForm({
                   />
                 </div>
               ) : (
-                <>
-                  <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock por tamanho
-                  </p>
-                  <div className="mt-2 grid grid-cols-5 gap-2">
-                    {SIZE_OPTIONS.map((s) => (
-                      <div
-                        key={s}
-                        className="flex flex-col items-center rounded-md border border-border bg-background p-2"
-                      >
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {s}
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.sizes[s]}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              sizes: {
-                                ...form.sizes,
-                                [s]: Math.max(0, Number(e.target.value) || 0),
-                              },
-                            })
-                          }
-                          className="mt-1 w-full rounded border border-border bg-background px-1 py-1 text-center text-[13px]"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <FlexibleSizes
+                  sizes={form.sizes}
+                  onChange={(sizes) => setForm({ ...form, sizes })}
+                />
               )}
             </div>
 
@@ -1263,6 +1265,125 @@ function PreviewCard({
 // CSV import
 // ============================================================
 
+function FlexibleSizes({
+  sizes,
+  onChange,
+}: {
+  sizes: Array<{ size: string; stock: number }>;
+  onChange: (sizes: Array<{ size: string; stock: number }>) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const addSize = (label: string) => {
+    const v = label.trim();
+    if (!v) return;
+    if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
+    onChange([...sizes, { size: v, stock: 0 }]);
+  };
+
+  const applyPreset = (preset: string[]) => {
+    onChange(preset.map((s) => ({ size: s, stock: 0 })));
+  };
+
+  const updateStock = (i: number, value: number) => {
+    const next = sizes.slice();
+    next[i] = { ...next[i], stock: Math.max(0, Number(value) || 0) };
+    onChange(next);
+  };
+
+  const remove = (i: number) => {
+    onChange(sizes.filter((_, idx) => idx !== i));
+  };
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        Presets
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {SIZE_PRESETS.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            onClick={() => applyPreset(p.sizes)}
+            className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+        Stock por tamanho
+      </p>
+      <div className="mt-2 flex gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addSize(draft);
+              setDraft("");
+            }
+          }}
+          placeholder="ex: 36, M, OS…"
+          className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-[13px]"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            addSize(draft);
+            setDraft("");
+          }}
+          className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-[13px] text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus size={14} /> Adicionar
+        </button>
+      </div>
+
+      {sizes.length === 0 ? (
+        <p className="mt-3 rounded-md border border-dashed border-border bg-muted/20 p-3 text-center text-[11px] text-muted-foreground">
+          Sem tamanhos. Adiciona acima ou usa um preset.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-1.5">
+          {sizes.map((s, i) => (
+            <div
+              key={`${s.size}-${i}`}
+              className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+            >
+              <span className="min-w-[40px] text-center font-medium text-[13px]">
+                {s.size}
+              </span>
+              <input
+                type="number"
+                min="0"
+                value={s.stock}
+                onChange={(e) => updateStock(i, Number(e.target.value))}
+                className="h-8 w-20 rounded border border-border bg-background px-2 text-center text-[13px]"
+              />
+              <span className="text-[11px] text-muted-foreground">unidades</span>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                aria-label="Remover tamanho"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CSV import (continued)
+// ============================================================
+
 type ParsedRow = {
   brand: string;
   name: string;
@@ -1367,7 +1488,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     const size = cell(iSize).toUpperCase();
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
-    const barcode = cell(iBarcode);
+    const barcode = normalizeBarcode(cell(iBarcode));
 
     const key = reference || `${brand}::${i}`;
     let row = grouped.get(key);
@@ -1709,6 +1830,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const manualInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<unknown>(null);
   const lastScanRef = useRef<{ code: string; ts: number }>({ code: "", ts: 0 });
@@ -1832,6 +1954,9 @@ function ScanModal({ onClose }: { onClose: () => void }) {
     if (!code) return;
     submitBarcode(code);
     setManual("");
+    // Re-focus so physical scanners (which act as keyboards and send Enter)
+    // can chain multiple scans without the user touching the input.
+    setTimeout(() => manualInputRef.current?.focus(), 0);
   };
 
   return (
@@ -1910,6 +2035,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
           <form onSubmit={onManualSubmit} className="mb-4 flex gap-2">
             <input
               autoFocus
+              ref={manualInputRef}
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               placeholder="Inserir código de barras manualmente…"

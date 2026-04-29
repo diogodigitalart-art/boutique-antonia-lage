@@ -14,8 +14,6 @@ import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
-const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
-
 export const Route = createFileRoute("/produto/$id")({
   head: () => ({
     meta: [{ title: "Peça | Boutique Antónia Lage" }],
@@ -229,16 +227,15 @@ function ProductPage() {
               <p className="text-sm text-foreground">Tamanho único</p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {ALL_SIZES.map((s) => {
-                  const inProduct = product.sizes.includes(s);
-                  const available = inProduct && availableSet.has(s);
+                {product.sizes.map((s) => {
+                  const available = availableSet.has(s);
                   const selected = size === s;
                   return (
                     <button
                       key={s}
                       onClick={() => available && setSize(s)}
                       disabled={!available}
-                      className={`flex h-11 w-11 items-center justify-center rounded-md border text-sm transition ${
+                      className={`flex h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm transition ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground"
                           : available
