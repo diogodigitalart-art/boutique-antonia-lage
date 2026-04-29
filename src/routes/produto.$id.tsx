@@ -14,8 +14,6 @@ import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
-const ALL_SIZES = ["XS", "S", "M", "L", "XL"] as const;
-
 export const Route = createFileRoute("/produto/$id")({
   head: () => ({
     meta: [{ title: "Peça | Boutique Antónia Lage" }],
