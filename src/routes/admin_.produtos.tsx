@@ -607,8 +607,10 @@ type FormState = {
   brand: string;
   name: string;
   reference: string;
+  barcode: string;
   description: string;
   price: string;
+  cost_price: string;
   original_price: string;
   discount_percent: string;
   category: string;
@@ -627,8 +629,10 @@ function emptyForm(brandOptions: string[]): FormState {
     brand: brandOptions[0] ?? "",
     name: "",
     reference: "",
+    barcode: "",
     description: "",
     price: "",
+    cost_price: "",
     original_price: "",
     discount_percent: "",
     category: "colecção",
@@ -636,7 +640,7 @@ function emptyForm(brandOptions: string[]): FormState {
     is_active: true,
     oneSize: false,
     sizes,
-    oneSizeStock: 1,
+    oneSizeStock: 0,
     images: [],
   };
 }
@@ -670,7 +674,7 @@ function ProductForm({
   });
 
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
-  const oneSizeStock = isOneSize ? existingSizes[0].stock : 1;
+  const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
 
   const knownBrand = !row || brandOptions.includes(row.brand);
   const [form, setForm] = useState<FormState>(
@@ -679,8 +683,10 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
+          barcode: row.barcode ?? "",
           description: row.description,
           price: String(row.price),
+          cost_price: row.cost_price != null ? String(row.cost_price) : "",
           original_price: row.original_price != null ? String(row.original_price) : "",
           discount_percent: row.discount_percent != null ? String(row.discount_percent) : "",
           category: row.category,
