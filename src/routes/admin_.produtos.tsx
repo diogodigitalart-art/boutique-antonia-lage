@@ -900,6 +900,14 @@ function ProductForm({
                   className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
                 />
               </Field>
+              <Field label="Código de barras">
+                <input
+                  value={form.barcode}
+                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                  placeholder="ex: 1234567890123"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                />
+              </Field>
               <Field label="Season">
                 <select
                   value={form.season}
@@ -926,6 +934,31 @@ function ProductForm({
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
                 />
+              </Field>
+              <Field label="Preço de custo (€)">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.cost_price}
+                  onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+                {(() => {
+                  const p = Number(form.price) || 0;
+                  const c = Number(form.cost_price) || 0;
+                  if (!p || !c) return null;
+                  const margin = ((p - c) / p) * 100;
+                  return (
+                    <p
+                      className={`mt-1 text-[11px] ${
+                        margin >= 0 ? "text-muted-foreground" : "text-destructive"
+                      }`}
+                    >
+                      Margem: {margin.toFixed(1)}%
+                    </p>
+                  );
+                })()}
               </Field>
               <Field label="Preço original (opcional)">
                 <input
