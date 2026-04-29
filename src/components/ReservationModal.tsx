@@ -37,6 +37,12 @@ export function ReservationModal({
   const send = useServerFn(sendReservationEmail);
   const { user, profile, refreshProfile } = useAuth();
   const today = new Date().toISOString().split("T")[0];
+  const minDate = (() => {
+    if (itemType !== "experiencia") return today;
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    return d.toISOString().split("T")[0];
+  })();
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
@@ -268,7 +274,7 @@ export function ReservationModal({
               name="date"
               required
               type="date"
-              min={today}
+              min={minDate}
               value={date}
               onChange={(e) => {
                 setDate(e.target.value);
@@ -276,6 +282,11 @@ export function ReservationModal({
               }}
               className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
             />
+            {itemType === "experiencia" && (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                As experiências requerem reserva com mínimo 3 dias de antecedência.
+              </p>
+            )}
             {dateIsSunday && (
               <p className="mt-1.5 text-xs text-destructive">
                 A boutique está fechada ao Domingo. Escolhe outro dia.
