@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,9 @@ import {
   Minus,
   ImageOff,
   FileSpreadsheet,
+  ScanLine,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -29,6 +32,7 @@ import {
   adminAddBrand,
   adminDeleteBrand,
   adminListSeasons,
+  adminAdjustStockByBarcode,
 } from "@/server/products";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL"] as const;
@@ -62,6 +66,8 @@ type ProductRow = {
   sizes: ProductSize[];
   is_active: boolean;
   created_at: string;
+  barcode?: string | null;
+  cost_price?: number | null;
 };
 type BrandRow = { id: string; name: string };
 
@@ -93,6 +99,7 @@ function Content() {
   const [showBrands, setShowBrands] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -203,6 +210,12 @@ function Content() {
           <span className="text-xs text-muted-foreground">{filtered.length} produtos</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setScanning(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
+          >
+            <ScanLine size={16} /> Scan
+          </button>
           <button
             onClick={() => setImporting(true)}
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
@@ -458,6 +471,15 @@ function Content() {
           }}
         />
       )}
+
+      {scanning && (
+        <ScanModal
+          onClose={() => {
+            setScanning(false);
+            refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -585,8 +607,10 @@ type FormState = {
   brand: string;
   name: string;
   reference: string;
+  barcode: string;
   description: string;
   price: string;
+  cost_price: string;
   original_price: string;
   discount_percent: string;
   category: string;
@@ -605,8 +629,10 @@ function emptyForm(brandOptions: string[]): FormState {
     brand: brandOptions[0] ?? "",
     name: "",
     reference: "",
+    barcode: "",
     description: "",
     price: "",
+    cost_price: "",
     original_price: "",
     discount_percent: "",
     category: "colecção",
@@ -614,7 +640,7 @@ function emptyForm(brandOptions: string[]): FormState {
     is_active: true,
     oneSize: false,
     sizes,
-    oneSizeStock: 1,
+    oneSizeStock: 0,
     images: [],
   };
 }
@@ -648,7 +674,7 @@ function ProductForm({
   });
 
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
-  const oneSizeStock = isOneSize ? existingSizes[0].stock : 1;
+  const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
 
   const knownBrand = !row || brandOptions.includes(row.brand);
   const [form, setForm] = useState<FormState>(
@@ -657,8 +683,10 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
+          barcode: row.barcode ?? "",
           description: row.description,
           price: String(row.price),
+          cost_price: row.cost_price != null ? String(row.cost_price) : "",
           original_price: row.original_price != null ? String(row.original_price) : "",
           discount_percent: row.discount_percent != null ? String(row.discount_percent) : "",
           category: row.category,
@@ -721,12 +749,12 @@ function ProductForm({
       sizesPayload = [
         {
           size: "U",
-          stock: Math.max(1, form.oneSizeStock || 1),
+          stock: Math.max(0, form.oneSizeStock || 0),
           reserved: liveU?.reserved ?? 0,
         },
       ];
     } else {
-      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] > 0).map((s) => {
+      sizesPayload = SIZE_OPTIONS.filter((s) => form.sizes[s] >= 0 && form.sizes[s] > 0).map((s) => {
         const live = liveSizes.find((x) => x.size === s);
         return { size: s, stock: form.sizes[s], reserved: live?.reserved ?? 0 };
       });
@@ -743,8 +771,10 @@ function ProductForm({
             brand: form.brand.trim(),
             name: form.name.trim(),
             reference: form.reference.trim(),
+            barcode: form.barcode.trim() || null,
             description: form.description.trim(),
             price: Number(form.price),
+            cost_price: form.cost_price ? Number(form.cost_price) : null,
             original_price: form.original_price ? Number(form.original_price) : null,
             discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
@@ -870,6 +900,14 @@ function ProductForm({
                   className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
                 />
               </Field>
+              <Field label="Código de barras">
+                <input
+                  value={form.barcode}
+                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                  placeholder="ex: 1234567890123"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                />
+              </Field>
               <Field label="Season">
                 <select
                   value={form.season}
@@ -896,6 +934,31 @@ function ProductForm({
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
                 />
+              </Field>
+              <Field label="Preço de custo (€)">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.cost_price}
+                  onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+                {(() => {
+                  const p = Number(form.price) || 0;
+                  const c = Number(form.cost_price) || 0;
+                  if (!p || !c) return null;
+                  const margin = ((p - c) / p) * 100;
+                  return (
+                    <p
+                      className={`mt-1 text-[11px] ${
+                        margin >= 0 ? "text-muted-foreground" : "text-destructive"
+                      }`}
+                    >
+                      Margem: {margin.toFixed(1)}%
+                    </p>
+                  );
+                })()}
               </Field>
               <Field label="Preço original (opcional)">
                 <input
@@ -968,19 +1031,29 @@ function ProductForm({
                 />
                 Tamanho único
               </label>
+              {(() => {
+                const total = form.oneSize
+                  ? Math.max(0, form.oneSizeStock || 0)
+                  : SIZE_OPTIONS.reduce((a, s) => a + (form.sizes[s] || 0), 0);
+                return (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Total disponível: <span className="font-medium text-foreground">{total}</span> unidades
+                  </p>
+                );
+              })()}
               {form.oneSize ? (
                 <div className="mt-3">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock
+                    Stock disponível
                   </label>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     value={form.oneSizeStock}
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        oneSizeStock: Math.max(1, Number(e.target.value) || 1),
+                        oneSizeStock: Math.max(0, Number(e.target.value) || 0),
                       })
                     }
                     className="mt-1 h-10 w-32 rounded-md border border-border bg-background px-3 text-[13px]"
@@ -1023,50 +1096,7 @@ function ProductForm({
             </div>
 
             {isEdit && liveSizes.length > 0 && (
-              <div className="rounded-md border border-border bg-muted/30 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Reservas manuais
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Marca como reservado para reservas presenciais.
-                </p>
-                <div className="mt-3 space-y-2">
-                  {liveSizes.map((s) => {
-                    const available = s.stock - s.reserved;
-                    return (
-                      <div
-                        key={s.size}
-                        className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 font-medium">{s.size}</span>
-                          <span className="text-[11px] text-muted-foreground">
-                            stock {s.stock} · reservado {s.reserved} · livre {available}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => adjust(s.size, -1)}
-                            disabled={s.reserved <= 0}
-                            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-40"
-                          >
-                            <Minus size={11} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => adjust(s.size, 1)}
-                            disabled={available <= 0}
-                            className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-                          >
-                            <Plus size={11} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <InventoryAdjustments liveSizes={liveSizes} onAdjust={adjust} />
             )}
 
             <div>
@@ -1581,6 +1611,370 @@ function ImportProductsModal({
             className="rounded-full bg-primary px-6 py-2 text-[13px] text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
             {importing ? "A importar…" : `Importar ${valid.length} produto(s)`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Inventory adjustments (collapsible)
+// ============================================================
+
+function InventoryAdjustments({
+  liveSizes,
+  onAdjust,
+}: {
+  liveSizes: ProductSize[];
+  onAdjust: (size: string, delta: 1 | -1) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-md border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-[13px]"
+      >
+        <span className="font-medium">Ajustes de inventário</span>
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+      {open && (
+        <div className="border-t border-border p-4">
+          <p className="mb-3 text-[11px] text-muted-foreground">
+            Marca como reservado para reservas presenciais.
+          </p>
+          <div className="space-y-2">
+            {liveSizes.map((s) => {
+              const available = s.stock - s.reserved;
+              return (
+                <div
+                  key={s.size}
+                  className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 font-medium">{s.size}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      stock {s.stock} · reservado {s.reserved} · livre {available}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onAdjust(s.size, -1)}
+                      disabled={s.reserved <= 0}
+                      className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] hover:bg-muted disabled:opacity-40"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAdjust(s.size, 1)}
+                      disabled={available <= 0}
+                      className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Scan modal — barcode IN/OUT stock adjustments
+// ============================================================
+
+type ScanLog = {
+  ts: number;
+  productName: string;
+  brand: string;
+  size: string;
+  action: "IN" | "OUT";
+  totalAvailable: number;
+};
+
+function ScanModal({ onClose }: { onClose: () => void }) {
+  const adjustFn = useServerFn(adminAdjustStockByBarcode);
+  const [mode, setMode] = useState<"IN" | "OUT">("IN");
+  const [manual, setManual] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [logs, setLogs] = useState<ScanLog[]>([]);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraOn, setCameraOn] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<unknown>(null);
+  const lastScanRef = useRef<{ code: string; ts: number }>({ code: "", ts: 0 });
+  const rafRef = useRef<number | null>(null);
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  const submitBarcode = useCallback(
+    async (barcode: string) => {
+      const code = barcode.trim();
+      if (!code) return;
+      // Debounce duplicate scans within 2s
+      const now = Date.now();
+      if (lastScanRef.current.code === code && now - lastScanRef.current.ts < 2000) return;
+      lastScanRef.current = { code, ts: now };
+      setBusy(true);
+      try {
+        const token = await getToken();
+        const res = (await adjustFn({
+          data: { token, barcode: code, delta: modeRef.current === "IN" ? 1 : -1 },
+        })) as {
+          productName: string;
+          brand: string;
+          size: string;
+          totalAvailable: number;
+        };
+        const log: ScanLog = {
+          ts: now,
+          productName: res.productName,
+          brand: res.brand,
+          size: res.size,
+          action: modeRef.current,
+          totalAvailable: res.totalAvailable,
+        };
+        setLogs((prev) => [log, ...prev].slice(0, 10));
+        toast.success(
+          `${modeRef.current === "IN" ? "Entrada" : "Saída"} · ${res.brand} ${res.productName} (${res.size}) · stock ${res.totalAvailable}`,
+        );
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [adjustFn],
+  );
+
+  // Camera + BarcodeDetector setup
+  useEffect(() => {
+    let cancelled = false;
+    const Detector = (
+      globalThis as unknown as {
+        BarcodeDetector?: new (opts?: { formats?: string[] }) => {
+          detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>>;
+        };
+      }
+    ).BarcodeDetector;
+    if (!Detector) {
+      setCameraError("O navegador não suporta leitura de códigos de barras. Usa o campo manual.");
+      return;
+    }
+    detectorRef.current = new Detector({
+      formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "qr_code"],
+    });
+    const loop = async () => {
+      const detector = detectorRef.current as {
+        detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>>;
+      } | null;
+      if (cancelled || !detector || !videoRef.current) return;
+      try {
+        if (videoRef.current.readyState >= 2) {
+          const codes = await detector.detect(videoRef.current);
+          if (codes && codes.length > 0 && codes[0].rawValue) {
+            await submitBarcode(codes[0].rawValue);
+          }
+        }
+      } catch {
+        /* ignore frame errors */
+      }
+      rafRef.current = window.setTimeout(loop, 400) as unknown as number;
+    };
+
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setCameraOn(true);
+          loop();
+        }
+      } catch {
+        setCameraError("Câmara indisponível. Usa o campo manual.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (rafRef.current) clearTimeout(rafRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        streamRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = manual.trim();
+    if (!code) return;
+    submitBarcode(code);
+    setManual("");
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-background shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+              Inventário
+            </p>
+            <h2 className="font-display text-xl italic">Scan de códigos de barras</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Mode selector */}
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setMode("IN")}
+              className={`flex items-center justify-center gap-2 rounded-xl border px-6 py-5 text-base font-medium transition ${
+                mode === "IN"
+                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <ArrowDownToLine size={20} /> Entrada (IN)
+            </button>
+            <button
+              onClick={() => setMode("OUT")}
+              className={`flex items-center justify-center gap-2 rounded-xl border px-6 py-5 text-base font-medium transition ${
+                mode === "OUT"
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <ArrowUpFromLine size={20} /> Saída (OUT)
+            </button>
+          </div>
+
+          {/* Camera viewfinder */}
+          <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-border bg-black">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className="h-full w-full object-cover"
+            />
+            {!cameraOn && !cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
+                A iniciar câmara…
+              </div>
+            )}
+            {cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-white/80">
+                {cameraError}
+              </div>
+            )}
+            {cameraOn && (
+              <div className="pointer-events-none absolute inset-x-8 top-1/2 h-px -translate-y-1/2 bg-red-500/80" />
+            )}
+          </div>
+
+          {/* Manual fallback */}
+          <form onSubmit={onManualSubmit} className="mb-4 flex gap-2">
+            <input
+              autoFocus
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              placeholder="Inserir código de barras manualmente…"
+              className="h-10 flex-1 rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+            />
+            <button
+              type="submit"
+              disabled={busy || !manual.trim()}
+              className="rounded-md bg-primary px-4 py-1.5 text-[13px] text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {busy ? "…" : "Aplicar"}
+            </button>
+          </form>
+
+          {/* Log */}
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Histórico (últimos 10)
+            </p>
+            {logs.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center text-[12px] text-muted-foreground">
+                Sem leituras ainda.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border rounded-md border border-border bg-card">
+                {logs.map((l) => (
+                  <li
+                    key={l.ts}
+                    className="flex items-center justify-between px-3 py-2 text-[12px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex h-6 w-12 items-center justify-center rounded-full text-[10px] font-medium ${
+                          l.action === "IN"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {l.action}
+                      </span>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {l.brand} · {l.productName}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          tamanho {l.size} · stock {l.totalAvailable}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">
+                      {new Date(l.ts).toLocaleTimeString("pt-PT")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-border bg-card px-6 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-full bg-primary px-6 py-2 text-[13px] text-primary-foreground hover:bg-primary/90"
+          >
+            Concluir
           </button>
         </div>
       </div>

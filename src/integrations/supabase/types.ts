@@ -216,6 +216,7 @@ export type Database = {
           barcode: string | null
           brand: string
           category: string
+          cost_price: number | null
           created_at: string
           description: string
           discount_percent: number | null
@@ -235,6 +236,7 @@ export type Database = {
           barcode?: string | null
           brand: string
           category?: string
+          cost_price?: number | null
           created_at?: string
           description?: string
           discount_percent?: number | null
@@ -254,6 +256,7 @@ export type Database = {
           barcode?: string | null
           brand?: string
           category?: string
+          cost_price?: number | null
           created_at?: string
           description?: string
           discount_percent?: number | null
