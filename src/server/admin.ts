@@ -40,7 +40,13 @@ export type AdminUser = {
     status: string;
     created_at: string;
   }>;
-  wishlist: Array<{ id: string; product_id: string; product_label: string; created_at: string }>;
+  wishlist: Array<{
+    id: string;
+    product_id: string;
+    product_label: string;
+    product_image: string | null;
+    created_at: string;
+  }>;
   quiz: { answers: JsonValue; profile_description: string; created_at: string } | null;
   feedback: Array<{
     id: string;
@@ -200,12 +206,16 @@ export const getAdminData = createServerFn({ method: "POST" })
         }));
       const userWishlist = wishlist
         .filter((w) => w.user_id === p.id)
-        .map((w) => ({
-          id: w.id,
-          product_id: w.product_id,
-          product_label: productMap.get(w.product_id) || w.product_id,
-          created_at: w.created_at,
-        }));
+        .map((w) => {
+          const meta = productMeta.get(w.product_id) || null;
+          return {
+            id: w.id,
+            product_id: w.product_id,
+            product_label: meta?.label || productMap.get(w.product_id) || w.product_id,
+            product_image: meta?.image || null,
+            created_at: w.created_at,
+          };
+        });
       const userQuiz = quiz.find((q) => q.user_id === p.id);
       const userContacts = contacts
         .filter((c) => p.email && c.email.toLowerCase() === (p.email || "").toLowerCase())
