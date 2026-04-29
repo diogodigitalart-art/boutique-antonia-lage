@@ -16,6 +16,7 @@ import {
   ChevronUp,
   Minus,
   ImageOff,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -205,6 +206,12 @@ function Content() {
           className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground hover:bg-primary/90"
         >
           <Plus size={16} /> Adicionar produto
+        </button>
+        <button
+          onClick={() => setImporting(true)}
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
+        >
+          <FileSpreadsheet size={16} /> Importar produtos
         </button>
       </div>
 
