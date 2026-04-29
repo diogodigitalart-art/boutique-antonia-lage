@@ -92,6 +92,7 @@ function Content() {
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -443,6 +444,17 @@ function Content() {
             if (!editing) return;
             await remove(editing);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {importing && (
+        <ImportProductsModal
+          brandOptions={allBrandNames}
+          onClose={() => setImporting(false)}
+          onDone={() => {
+            setImporting(false);
+            refresh();
           }}
         />
       )}
