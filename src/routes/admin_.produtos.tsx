@@ -99,6 +99,7 @@ function Content() {
   const [showBrands, setShowBrands] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -209,6 +210,12 @@ function Content() {
           <span className="text-xs text-muted-foreground">{filtered.length} produtos</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setScanning(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
+          >
+            <ScanLine size={16} /> Scan
+          </button>
           <button
             onClick={() => setImporting(true)}
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm text-foreground hover:bg-muted"
@@ -460,6 +467,15 @@ function Content() {
           onClose={() => setImporting(false)}
           onDone={() => {
             setImporting(false);
+            refresh();
+          }}
+        />
+      )}
+
+      {scanning && (
+        <ScanModal
+          onClose={() => {
+            setScanning(false);
             refresh();
           }}
         />
