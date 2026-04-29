@@ -1483,7 +1483,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     const size = cell(iSize).toUpperCase();
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
-    const barcode = cell(iBarcode);
+    const barcode = normalizeBarcode(cell(iBarcode));
 
     const key = reference || `${brand}::${i}`;
     let row = grouped.get(key);
