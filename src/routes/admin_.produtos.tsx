@@ -643,14 +643,12 @@ type FormState = {
   season: string;
   is_active: boolean;
   oneSize: boolean;
-  sizes: Record<string, number>;
+  sizes: Array<{ size: string; stock: number }>;
   oneSizeStock: number;
   images: string[];
 };
 
 function emptyForm(brandOptions: string[]): FormState {
-  const sizes: Record<string, number> = {};
-  SIZE_OPTIONS.forEach((s) => (sizes[s] = 0));
   return {
     brand: brandOptions[0] ?? "",
     name: "",
@@ -665,7 +663,7 @@ function emptyForm(brandOptions: string[]): FormState {
     season: "",
     is_active: true,
     oneSize: false,
-    sizes,
+    sizes: [],
     oneSizeStock: 0,
     images: [],
   };
