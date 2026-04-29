@@ -1260,6 +1260,125 @@ function PreviewCard({
 // CSV import
 // ============================================================
 
+function FlexibleSizes({
+  sizes,
+  onChange,
+}: {
+  sizes: Array<{ size: string; stock: number }>;
+  onChange: (sizes: Array<{ size: string; stock: number }>) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const addSize = (label: string) => {
+    const v = label.trim();
+    if (!v) return;
+    if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
+    onChange([...sizes, { size: v, stock: 0 }]);
+  };
+
+  const applyPreset = (preset: string[]) => {
+    onChange(preset.map((s) => ({ size: s, stock: 0 })));
+  };
+
+  const updateStock = (i: number, value: number) => {
+    const next = sizes.slice();
+    next[i] = { ...next[i], stock: Math.max(0, Number(value) || 0) };
+    onChange(next);
+  };
+
+  const remove = (i: number) => {
+    onChange(sizes.filter((_, idx) => idx !== i));
+  };
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        Presets
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {SIZE_PRESETS.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            onClick={() => applyPreset(p.sizes)}
+            className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+        Stock por tamanho
+      </p>
+      <div className="mt-2 flex gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addSize(draft);
+              setDraft("");
+            }
+          }}
+          placeholder="ex: 36, M, OS…"
+          className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-[13px]"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            addSize(draft);
+            setDraft("");
+          }}
+          className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-[13px] text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus size={14} /> Adicionar
+        </button>
+      </div>
+
+      {sizes.length === 0 ? (
+        <p className="mt-3 rounded-md border border-dashed border-border bg-muted/20 p-3 text-center text-[11px] text-muted-foreground">
+          Sem tamanhos. Adiciona acima ou usa um preset.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-1.5">
+          {sizes.map((s, i) => (
+            <div
+              key={`${s.size}-${i}`}
+              className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+            >
+              <span className="min-w-[40px] text-center font-medium text-[13px]">
+                {s.size}
+              </span>
+              <input
+                type="number"
+                min="0"
+                value={s.stock}
+                onChange={(e) => updateStock(i, Number(e.target.value))}
+                className="h-8 w-20 rounded border border-border bg-background px-2 text-center text-[13px]"
+              />
+              <span className="text-[11px] text-muted-foreground">unidades</span>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                aria-label="Remover tamanho"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CSV import (continued)
+// ============================================================
+
 type ParsedRow = {
   brand: string;
   name: string;
