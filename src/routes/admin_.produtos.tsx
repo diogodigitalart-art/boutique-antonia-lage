@@ -1059,7 +1059,7 @@ function ProductForm({
               {(() => {
                 const total = form.oneSize
                   ? Math.max(0, form.oneSizeStock || 0)
-                  : SIZE_OPTIONS.reduce((a, s) => a + (form.sizes[s] || 0), 0);
+                  : form.sizes.reduce((a, s) => a + (Number(s.stock) || 0), 0);
                 return (
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Total disponível: <span className="font-medium text-foreground">{total}</span> unidades
@@ -1069,7 +1069,7 @@ function ProductForm({
               {form.oneSize ? (
                 <div className="mt-3">
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock disponível
+                    Stock disponível (U)
                   </label>
                   <input
                     type="number"
@@ -1085,38 +1085,10 @@ function ProductForm({
                   />
                 </div>
               ) : (
-                <>
-                  <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Stock por tamanho
-                  </p>
-                  <div className="mt-2 grid grid-cols-5 gap-2">
-                    {SIZE_OPTIONS.map((s) => (
-                      <div
-                        key={s}
-                        className="flex flex-col items-center rounded-md border border-border bg-background p-2"
-                      >
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {s}
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.sizes[s]}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              sizes: {
-                                ...form.sizes,
-                                [s]: Math.max(0, Number(e.target.value) || 0),
-                              },
-                            })
-                          }
-                          className="mt-1 w-full rounded border border-border bg-background px-1 py-1 text-center text-[13px]"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <FlexibleSizes
+                  sizes={form.sizes}
+                  onChange={(sizes) => setForm({ ...form, sizes })}
+                />
               )}
             </div>
 
