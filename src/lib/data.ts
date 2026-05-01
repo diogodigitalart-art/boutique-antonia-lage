@@ -1,3 +1,4 @@
+// updated
 // Mock data for Boutique Antónia Lage
 // Experiences are still hardcoded; products now come from the live Supabase
 // `products` table via `useProducts()` (see `src/lib/products.tsx`).
