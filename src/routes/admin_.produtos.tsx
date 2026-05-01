@@ -1539,18 +1539,43 @@ function ImportProductsModal({
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
+  const [existingByRef, setExistingByRef] = useState<Map<string, string>>(new Map());
 
   const onFile = async (file: File) => {
     setFileName(file.name);
     const text = await file.text();
     const delim = detectDelimiter(text);
     const matrix = parseCsv(text, delim);
-    setRows(rowsToProducts(matrix));
+    const parsed = rowsToProducts(matrix);
+    setRows(parsed);
     setProgress({ done: 0, ok: 0, err: 0 });
+    // Fetch existing products by reference to determine create vs update
+    const refs = Array.from(
+      new Set(parsed.map((r) => r.reference).filter((r) => !!r)),
+    );
+    if (refs.length > 0) {
+      const { data, error } = await supabase
+        .from("products" as never)
+        .select("id, reference")
+        .in("reference", refs);
+      if (!error && data) {
+        const map = new Map<string, string>();
+        for (const row of data as Array<{ id: string; reference: string }>) {
+          map.set(row.reference, row.id);
+        }
+        setExistingByRef(map);
+      } else {
+        setExistingByRef(new Map());
+      }
+    } else {
+      setExistingByRef(new Map());
+    }
   };
 
   const valid = rows.filter((r) => !r._error);
   const invalid = rows.length - valid.length;
+  const updateCount = valid.filter((r) => existingByRef.has(r.reference)).length;
+  const createCount = valid.length - updateCount;
 
   const start = async () => {
     if (valid.length === 0) return;
@@ -1562,10 +1587,12 @@ function ImportProductsModal({
       for (let i = 0; i < valid.length; i++) {
         const r = valid[i];
         try {
+          const existingId = existingByRef.get(r.reference);
           await upsertFn({
             data: {
               token,
               product: {
+                id: existingId,
                 brand: r.brand,
                 name: r.name,
                 reference: r.reference,
@@ -1589,7 +1616,9 @@ function ImportProductsModal({
         }
         setProgress({ done: i + 1, ok, err });
       }
-      toast.success(`Importação concluída: ${ok} criado(s), ${err} erro(s)`);
+      toast.success(
+        `Importação concluída: ${ok} processado(s) (${createCount} novo(s), ${updateCount} actualizado(s)), ${err} erro(s)`,
+      );
       if (ok > 0) onDone();
     } finally {
       setImporting(false);
@@ -1664,7 +1693,10 @@ function ImportProductsModal({
             <>
               <div className="mb-3 flex flex-wrap items-center gap-2 text-[12px]">
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
-                  {valid.length} válidos
+                  {createCount} novo(s)
+                </span>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">
+                  {updateCount} actualizado(s)
                 </span>
                 {invalid > 0 && (
                   <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">
@@ -1700,8 +1732,10 @@ function ImportProductsModal({
                           <td className="px-3 py-1.5">
                             {r._error ? (
                               <span className="text-red-600">{r._error}</span>
+                            ) : existingByRef.has(r.reference) ? (
+                              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-700">ACTUALIZAR</span>
                             ) : (
-                              <span className="text-emerald-700">OK</span>
+                              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700">NOVO</span>
                             )}
                           </td>
                         </tr>
