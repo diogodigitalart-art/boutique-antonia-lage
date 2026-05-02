@@ -2,15 +2,18 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Search, User, Heart, ShoppingBag } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
+import { useProducts } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 import { Logo } from "./Logo";
 
 export function TopNav() {
   const { lang, setLang, t } = useI18n();
   const { ids } = useWishlist();
+  const { products } = useProducts();
   const { count: cartCount } = useCart();
   const loc = useLocation();
-  const hasWish = ids.length > 0;
+  const wishCount = ids.filter((id) => products.some((p) => p.id === id)).length;
+  const hasWish = wishCount > 0;
 
   const tabs: { to: "/" | "/coleccao" | "/experiencias" | "/arquivo"; label: string; match: string; badge?: boolean }[] = [
     { to: "/coleccao", label: t("tab_collection"), match: "/coleccao" },
