@@ -85,12 +85,10 @@ function ProductPage() {
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
   const availableSet = new Set(product.availableSizes ?? product.sizes);
-  const lowStock =
+  const lastPiece =
     !product.fullyReserved &&
     typeof product.availableUnits === "number" &&
-    product.availableUnits > 0 &&
-    product.availableUnits <= 2;
-  const lastPiece = lowStock && product.availableUnits === 1;
+    product.availableUnits === 1;
   const galleryImages =
     product.images && product.images.length > 0 ? product.images : [product.image];
   const currentImage = galleryImages[activeImage] ?? galleryImages[0];
@@ -157,7 +155,7 @@ function ProductPage() {
             />
           </button>
           {galleryImages.length > 1 && (
-            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
+            <div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 py-1">
               {galleryImages.map((img, i) => {
                 const selected = i === activeImage;
                 return (
@@ -260,17 +258,10 @@ function ProductPage() {
                 Esgotado — todas as peças estão reservadas.
               </p>
             )}
-            {lowStock && (
-              <div
-                className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
-                  lastPiece
-                    ? "bg-amber-500/15 text-amber-700"
-                    : "bg-foreground/10 text-foreground"
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${lastPiece ? "bg-amber-500" : "bg-foreground/60"}`} />
-                {lastPiece ? "Última peça disponível" : "Quase esgotado — restam apenas 2"}
-              </div>
+            {lastPiece && (
+              <p className="mt-4 font-display text-sm italic text-muted-foreground">
+                Última peça disponível
+              </p>
             )}
           </div>
 
