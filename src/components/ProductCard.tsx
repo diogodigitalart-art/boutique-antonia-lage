@@ -15,12 +15,10 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
   const isArchive = product.category === "archive" && product.originalPrice;
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
-  const lowStock =
+  const lastPiece =
     !product.fullyReserved &&
     typeof product.availableUnits === "number" &&
-    product.availableUnits > 0 &&
-    product.availableUnits <= 2;
-  const lastPiece = lowStock && product.availableUnits === 1;
+    product.availableUnits === 1;
 
   return (
     <div className="group relative flex h-full w-full flex-col">
@@ -46,17 +44,7 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
               −{product.discountPercent}%
             </span>
           )}
-          {lowStock && !hasDiscount && !product.fullyReserved && (
-            <span
-              className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm ${
-                lastPiece
-                  ? "bg-amber-500/95 text-white"
-                  : "bg-foreground/85 text-background"
-              }`}
-            >
-              {lastPiece ? "Última peça" : "Quase esgotado"}
-            </span>
-          )}
+          {/* low-stock indicator moved below price for a more subtle treatment */}
         </div>
       </Link>
       <button
@@ -106,6 +94,12 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           </div>
         ) : (
           <p className="mt-1.5 text-sm font-light text-foreground">€{product.price}</p>
+        )}
+        {lastPiece && (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-light tracking-wide text-muted-foreground">
+            <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
+            Última peça
+          </p>
         )}
       </Link>
     </div>
