@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendReservationEmail } from "@/server/reservation";
+import { getBookedSlots, listExperienceCapacity, type BookedSlot, type ExperienceCapacityRow } from "@/server/slots";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { TIME_SLOTS, SCHEDULE_NOTE, isSunday } from "@/lib/reservations";
@@ -35,6 +36,8 @@ export function ReservationModal({
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const send = useServerFn(sendReservationEmail);
+  const fetchBookedSlots = useServerFn(getBookedSlots);
+  const fetchExperienceCapacity = useServerFn(listExperienceCapacity);
   const { user, profile, refreshProfile } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   const minDate = (() => {
@@ -46,6 +49,8 @@ export function ReservationModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [experienceCapacity, setExperienceCapacity] = useState<ExperienceCapacityRow[]>([]);
   // Optional occasion (Checkpoint 4) — shown on every reservation
   const [occasion, setOccasion] = useState("");
   // Boutique Privada extra fields
@@ -71,8 +76,25 @@ export function ReservationModal({
         .select("blocked_date, blocked_time")
         .gte("blocked_date", today);
       setBlocked((data as Array<{ blocked_date: string; blocked_time: string | null }>) ?? []);
+      // Load booked slots for the next 90 days + capacity rules
+      try {
+        const toDate = (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 90);
+          return d.toISOString().split("T")[0];
+        })();
+        const [slotsRes, capRes] = await Promise.all([
+          fetchBookedSlots({ data: { fromDate: today, toDate } }),
+          fetchExperienceCapacity(),
+        ]);
+        setBookedSlots(slotsRes.slots);
+        setExperienceCapacity(capRes.rows);
+      } catch (e) {
+        console.error("Failed to load slot availability", e);
+      }
     })();
-  }, [open, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const dateIsSunday = isSunday(date);
   const dateFullyBlocked = useMemo(
@@ -88,6 +110,55 @@ export function ReservationModal({
       ),
     [date, blocked],
   );
+
+  // Capacity for current experience (defaults to 1 if not configured)
+  const experienceMaxCapacity = useMemo(() => {
+    if (itemType !== "experiencia") return Infinity;
+    const found = experienceCapacity.find((c) => c.experience_name === itemName);
+    return found ? found.max_capacity_per_slot : 1;
+  }, [itemType, itemName, experienceCapacity]);
+
+  /** Returns true if the given time slot is unavailable on the selected date. */
+  const isSlotUnavailable = (slot: string): boolean => {
+    if (!date) return false;
+    if (blockedTimesForDate.has(slot)) return true;
+
+    if (itemType === "experiencia") {
+      const count = bookedSlots
+        .filter(
+          (b) =>
+            b.preferred_date === date &&
+            b.reservation_time === slot &&
+            b.item_type === "experiencia" &&
+            b.item_name === itemName,
+        )
+        .reduce((sum, b) => sum + b.booking_count, 0);
+      return count >= experienceMaxCapacity;
+    }
+
+    // Product reservation: block exact product+size+date+time conflicts
+    if (itemType === "produto" && productUuid && selectedSize) {
+      const taken = bookedSlots.some(
+        (b) =>
+          b.preferred_date === date &&
+          b.reservation_time === slot &&
+          b.item_type === "produto" &&
+          b.product_id === productUuid &&
+          b.product_size === selectedSize,
+      );
+      return taken;
+    }
+    return false;
+  };
+
+  /** Suggest the next available slot if the chosen one is busy (product only). */
+  const nextAvailableSlot = useMemo(() => {
+    if (!date || itemType !== "produto") return null;
+    if (!productUuid || !selectedSize) return null;
+    if (!time || !isSlotUnavailable(time)) return null;
+    return TIME_SLOTS.find((s) => !isSlotUnavailable(s)) ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, time, bookedSlots, productUuid, selectedSize, itemType]);
 
   if (!open) return null;
 
@@ -129,6 +200,10 @@ export function ReservationModal({
     }
     if (blockedTimesForDate.has(payload.time)) {
       toast.error("Essa hora não está disponível.");
+      return;
+    }
+    if (isSlotUnavailable(payload.time)) {
+      toast.error("Esse horário já não está disponível. Escolhe outro.");
       return;
     }
 
