@@ -260,6 +260,18 @@ function ProductPage() {
                 Esgotado — todas as peças estão reservadas.
               </p>
             )}
+            {lowStock && (
+              <div
+                className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
+                  lastPiece
+                    ? "bg-amber-500/15 text-amber-700"
+                    : "bg-foreground/10 text-foreground"
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full ${lastPiece ? "bg-amber-500" : "bg-foreground/60"}`} />
+                {lastPiece ? "Última peça disponível" : "Quase esgotado — restam apenas 2"}
+              </div>
+            )}
           </div>
 
           {/* Description */}
