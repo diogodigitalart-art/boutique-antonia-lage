@@ -382,28 +382,53 @@ export function ReservationModal({
             <label htmlFor="time" className="text-xs uppercase tracking-wider text-muted-foreground">
               Hora preferida
             </label>
-            <select
-              id="time"
-              name="time"
-              required
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              disabled={!date || dateIsSunday || dateFullyBlocked}
-              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <option value="" disabled>
-                Seleccionar hora
-              </option>
-              {TIME_SLOTS.map((slot) => {
-                const isBlocked = blockedTimesForDate.has(slot);
-                return (
-                  <option key={slot} value={slot} disabled={isBlocked}>
-                    {slot}
-                    {isBlocked ? " — indisponível" : ""}
-                  </option>
-                );
-              })}
-            </select>
+            {/* Hidden input keeps form-data submission semantics */}
+            <input type="hidden" name="time" value={time} />
+            {!date || dateIsSunday || dateFullyBlocked ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Selecciona uma data primeiro.
+              </p>
+            ) : (
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {TIME_SLOTS.map((slot) => {
+                  const unavailable = isSlotUnavailable(slot);
+                  const selected = time === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => !unavailable && setTime(slot)}
+                      disabled={unavailable}
+                      className={`relative flex h-12 flex-col items-center justify-center rounded-lg border text-sm transition ${
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : unavailable
+                            ? "cursor-not-allowed border-border bg-muted text-muted-foreground/60"
+                            : "border-primary/30 bg-primary-soft text-primary hover:border-primary hover:bg-primary/10"
+                      }`}
+                      aria-label={`${slot}${unavailable ? " — ocupado" : ""}`}
+                    >
+                      <span className="font-medium">{slot}</span>
+                      {unavailable && (
+                        <span className="text-[9px] uppercase tracking-wider">Ocupado</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {nextAvailableSlot && (
+              <p className="mt-2 text-xs text-warning">
+                Esse horário está ocupado.{" "}
+                <button
+                  type="button"
+                  onClick={() => setTime(nextAvailableSlot)}
+                  className="font-medium underline hover:text-foreground"
+                >
+                  Sugerir {nextAvailableSlot}
+                </button>
+              </p>
+            )}
             <p className="mt-1.5 text-[11px] text-muted-foreground">{SCHEDULE_NOTE}</p>
           </div>
 
