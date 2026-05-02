@@ -10,8 +10,7 @@ import {
 } from "@/server/admin";
 import { Loader2, Search, ChevronLeft, ChevronRight, Calendar, List } from "lucide-react";
 import { toast } from "sonner";
-import { STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
-import { TIME_SLOTS } from "@/lib/reservations";
+import { STATUS_OPTIONS, statusBadgeClasses, TIME_SLOTS } from "@/lib/reservations";
 
 export const Route = createFileRoute("/admin_/reservas")({
   head: () => ({ meta: [{ title: "Reservas | Admin" }] }),
