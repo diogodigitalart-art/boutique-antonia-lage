@@ -116,6 +116,30 @@ export type Database = {
         }
         Relationships: []
       }
+      experience_capacity: {
+        Row: {
+          created_at: string
+          experience_name: string
+          id: string
+          max_capacity_per_slot: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          experience_name: string
+          id?: string
+          max_capacity_per_slot?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          experience_name?: string
+          id?: string
+          max_capacity_per_slot?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -503,6 +527,10 @@ export type Database = {
         Args: { _delta: number; _product_id: string; _size: string }
         Returns: undefined
       }
+      count_experience_bookings: {
+        Args: { _date: string; _experience_name: string; _time: string }
+        Returns: number
+      }
       decrement_product_stock: {
         Args: {
           _from_reserved?: boolean
@@ -511,6 +539,27 @@ export type Database = {
           _size: string
         }
         Returns: undefined
+      }
+      get_booked_slots: {
+        Args: { _from_date: string; _to_date: string }
+        Returns: {
+          booking_count: number
+          item_name: string
+          item_type: string
+          preferred_date: string
+          product_id: string
+          product_size: string
+          reservation_time: string
+        }[]
+      }
+      is_product_slot_taken: {
+        Args: {
+          _date: string
+          _product_id: string
+          _size: string
+          _time: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

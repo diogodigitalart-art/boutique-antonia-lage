@@ -18,6 +18,8 @@ export type Product = {
   availableSizes?: string[];
   /** True when every size is reserved (no stock available). */
   fullyReserved?: boolean;
+  /** Total available units across all sizes (stock - reserved). */
+  availableUnits?: number;
   reference?: string;
   description: string;
   category: "new" | "archive" | "curated";

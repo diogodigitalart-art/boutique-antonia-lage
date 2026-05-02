@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendReservationEmail } from "@/server/reservation";
+import { getBookedSlots, listExperienceCapacity, type BookedSlot, type ExperienceCapacityRow } from "@/server/slots";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { TIME_SLOTS, SCHEDULE_NOTE, isSunday } from "@/lib/reservations";
@@ -35,6 +36,8 @@ export function ReservationModal({
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const send = useServerFn(sendReservationEmail);
+  const fetchBookedSlots = useServerFn(getBookedSlots);
+  const fetchExperienceCapacity = useServerFn(listExperienceCapacity);
   const { user, profile, refreshProfile } = useAuth();
   const today = new Date().toISOString().split("T")[0];
   const minDate = (() => {
@@ -46,6 +49,8 @@ export function ReservationModal({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [blocked, setBlocked] = useState<Array<{ blocked_date: string; blocked_time: string | null }>>([]);
+  const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [experienceCapacity, setExperienceCapacity] = useState<ExperienceCapacityRow[]>([]);
   // Optional occasion (Checkpoint 4) — shown on every reservation
   const [occasion, setOccasion] = useState("");
   // Boutique Privada extra fields
@@ -71,8 +76,25 @@ export function ReservationModal({
         .select("blocked_date, blocked_time")
         .gte("blocked_date", today);
       setBlocked((data as Array<{ blocked_date: string; blocked_time: string | null }>) ?? []);
+      // Load booked slots for the next 90 days + capacity rules
+      try {
+        const toDate = (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 90);
+          return d.toISOString().split("T")[0];
+        })();
+        const [slotsRes, capRes] = await Promise.all([
+          fetchBookedSlots({ data: { fromDate: today, toDate } }),
+          fetchExperienceCapacity(),
+        ]);
+        setBookedSlots(slotsRes.slots);
+        setExperienceCapacity(capRes.rows);
+      } catch (e) {
+        console.error("Failed to load slot availability", e);
+      }
     })();
-  }, [open, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const dateIsSunday = isSunday(date);
   const dateFullyBlocked = useMemo(
@@ -88,6 +110,55 @@ export function ReservationModal({
       ),
     [date, blocked],
   );
+
+  // Capacity for current experience (defaults to 1 if not configured)
+  const experienceMaxCapacity = useMemo(() => {
+    if (itemType !== "experiencia") return Infinity;
+    const found = experienceCapacity.find((c) => c.experience_name === itemName);
+    return found ? found.max_capacity_per_slot : 1;
+  }, [itemType, itemName, experienceCapacity]);
+
+  /** Returns true if the given time slot is unavailable on the selected date. */
+  const isSlotUnavailable = (slot: string): boolean => {
+    if (!date) return false;
+    if (blockedTimesForDate.has(slot)) return true;
+
+    if (itemType === "experiencia") {
+      const count = bookedSlots
+        .filter(
+          (b) =>
+            b.preferred_date === date &&
+            b.reservation_time === slot &&
+            b.item_type === "experiencia" &&
+            b.item_name === itemName,
+        )
+        .reduce((sum, b) => sum + b.booking_count, 0);
+      return count >= experienceMaxCapacity;
+    }
+
+    // Product reservation: block exact product+size+date+time conflicts
+    if (itemType === "produto" && productUuid && selectedSize) {
+      const taken = bookedSlots.some(
+        (b) =>
+          b.preferred_date === date &&
+          b.reservation_time === slot &&
+          b.item_type === "produto" &&
+          b.product_id === productUuid &&
+          b.product_size === selectedSize,
+      );
+      return taken;
+    }
+    return false;
+  };
+
+  /** Suggest the next available slot if the chosen one is busy (product only). */
+  const nextAvailableSlot = useMemo(() => {
+    if (!date || itemType !== "produto") return null;
+    if (!productUuid || !selectedSize) return null;
+    if (!time || !isSlotUnavailable(time)) return null;
+    return TIME_SLOTS.find((s) => !isSlotUnavailable(s)) ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, time, bookedSlots, productUuid, selectedSize, itemType]);
 
   if (!open) return null;
 
@@ -129,6 +200,10 @@ export function ReservationModal({
     }
     if (blockedTimesForDate.has(payload.time)) {
       toast.error("Essa hora não está disponível.");
+      return;
+    }
+    if (isSlotUnavailable(payload.time)) {
+      toast.error("Esse horário já não está disponível. Escolhe outro.");
       return;
     }
 
@@ -307,28 +382,53 @@ export function ReservationModal({
             <label htmlFor="time" className="text-xs uppercase tracking-wider text-muted-foreground">
               Hora preferida
             </label>
-            <select
-              id="time"
-              name="time"
-              required
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              disabled={!date || dateIsSunday || dateFullyBlocked}
-              className="mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <option value="" disabled>
-                Seleccionar hora
-              </option>
-              {TIME_SLOTS.map((slot) => {
-                const isBlocked = blockedTimesForDate.has(slot);
-                return (
-                  <option key={slot} value={slot} disabled={isBlocked}>
-                    {slot}
-                    {isBlocked ? " — indisponível" : ""}
-                  </option>
-                );
-              })}
-            </select>
+            {/* Hidden input keeps form-data submission semantics */}
+            <input type="hidden" name="time" value={time} />
+            {!date || dateIsSunday || dateFullyBlocked ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Selecciona uma data primeiro.
+              </p>
+            ) : (
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {TIME_SLOTS.map((slot) => {
+                  const unavailable = isSlotUnavailable(slot);
+                  const selected = time === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => !unavailable && setTime(slot)}
+                      disabled={unavailable}
+                      className={`relative flex h-12 flex-col items-center justify-center rounded-lg border text-sm transition ${
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : unavailable
+                            ? "cursor-not-allowed border-border bg-muted text-muted-foreground/60"
+                            : "border-primary/30 bg-primary-soft text-primary hover:border-primary hover:bg-primary/10"
+                      }`}
+                      aria-label={`${slot}${unavailable ? " — ocupado" : ""}`}
+                    >
+                      <span className="font-medium">{slot}</span>
+                      {unavailable && (
+                        <span className="text-[9px] uppercase tracking-wider">Ocupado</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {nextAvailableSlot && (
+              <p className="mt-2 text-xs text-warning">
+                Esse horário está ocupado.{" "}
+                <button
+                  type="button"
+                  onClick={() => setTime(nextAvailableSlot)}
+                  className="font-medium underline hover:text-foreground"
+                >
+                  Sugerir {nextAvailableSlot}
+                </button>
+              </p>
+            )}
             <p className="mt-1.5 text-[11px] text-muted-foreground">{SCHEDULE_NOTE}</p>
           </div>
 

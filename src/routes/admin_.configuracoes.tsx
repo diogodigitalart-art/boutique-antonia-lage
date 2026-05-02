@@ -13,6 +13,11 @@ import {
   adminAddSeason,
   adminDeleteSeason,
 } from "@/server/products";
+import {
+  listExperienceCapacity,
+  adminSetExperienceCapacity,
+  type ExperienceCapacityRow,
+} from "@/server/slots";
 
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),
@@ -55,8 +60,95 @@ function Content() {
           addFn={adminAddSeason}
           delFn={adminDeleteSeason}
         />
+        <ExperienceCapacitySection />
       </div>
     </div>
+  );
+}
+
+function ExperienceCapacitySection() {
+  const list = useServerFn(listExperienceCapacity);
+  const set = useServerFn(adminSetExperienceCapacity);
+  const [rows, setRows] = useState<ExperienceCapacityRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyName, setBusyName] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const r = await list();
+      setRows(r.rows);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao carregar");
+    } finally {
+      setLoading(false);
+    }
+  }, [list]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const handleChange = async (experienceName: string, value: number) => {
+    if (!Number.isFinite(value) || value < 1) return;
+    setBusyName(experienceName);
+    try {
+      const token = await getToken();
+      await set({ data: { token, experienceName, maxCapacity: value } });
+      toast.success("Capacidade actualizada");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusyName(null);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="font-display text-xl italic mb-1">Capacidade por experiência</h2>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Número máximo de reservas aceites por horário para cada experiência.
+        As reservas de produtos (provas) não têm limite a este nível — controlam-se
+        por peça e tamanho automaticamente.
+      </p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sem experiências configuradas.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((r) => (
+            <div
+              key={r.id}
+              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">{r.experience_name}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Reservas máximas por slot
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  defaultValue={r.max_capacity_per_slot}
+                  disabled={busyName === r.experience_name}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value);
+                    if (n !== r.max_capacity_per_slot) {
+                      void handleChange(r.experience_name, n);
+                    }
+                  }}
+                  className="h-10 w-20 rounded-md border border-border bg-card px-3 text-center text-sm"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -85,6 +85,12 @@ function ProductPage() {
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
   const availableSet = new Set(product.availableSizes ?? product.sizes);
+  const lowStock =
+    !product.fullyReserved &&
+    typeof product.availableUnits === "number" &&
+    product.availableUnits > 0 &&
+    product.availableUnits <= 2;
+  const lastPiece = lowStock && product.availableUnits === 1;
   const galleryImages =
     product.images && product.images.length > 0 ? product.images : [product.image];
   const currentImage = galleryImages[activeImage] ?? galleryImages[0];
@@ -253,6 +259,18 @@ function ProductPage() {
               <p className="mt-3 text-xs uppercase tracking-wider text-destructive">
                 Esgotado — todas as peças estão reservadas.
               </p>
+            )}
+            {lowStock && (
+              <div
+                className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
+                  lastPiece
+                    ? "bg-amber-500/15 text-amber-700"
+                    : "bg-foreground/10 text-foreground"
+                }`}
+              >
+                <span className={`h-2 w-2 rounded-full ${lastPiece ? "bg-amber-500" : "bg-foreground/60"}`} />
+                {lastPiece ? "Última peça disponível" : "Quase esgotado — restam apenas 2"}
+              </div>
             )}
           </div>
 
