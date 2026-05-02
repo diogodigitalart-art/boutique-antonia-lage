@@ -29,6 +29,10 @@ export function rowToProduct(row: ProductRow): Product {
     .filter((s) => Number(s.stock) - Number(s.reserved) > 0)
     .map((s) => s.size);
   const fullyReserved = sizesArr.length > 0 && availableSizes.length === 0;
+  const availableUnits = sizesArr.reduce(
+    (sum, s) => sum + Math.max(0, Number(s.stock) - Number(s.reserved)),
+    0,
+  );
   const basePrice = Number(row.price);
   const pct = row.discount_percent != null ? Number(row.discount_percent) : null;
   const hasDiscount = pct != null && pct > 0;
@@ -52,6 +56,7 @@ export function rowToProduct(row: ProductRow): Product {
     sizes: sizesArr.map((s) => s.size),
     availableSizes,
     fullyReserved,
+    availableUnits,
     reference: row.reference,
     description: row.description,
     category: row.category === "arquivo" ? "archive" : "new",

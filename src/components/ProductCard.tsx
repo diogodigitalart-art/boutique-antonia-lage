@@ -15,6 +15,12 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
   const isArchive = product.category === "archive" && product.originalPrice;
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
+  const lowStock =
+    !product.fullyReserved &&
+    typeof product.availableUnits === "number" &&
+    product.availableUnits > 0 &&
+    product.availableUnits <= 2;
+  const lastPiece = lowStock && product.availableUnits === 1;
 
   return (
     <div className="group relative flex h-full w-full flex-col">
@@ -38,6 +44,17 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           {hasDiscount && !product.fullyReserved && (
             <span className="absolute left-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white shadow-sm">
               −{product.discountPercent}%
+            </span>
+          )}
+          {lowStock && !hasDiscount && !product.fullyReserved && (
+            <span
+              className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] shadow-sm ${
+                lastPiece
+                  ? "bg-amber-500/95 text-white"
+                  : "bg-foreground/85 text-background"
+              }`}
+            >
+              {lastPiece ? "Última peça" : "Quase esgotado"}
             </span>
           )}
         </div>

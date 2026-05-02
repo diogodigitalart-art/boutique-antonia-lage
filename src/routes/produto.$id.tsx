@@ -85,6 +85,12 @@ function ProductPage() {
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
   const availableSet = new Set(product.availableSizes ?? product.sizes);
+  const lowStock =
+    !product.fullyReserved &&
+    typeof product.availableUnits === "number" &&
+    product.availableUnits > 0 &&
+    product.availableUnits <= 2;
+  const lastPiece = lowStock && product.availableUnits === 1;
   const galleryImages =
     product.images && product.images.length > 0 ? product.images : [product.image];
   const currentImage = galleryImages[activeImage] ?? galleryImages[0];
