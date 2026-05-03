@@ -21,6 +21,9 @@ export type ProductRow = {
   discount_percent: number | null;
   created_at: string;
   updated_at: string;
+  color: string | null;
+  composition: string | null;
+  care_instructions: string | null;
 };
 
 export function rowToProduct(row: ProductRow): Product {
@@ -62,6 +65,9 @@ export function rowToProduct(row: ProductRow): Product {
     category: row.category === "arquivo" ? "archive" : "new",
     season: row.season || undefined,
     discountPercent: hasDiscount ? (pct as number) : undefined,
+    color: row.color || undefined,
+    composition: row.composition || undefined,
+    careInstructions: row.care_instructions || undefined,
   };
 }
 
