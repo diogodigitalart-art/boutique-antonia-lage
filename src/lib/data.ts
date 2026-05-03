@@ -29,6 +29,10 @@ export type Product = {
   color?: string;
   composition?: string;
   careInstructions?: string;
+  /** ISO timestamp when the product was created in the catalogue. */
+  createdAt?: string;
+  /** Per-size availability with stock counts (for filtering by available sizes). */
+  sizeAvailability?: { size: string; available: number }[];
 };
 
 export type Experience = {
