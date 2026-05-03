@@ -44,6 +44,9 @@ export type AdminProductPayload = {
   is_active: boolean;
   barcode?: string | null;
   cost_price?: number | null;
+  color?: string | null;
+  composition?: string | null;
+  care_instructions?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -80,6 +83,13 @@ function parsePayload(input: unknown): AdminProductPayload {
     barcode: normalizeBarcodeServer(i.barcode),
     cost_price:
       i.cost_price == null || i.cost_price === "" ? null : Number(i.cost_price),
+    color: s(i.color) && (i.color as string).trim() ? (i.color as string).trim() : null,
+    composition:
+      s(i.composition) && (i.composition as string).trim() ? (i.composition as string).trim() : null,
+    care_instructions:
+      s(i.care_instructions) && (i.care_instructions as string).trim()
+        ? (i.care_instructions as string).trim()
+        : null,
   };
 }
 
@@ -126,6 +136,9 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       is_active: p.is_active,
       barcode: p.barcode ?? null,
       cost_price: p.cost_price ?? null,
+      color: p.color ?? null,
+      composition: p.composition ?? null,
+      care_instructions: p.care_instructions ?? null,
     };
     if (p.id) {
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
