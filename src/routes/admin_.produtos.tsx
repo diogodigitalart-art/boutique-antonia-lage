@@ -1035,6 +1035,31 @@ function ProductForm({
                   className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
                 />
               </Field>
+              <Field label="Cor">
+                <input
+                  value={form.color}
+                  onChange={(e) => setForm({ ...form, color: e.target.value })}
+                  placeholder="ex: Azul, Floral"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Instruções de lavagem">
+                <input
+                  value={form.care_instructions}
+                  onChange={(e) => setForm({ ...form, care_instructions: e.target.value })}
+                  placeholder="ex: Lavagem à mão"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Composição" className="sm:col-span-2">
+                <textarea
+                  value={form.composition}
+                  onChange={(e) => setForm({ ...form, composition: e.target.value })}
+                  rows={2}
+                  placeholder="ex: 100% Polyester"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
+                />
+              </Field>
             </div>
           </div>
 
