@@ -94,6 +94,9 @@ type ProductRow = {
   created_at: string;
   barcode?: string | null;
   cost_price?: number | null;
+  color?: string | null;
+  composition?: string | null;
+  care_instructions?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
@@ -651,6 +654,9 @@ type FormState = {
   sizes: Array<{ size: string; stock: number }>;
   oneSizeStock: number;
   images: string[];
+  color: string;
+  composition: string;
+  care_instructions: string;
 };
 
 function emptyForm(brandOptions: string[]): FormState {
@@ -671,6 +677,9 @@ function emptyForm(brandOptions: string[]): FormState {
     sizes: [],
     oneSizeStock: 0,
     images: [],
+    color: "",
+    composition: "",
+    care_instructions: "",
   };
 }
 
@@ -720,6 +729,9 @@ function ProductForm({
           sizes: initialSizesList,
           oneSizeStock,
           images: row.images ?? [],
+          color: row.color ?? "",
+          composition: row.composition ?? "",
+          care_instructions: row.care_instructions ?? "",
         }
       : emptyForm(brandOptions),
   );
@@ -812,6 +824,9 @@ function ProductForm({
             images: form.images,
             sizes: sizesPayload,
             is_active: form.is_active,
+            color: form.color.trim() || null,
+            composition: form.composition.trim() || null,
+            care_instructions: form.care_instructions.trim() || null,
           },
         },
       });
@@ -1017,6 +1032,31 @@ function ProductForm({
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={4}
+                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
+                />
+              </Field>
+              <Field label="Cor">
+                <input
+                  value={form.color}
+                  onChange={(e) => setForm({ ...form, color: e.target.value })}
+                  placeholder="ex: Azul, Floral"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Instruções de lavagem">
+                <input
+                  value={form.care_instructions}
+                  onChange={(e) => setForm({ ...form, care_instructions: e.target.value })}
+                  placeholder="ex: Lavagem à mão"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                />
+              </Field>
+              <Field label="Composição" className="sm:col-span-2">
+                <textarea
+                  value={form.composition}
+                  onChange={(e) => setForm({ ...form, composition: e.target.value })}
+                  rows={2}
+                  placeholder="ex: 100% Polyester"
                   className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
                 />
               </Field>

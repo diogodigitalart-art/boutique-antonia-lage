@@ -26,6 +26,9 @@ export type Product = {
   season?: string;
   /** Discount percentage 0-100. When set, price = original * (1 - pct/100). */
   discountPercent?: number;
+  color?: string;
+  composition?: string;
+  careInstructions?: string;
 };
 
 export type Experience = {

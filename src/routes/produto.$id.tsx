@@ -13,6 +13,12 @@ import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/produto/$id")({
   head: () => ({
@@ -120,6 +126,22 @@ function ProductPage() {
     0,
     4,
   );
+  const relatedIds = new Set(related.map((p) => p.id));
+  const youMayLike = (() => {
+    const pool = products.filter(
+      (p) =>
+        p.id !== product.id &&
+        !relatedIds.has(p.id) &&
+        p.category === product.category,
+    );
+    // shuffle
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 4);
+  })();
+  const hasDetails = !!(product.composition || product.color || product.careInstructions);
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -293,6 +315,44 @@ function ProductPage() {
             Reserva gratuita · Peça guardada 48h · Sem compromisso
           </p>
 
+          {hasDetails && (
+            <Accordion type="single" collapsible className="mt-6 border-t border-border">
+              <AccordionItem value="details" className="border-b-0">
+                <AccordionTrigger className="text-xs uppercase tracking-[0.2em] text-foreground">
+                  Detalhes do produto
+                </AccordionTrigger>
+                <AccordionContent>
+                  <dl className="space-y-3 text-sm text-muted-foreground">
+                    {product.composition && (
+                      <div>
+                        <dt className="text-[10px] uppercase tracking-[0.2em] text-foreground">
+                          Composição
+                        </dt>
+                        <dd className="mt-1 whitespace-pre-line">{product.composition}</dd>
+                      </div>
+                    )}
+                    {product.color && (
+                      <div>
+                        <dt className="text-[10px] uppercase tracking-[0.2em] text-foreground">
+                          Cor
+                        </dt>
+                        <dd className="mt-1">{product.color}</dd>
+                      </div>
+                    )}
+                    {product.careInstructions && (
+                      <div>
+                        <dt className="text-[10px] uppercase tracking-[0.2em] text-foreground">
+                          Cuidados
+                        </dt>
+                        <dd className="mt-1 whitespace-pre-line">{product.careInstructions}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+
           {/* Wishlist as subtle action */}
           <button
             onClick={() => requireAuth(() => {
@@ -319,6 +379,21 @@ function ProductPage() {
             </h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
               {related.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {youMayLike.length > 0 && (
+        <section className="mt-16">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <h2 className="mb-5 font-display text-2xl italic text-foreground md:text-3xl">
+              Pode também gostar
+            </h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+              {youMayLike.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
