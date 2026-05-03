@@ -824,6 +824,9 @@ function ProductForm({
             images: form.images,
             sizes: sizesPayload,
             is_active: form.is_active,
+            color: form.color.trim() || null,
+            composition: form.composition.trim() || null,
+            care_instructions: form.care_instructions.trim() || null,
           },
         },
       });
