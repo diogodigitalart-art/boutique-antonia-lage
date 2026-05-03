@@ -386,6 +386,21 @@ function ProductPage() {
         </section>
       )}
 
+      {youMayLike.length > 0 && (
+        <section className="mt-16">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <h2 className="mb-5 font-display text-2xl italic text-foreground md:text-3xl">
+              Pode também gostar
+            </h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+              {youMayLike.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <ReservationModal
         open={reserveOpen}
         onClose={() => setReserveOpen(false)}
