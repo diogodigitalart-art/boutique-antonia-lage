@@ -729,6 +729,9 @@ function ProductForm({
           sizes: initialSizesList,
           oneSizeStock,
           images: row.images ?? [],
+          color: row.color ?? "",
+          composition: row.composition ?? "",
+          care_instructions: row.care_instructions ?? "",
         }
       : emptyForm(brandOptions),
   );
