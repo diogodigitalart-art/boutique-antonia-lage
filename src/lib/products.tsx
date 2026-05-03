@@ -31,6 +31,10 @@ export function rowToProduct(row: ProductRow): Product {
   const availableSizes = sizesArr
     .filter((s) => Number(s.stock) - Number(s.reserved) > 0)
     .map((s) => s.size);
+  const sizeAvailability = sizesArr.map((s) => ({
+    size: s.size,
+    available: Math.max(0, Number(s.stock) - Number(s.reserved)),
+  }));
   const fullyReserved = sizesArr.length > 0 && availableSizes.length === 0;
   const availableUnits = sizesArr.reduce(
     (sum, s) => sum + Math.max(0, Number(s.stock) - Number(s.reserved)),
@@ -68,6 +72,8 @@ export function rowToProduct(row: ProductRow): Product {
     color: row.color || undefined,
     composition: row.composition || undefined,
     careInstructions: row.care_instructions || undefined,
+    createdAt: row.created_at,
+    sizeAvailability,
   };
 }
 
