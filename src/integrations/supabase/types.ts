@@ -239,7 +239,10 @@ export type Database = {
         Row: {
           barcode: string | null
           brand: string
+          care_instructions: string | null
           category: string
+          color: string | null
+          composition: string | null
           cost_price: number | null
           created_at: string
           description: string
@@ -259,7 +262,10 @@ export type Database = {
         Insert: {
           barcode?: string | null
           brand: string
+          care_instructions?: string | null
           category?: string
+          color?: string | null
+          composition?: string | null
           cost_price?: number | null
           created_at?: string
           description?: string
@@ -279,7 +285,10 @@ export type Database = {
         Update: {
           barcode?: string | null
           brand?: string
+          care_instructions?: string | null
           category?: string
+          color?: string | null
+          composition?: string | null
           cost_price?: number | null
           created_at?: string
           description?: string
