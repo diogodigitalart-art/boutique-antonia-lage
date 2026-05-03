@@ -94,6 +94,9 @@ type ProductRow = {
   created_at: string;
   barcode?: string | null;
   cost_price?: number | null;
+  color?: string | null;
+  composition?: string | null;
+  care_instructions?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
