@@ -654,6 +654,9 @@ type FormState = {
   sizes: Array<{ size: string; stock: number }>;
   oneSizeStock: number;
   images: string[];
+  color: string;
+  composition: string;
+  care_instructions: string;
 };
 
 function emptyForm(brandOptions: string[]): FormState {
@@ -674,6 +677,9 @@ function emptyForm(brandOptions: string[]): FormState {
     sizes: [],
     oneSizeStock: 0,
     images: [],
+    color: "",
+    composition: "",
+    care_instructions: "",
   };
 }
 
