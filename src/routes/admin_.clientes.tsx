@@ -9,6 +9,7 @@ import {
   type AdminPayload,
   type AdminUser,
 } from "@/server/admin";
+import { adminListSubscribers, type NewsletterSubscriberRow } from "@/server/newsletter";
 import {
   Search,
   Users,
@@ -155,7 +156,75 @@ function ClientesContent() {
           )}
         </section>
       </div>
+
+      <NewsletterSection />
     </div>
+  );
+}
+
+function NewsletterSection() {
+  const list = useServerFn(adminListSubscribers);
+  const [rows, setRows] = useState<NewsletterSubscriberRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const token = sess.session?.access_token;
+        if (!token) return;
+        const r = await list({ data: { token } });
+        setRows(r.rows);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [list]);
+
+  return (
+    <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+      <header className="mb-4 flex items-baseline justify-between">
+        <div>
+          <h2 className="font-display text-2xl italic">Newsletter</h2>
+          <p className="text-xs text-muted-foreground">
+            Subscritores e respectivos códigos de boas-vindas.
+          </p>
+        </div>
+        <span className="text-xs text-muted-foreground">{rows.length} subscritores</span>
+      </header>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Ainda sem subscritores.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border">
+                <th className="py-2 pr-4">Email</th>
+                <th className="py-2 pr-4">Código</th>
+                <th className="py-2 pr-4">Origem</th>
+                <th className="py-2 pr-4">Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-b border-border/60">
+                  <td className="py-2 pr-4">{r.email}</td>
+                  <td className="py-2 pr-4 font-mono text-xs">{r.discount_code}</td>
+                  <td className="py-2 pr-4 text-xs text-muted-foreground">{r.source ?? "—"}</td>
+                  <td className="py-2 pr-4 text-xs text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString("pt-PT")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

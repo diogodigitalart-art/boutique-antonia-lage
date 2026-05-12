@@ -18,6 +18,7 @@ import {
   adminSetExperienceCapacity,
   type ExperienceCapacityRow,
 } from "@/server/slots";
+import { getSetting, adminSetSetting } from "@/server/newsletter";
 
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),
@@ -61,8 +62,65 @@ function Content() {
           delFn={adminDeleteSeason}
         />
         <ExperienceCapacitySection />
+        <WhatsAppSettingSection />
       </div>
     </div>
+  );
+}
+
+function WhatsAppSettingSection() {
+  const fetchSetting = useServerFn(getSetting);
+  const setSetting = useServerFn(adminSetSetting);
+  const [value, setValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetchSetting({ data: { key: "whatsapp_number" } })
+      .then((r) => setValue(r.value ?? ""))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [fetchSetting]);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const token = await getToken();
+      await setSetting({ data: { token, key: "whatsapp_number", value: value.trim() } });
+      toast.success("Número actualizado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="font-display text-xl italic mb-1">WhatsApp Business</h2>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Número usado pelo botão flutuante e pelos pedidos no WhatsApp. Inclui código do país (ex.: +351253000000).
+      </p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <div className="flex gap-2">
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="+351253000000"
+            className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm"
+          />
+          <button
+            onClick={save}
+            disabled={busy}
+            className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            Guardar
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 

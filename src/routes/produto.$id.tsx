@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { WhatsAppLink } from "@/components/WhatsAppButton";
 import {
   Accordion,
   AccordionContent,
@@ -308,6 +309,12 @@ function ProductPage() {
             >
               Reservar para experimentar
             </button>
+            <WhatsAppLink
+              message={`Olá! Tenho interesse em: ${product.name} (${product.brand}). Podem ajudar-me?`}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border text-xs uppercase tracking-wider text-foreground transition hover:bg-muted"
+            >
+              <span style={{ color: "#25D366" }}>●</span> Perguntar no WhatsApp
+            </WhatsAppLink>
           </div>
 
           {/* Reassurance line */}
