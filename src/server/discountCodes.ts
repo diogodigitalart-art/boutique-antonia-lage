@@ -15,6 +15,7 @@ export type DiscountCodeRow = {
   status: string;
   expires_at: string | null;
   created_at: string;
+  source: "manual" | "newsletter";
 };
 
 async function requireAdmin(token: string) {
@@ -38,14 +39,38 @@ export const adminListDiscountCodes = createServerFn({ method: "POST" })
       .select("id, code, discount_percent, email, status, expires_at, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+    const { data: subscribers, error: subscribersError } = await supabaseAdmin
+      .from("newsletter_subscribers")
+      .select("id, email, discount_code, created_at")
+      .order("created_at", { ascending: false });
+    if (subscribersError) throw new Error(subscribersError.message);
+
     // Compute usage stats from orders.discount_code
     const { data: usedRows } = await supabaseAdmin
       .from("orders")
       .select("discount_code")
       .not("discount_code", "is", null);
     const usedSet = new Set((usedRows ?? []).map((r) => (r.discount_code as string) || "").filter(Boolean));
+    const manualRows = ((rows ?? []) as Omit<DiscountCodeRow, "source">[]).map((row) => ({
+      ...row,
+      source: "manual" as const,
+    }));
+    const newsletterRows = (subscribers ?? []).map((subscriber) => ({
+      id: `newsletter-${subscriber.id}`,
+      code: subscriber.discount_code,
+      discount_percent: 10,
+      email: subscriber.email,
+      status: usedSet.has(subscriber.discount_code) ? "utilizado" : "activo",
+      expires_at: null,
+      created_at: subscriber.created_at,
+      source: "newsletter" as const,
+    }));
+    const mergedRows = [...manualRows, ...newsletterRows].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
     return {
-      rows: (rows ?? []) as DiscountCodeRow[],
+      rows: mergedRows,
       usedCodes: Array.from(usedSet),
     };
   });
