@@ -185,6 +185,42 @@ export const adminToggleProductActive = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Bulk deactivation for full inventory sync: deactivates all products whose
+// reference is non-empty and NOT included in `keepRefs`. Products without a
+// reference are never touched. Returns ids that were deactivated.
+export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!s(i.token)) throw new Error("Missing token");
+    if (!Array.isArray(i.keepRefs)) throw new Error("keepRefs must be an array");
+    const keepRefs = (i.keepRefs as unknown[])
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .map((x) => x.trim());
+    return { token: i.token as string, keepRefs };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin(data.token);
+    // Fetch all active products with a non-empty reference
+    const { data: rows, error } = await supabaseAdmin
+      .from("products")
+      .select("id, reference, is_active")
+      .not("reference", "is", null)
+      .neq("reference", "")
+      .eq("is_active", true);
+    if (error) throw new Error(error.message);
+    const keep = new Set(data.keepRefs);
+    const toDeactivate = (rows ?? [])
+      .filter((r) => r.reference && !keep.has(r.reference as string))
+      .map((r) => r.id as string);
+    if (toDeactivate.length === 0) return { deactivated: 0, ids: [] as string[] };
+    const { error: upErr } = await supabaseAdmin
+      .from("products")
+      .update({ is_active: false })
+      .in("id", toDeactivate);
+    if (upErr) throw new Error(upErr.message);
+    return { deactivated: toDeactivate.length, ids: toDeactivate };
+  });
+
 export const adminUploadProductImage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
