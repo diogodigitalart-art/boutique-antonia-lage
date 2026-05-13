@@ -13,6 +13,8 @@ export function ImageLightbox({ open, onClose, images, startIndex = 0, alt }: Pr
   const [index, setIndex] = useState(startIndex);
   const [scale, setScale] = useState(1);
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     if (open) {
@@ -103,6 +105,10 @@ export function ImageLightbox({ open, onClose, images, startIndex = 0, alt }: Pr
         onTouchStart={(e) => {
           if (e.touches.length === 2) {
             pinchStartRef.current = { dist: dist(e.touches), scale };
+            touchStartRef.current = null;
+          } else if (e.touches.length === 1) {
+            touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            touchDeltaRef.current = { x: 0, y: 0 };
           }
         }}
         onTouchMove={(e) => {
@@ -111,10 +117,23 @@ export function ImageLightbox({ open, onClose, images, startIndex = 0, alt }: Pr
             const ratio = dist(e.touches) / pinchStartRef.current.dist;
             const newScale = Math.min(4, Math.max(1, pinchStartRef.current.scale * ratio));
             setScale(newScale);
+          } else if (e.touches.length === 1 && touchStartRef.current) {
+            touchDeltaRef.current = {
+              x: e.touches[0].clientX - touchStartRef.current.x,
+              y: e.touches[0].clientY - touchStartRef.current.y,
+            };
           }
         }}
         onTouchEnd={(e) => {
           if (e.touches.length < 2) pinchStartRef.current = null;
+          if (e.touches.length === 0 && touchStartRef.current && hasMultiple && scale === 1) {
+            const { x, y } = touchDeltaRef.current;
+            if (Math.abs(x) >= 50 && Math.abs(x) > Math.abs(y)) {
+              if (x < 0) next();
+              else prev();
+            }
+          }
+          if (e.touches.length === 0) touchStartRef.current = null;
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();

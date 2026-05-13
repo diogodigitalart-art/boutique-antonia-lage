@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, Mail, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -22,13 +21,6 @@ export const Route = createFileRoute("/admin_/newsletter")({
   ),
 });
 
-async function getToken() {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Sessão expirada");
-  return token;
-}
-
 function NewsletterPage() {
   const list = useServerFn(adminListDiscountCodes);
   const create = useServerFn(adminCreateDiscountCode);
@@ -45,9 +37,9 @@ function NewsletterPage() {
   const [expires, setExpires] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async (token: string) => {
+    setLoading(true);
     try {
-      const token = await getToken();
       const r = await list({ data: { token } });
       setRows(r.rows);
       setUsedCodes(r.usedCodes);
@@ -56,17 +48,24 @@ function NewsletterPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [list]);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!session) {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    const token = session?.access_token;
+    if (!token) {
+      setRows([]);
+      setUsedCodes([]);
       setLoading(false);
       return;
     }
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, session?.access_token]);
+
+    void load(token);
+  }, [authLoading, load, session?.access_token]);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -79,9 +78,13 @@ function NewsletterPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
+    const token = session?.access_token;
+    if (!token) {
+      toast.error("Sessão expirada");
+      return;
+    }
     setBusy(true);
     try {
-      const token = await getToken();
       await create({
         data: {
           token,
@@ -94,7 +97,7 @@ function NewsletterPage() {
       setCode("");
       setPercent(10);
       setExpires("");
-      void load();
+      void load(token);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro");
     } finally {
@@ -103,11 +106,15 @@ function NewsletterPage() {
   };
 
   const handleStatus = async (id: string, status: string) => {
+    const token = session?.access_token;
+    if (!token) {
+      toast.error("Sessão expirada");
+      return;
+    }
     try {
-      const token = await getToken();
       await updateStatus({ data: { token, id, status } });
       toast.success("Estado atualizado");
-      void load();
+      void load(token);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro");
     }
@@ -217,15 +224,19 @@ function NewsletterPage() {
                         <StatusBadge status={effectiveStatus} />
                       </td>
                       <td className="py-2 pr-4">
-                        <select
-                          value={r.status}
-                          onChange={(e) => handleStatus(r.id, e.target.value)}
-                          className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                        >
-                          <option value="activo">Activo</option>
-                          <option value="utilizado">Utilizado</option>
-                          <option value="expirado">Expirado</option>
-                        </select>
+                        {r.source === "manual" ? (
+                          <select
+                            value={r.status}
+                            onChange={(e) => handleStatus(r.id, e.target.value)}
+                            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                          >
+                            <option value="activo">Activo</option>
+                            <option value="utilizado">Utilizado</option>
+                            <option value="expirado">Expirado</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Newsletter</span>
+                        )}
                       </td>
                     </tr>
                   );
