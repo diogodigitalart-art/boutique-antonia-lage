@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, Mail, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 import {
   adminListDiscountCodes,
   adminCreateDiscountCode,
@@ -32,6 +33,7 @@ function NewsletterPage() {
   const list = useServerFn(adminListDiscountCodes);
   const create = useServerFn(adminCreateDiscountCode);
   const updateStatus = useServerFn(adminUpdateDiscountCodeStatus);
+  const { session, loading: authLoading } = useAuth();
 
   const [rows, setRows] = useState<DiscountCodeRow[]>([]);
   const [usedCodes, setUsedCodes] = useState<string[]>([]);
@@ -57,9 +59,14 @@ function NewsletterPage() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!session) {
+      setLoading(false);
+      return;
+    }
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, session?.access_token]);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -106,7 +113,7 @@ function NewsletterPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
