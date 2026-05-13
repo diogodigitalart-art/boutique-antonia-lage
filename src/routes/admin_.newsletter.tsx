@@ -38,6 +38,7 @@ function NewsletterPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (token: string) => {
+    if (!token) return;
     setLoading(true);
     try {
       const r = await list({ data: { token } });
@@ -56,15 +57,14 @@ function NewsletterPage() {
       return;
     }
 
-    const token = session?.access_token;
-    if (!token) {
+    if (!session?.access_token) {
       setRows([]);
       setUsedCodes([]);
       setLoading(false);
       return;
     }
 
-    void load(token);
+    void load(session.access_token);
   }, [authLoading, load, session?.access_token]);
 
   const stats = useMemo(() => {
@@ -147,38 +147,48 @@ function NewsletterPage() {
 
       <section className="mt-8 rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-xl italic">Criar código manual</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Para campanhas, ofertas especiais ou clientes VIP.
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+          Define um código promocional curto e memorável, escolhe a percentagem de desconto a aplicar no checkout e, se necessário, adiciona uma data de expiração para campanhas temporárias.
         </p>
-        <form onSubmit={handleCreate} className="mt-4 grid gap-3 sm:grid-cols-[1fr_120px_180px_auto]">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="Código (ex.: VERAO25)"
-            className="rounded-full border border-border bg-background px-4 py-2 text-sm uppercase"
-            required
-          />
-          <input
-            type="number"
-            min={1}
-            max={100}
-            value={percent}
-            onChange={(e) => setPercent(Number(e.target.value))}
-            placeholder="%"
-            className="rounded-full border border-border bg-background px-4 py-2 text-sm"
-            required
-          />
-          <input
-            type="date"
-            value={expires}
-            onChange={(e) => setExpires(e.target.value)}
-            placeholder="Expira em"
-            className="rounded-full border border-border bg-background px-4 py-2 text-sm"
-          />
+        <form onSubmit={handleCreate} className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px_220px_auto] sm:items-end">
+          <label className="grid gap-1.5 text-xs font-medium text-foreground">
+            Código promocional
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ex. VERAO25"
+              className="h-10 rounded-full border border-border bg-background px-4 text-sm uppercase outline-none transition focus:border-primary"
+              required
+            />
+          </label>
+          <label className="grid gap-1.5 text-xs font-medium text-foreground">
+            Desconto (%)
+            <div className="relative">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={percent}
+                onChange={(e) => setPercent(Number(e.target.value))}
+                className="h-10 w-full rounded-full border border-border bg-background px-4 pr-9 text-sm outline-none transition focus:border-primary"
+                required
+              />
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+            </div>
+          </label>
+          <label className="grid gap-1.5 text-xs font-medium text-foreground">
+            Data de expiração (opcional)
+            <input
+              type="date"
+              value={expires}
+              onChange={(e) => setExpires(e.target.value)}
+              className="h-10 rounded-full border border-border bg-background px-4 text-sm outline-none transition focus:border-primary"
+            />
+          </label>
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
             <Plus size={14} /> Criar
           </button>
@@ -199,9 +209,9 @@ function NewsletterPage() {
                 <tr className="border-b border-border">
                   <th className="py-2 pr-4">Email</th>
                   <th className="py-2 pr-4">Código</th>
-                  <th className="py-2 pr-4">%</th>
-                  <th className="py-2 pr-4">Data</th>
-                  <th className="py-2 pr-4">Expira</th>
+                  <th className="py-2 pr-4">Desconto</th>
+                  <th className="py-2 pr-4">Estado</th>
+                  <th className="py-2 pr-4">Data de subscrição</th>
                   <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Ações</th>
                 </tr>
@@ -214,14 +224,12 @@ function NewsletterPage() {
                       <td className="py-2 pr-4">{r.email ?? <span className="text-muted-foreground">— geral —</span>}</td>
                       <td className="py-2 pr-4 font-mono text-xs">{r.code}</td>
                       <td className="py-2 pr-4">{r.discount_percent}%</td>
-                      <td className="py-2 pr-4 text-xs text-muted-foreground">
-                        {new Date(r.created_at).toLocaleDateString("pt-PT")}
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-muted-foreground">
-                        {r.expires_at ? new Date(r.expires_at).toLocaleDateString("pt-PT") : "—"}
-                      </td>
                       <td className="py-2 pr-4">
                         <StatusBadge status={effectiveStatus} />
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString("pt-PT")}
+                        {r.expires_at ? ` · expira ${new Date(r.expires_at).toLocaleDateString("pt-PT")}` : ""}
                       </td>
                       <td className="py-2 pr-4">
                         {r.source === "manual" ? (
