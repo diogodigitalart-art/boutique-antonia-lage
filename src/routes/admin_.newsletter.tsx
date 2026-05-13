@@ -224,15 +224,19 @@ function NewsletterPage() {
                         <StatusBadge status={effectiveStatus} />
                       </td>
                       <td className="py-2 pr-4">
-                        <select
-                          value={r.status}
-                          onChange={(e) => handleStatus(r.id, e.target.value)}
-                          className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                        >
-                          <option value="activo">Activo</option>
-                          <option value="utilizado">Utilizado</option>
-                          <option value="expirado">Expirado</option>
-                        </select>
+                        {r.source === "manual" ? (
+                          <select
+                            value={r.status}
+                            onChange={(e) => handleStatus(r.id, e.target.value)}
+                            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                          >
+                            <option value="activo">Activo</option>
+                            <option value="utilizado">Utilizado</option>
+                            <option value="expirado">Expirado</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Newsletter</span>
+                        )}
                       </td>
                     </tr>
                   );
