@@ -266,9 +266,9 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    activo: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    activo: "border-success/30 bg-success-soft text-success",
     utilizado: "bg-muted text-muted-foreground border-border",
-    expirado: "bg-red-50 text-red-700 border-red-200",
+    expirado: "border-destructive/30 bg-destructive-soft text-destructive",
   };
   const label: Record<string, string> = {
     activo: "Activo",
