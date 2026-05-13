@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useProducts } from "@/lib/products";
