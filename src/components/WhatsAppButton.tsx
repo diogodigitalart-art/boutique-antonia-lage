@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getSetting } from "@/server/newsletter";
 
-const DEFAULT_NUMBER = "+351253000000";
+const DEFAULT_NUMBER = "+351932196049";
 
 function buildLink(rawNumber: string, message: string) {
   const digits = rawNumber.replace(/[^\d]/g, "");
