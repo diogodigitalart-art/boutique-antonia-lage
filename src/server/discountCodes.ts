@@ -103,23 +103,38 @@ export const validateDiscountCode = createServerFn({ method: "POST" })
     return { code: (i.code as string).trim().toUpperCase() };
   })
   .handler(async ({ data }) => {
+    // 1) Check discount_codes table first
     const { data: row, error } = await supabaseAdmin
       .from("discount_codes")
       .select("id, code, discount_percent, status, expires_at")
       .eq("code", data.code)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) throw new Error("Código não encontrado");
-    if (row.status !== "activo") throw new Error("Código já utilizado ou expirado");
-    if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
-      throw new Error("Código expirado");
+    if (row) {
+      if (row.status !== "activo") throw new Error("Código já utilizado ou expirado");
+      if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+        throw new Error("Código expirado");
+      }
+      const { data: used } = await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("discount_code", row.code)
+        .limit(1);
+      if (used && used.length > 0) throw new Error("Código já foi utilizado");
+      return { code: row.code, discount_percent: row.discount_percent };
     }
-    // Check if already used in any order
-    const { data: used } = await supabaseAdmin
+    // 2) Fall back to newsletter_subscribers welcome codes (10%)
+    const { data: sub } = await supabaseAdmin
+      .from("newsletter_subscribers")
+      .select("id, discount_code")
+      .eq("discount_code", data.code)
+      .maybeSingle();
+    if (!sub) throw new Error("Código não encontrado");
+    const { data: usedInOrder } = await supabaseAdmin
       .from("orders")
       .select("id")
-      .eq("discount_code", row.code)
+      .eq("discount_code", sub.discount_code)
       .limit(1);
-    if (used && used.length > 0) throw new Error("Código já foi utilizado");
-    return { code: row.code, discount_percent: row.discount_percent };
+    if (usedInOrder && usedInOrder.length > 0) throw new Error("Código já foi utilizado");
+    return { code: sub.discount_code, discount_percent: 10 };
   });

@@ -86,6 +86,17 @@ export const createOrder = createServerFn({ method: "POST" })
       if (dc && dc.status === "activo" && (!dc.expires_at || new Date(dc.expires_at).getTime() > Date.now())) {
         discountCode = dc.code;
         discountAmount = Number(data.discount_amount || 0);
+      } else {
+        // Fall back to newsletter welcome code (10%)
+        const { data: sub } = await supabaseAdmin
+          .from("newsletter_subscribers")
+          .select("discount_code")
+          .eq("discount_code", code)
+          .maybeSingle();
+        if (sub) {
+          discountCode = sub.discount_code;
+          discountAmount = Number(data.discount_amount || 0);
+        }
       }
     }
 

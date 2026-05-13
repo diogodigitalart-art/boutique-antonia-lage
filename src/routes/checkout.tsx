@@ -456,18 +456,18 @@ function CheckoutPage() {
                   </button>
                 )}
                 {discountOpen && !discount && (
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex gap-2 min-w-0">
                     <input
                       value={discountInput}
                       onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
                       placeholder="Código"
-                      className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm uppercase outline-none focus:border-primary"
+                      className="h-10 min-w-0 flex-1 rounded-full border border-border bg-background px-3 text-sm uppercase outline-none focus:border-primary"
                     />
                     <button
                       type="button"
                       onClick={() => void applyDiscount()}
                       disabled={discountBusy || !discountInput.trim()}
-                      className="h-10 rounded-full bg-primary px-4 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                      className="h-10 shrink-0 rounded-full bg-primary px-4 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                     >
                       {discountBusy ? "…" : "Aplicar"}
                     </button>

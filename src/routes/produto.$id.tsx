@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useProducts } from "@/lib/products";
@@ -54,6 +54,8 @@ function ProductPage() {
   const [addedOpen, setAddedOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef<number>(0);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
@@ -99,6 +101,26 @@ function ProductPage() {
   const galleryImages =
     product.images && product.images.length > 0 ? product.images : [product.image];
   const currentImage = galleryImages[activeImage] ?? galleryImages[0];
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  };
+  const onTouchEnd = () => {
+    const dx = touchDeltaX.current;
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+    if (Math.abs(dx) < 50 || galleryImages.length <= 1) return;
+    setActiveImage((i) =>
+      dx < 0
+        ? (i + 1) % galleryImages.length
+        : (i - 1 + galleryImages.length) % galleryImages.length,
+    );
+  };
 
   const requireAuth = (next: () => void) => {
     if (!session) {
@@ -168,6 +190,9 @@ function ProductPage() {
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             className="block w-full overflow-hidden rounded-3xl bg-photo-bg ring-[0.5px] ring-black/5 cursor-zoom-in"
             aria-label="Ampliar fotografia"
           >
