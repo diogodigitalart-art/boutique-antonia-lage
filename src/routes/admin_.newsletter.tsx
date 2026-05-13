@@ -212,7 +212,6 @@ function NewsletterPage() {
                   <th className="py-2 pr-4">Desconto</th>
                   <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Data de subscrição</th>
-                  <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Ações</th>
                 </tr>
               </thead>
