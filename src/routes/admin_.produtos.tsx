@@ -33,6 +33,7 @@ import {
   adminDeleteBrand,
   adminListSeasons,
   adminAdjustStockByBarcode,
+  adminBulkDeactivateByRefs,
 } from "@/server/products";
 
 const CATEGORIES: Array<{ value: string; label: string }> = [
