@@ -1758,6 +1758,21 @@ function ImportProductsModal({
             {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
           </div>
 
+          <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={syncMode}
+              onChange={(e) => setSyncMode(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="font-medium text-foreground">Sincronização completa</span>
+              <span className="block text-muted-foreground">
+                Produtos existentes são actualizados (nome e imagens preservados). Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
+              </span>
+            </span>
+          </label>
+
           <div className="mb-4 space-y-2 text-[12px] text-muted-foreground">
             <p>
               Formato Farfetch (separador <code>;</code>). Colunas reconhecidas:{" "}
@@ -1782,6 +1797,11 @@ function ImportProductsModal({
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">
                   {updateCount} actualizado(s)
                 </span>
+                {syncMode && (
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">
+                    {deactivateCount} serão desactivados
+                  </span>
+                )}
                 {invalid > 0 && (
                   <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">
                     {invalid} com erros
