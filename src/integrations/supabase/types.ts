@@ -116,6 +116,39 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_percent: number
+          email: string | null
+          expires_at: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_percent?: number
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_percent?: number
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       experience_capacity: {
         Row: {
           created_at: string
@@ -214,6 +247,8 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string | null
+          discount_amount: number
+          discount_code: string | null
           id: string
           items: Json
           notes: string | null
@@ -230,6 +265,8 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone?: string | null
+          discount_amount?: number
+          discount_code?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -246,6 +283,8 @@ export type Database = {
           customer_email?: string
           customer_name?: string
           customer_phone?: string | null
+          discount_amount?: number
+          discount_code?: string | null
           id?: string
           items?: Json
           notes?: string | null

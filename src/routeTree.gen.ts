@@ -32,6 +32,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
+import { Route as AdminNewsletterRouteImport } from './routes/admin_.newsletter'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
@@ -153,6 +154,11 @@ const AdminProdutosRoute = AdminProdutosRouteImport.update({
   path: '/admin/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
+  id: '/admin_/newsletter',
+  path: '/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminEncomendasRoute = AdminEncomendasRouteImport.update({
   id: '/admin_/encomendas',
   path: '/admin/encomendas',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/encomendas': typeof AdminEncomendasRoute
+  '/admin_/newsletter': typeof AdminNewsletterRoute
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/encomendas'
+    | '/admin/newsletter'
     | '/admin/produtos'
     | '/admin/relatorios'
     | '/admin/reservas'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/encomendas'
+    | '/admin/newsletter'
     | '/admin/produtos'
     | '/admin/relatorios'
     | '/admin/reservas'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/admin_/clientes'
     | '/admin_/configuracoes'
     | '/admin_/encomendas'
+    | '/admin_/newsletter'
     | '/admin_/produtos'
     | '/admin_/relatorios'
     | '/admin_/reservas'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminEncomendasRoute: typeof AdminEncomendasRoute
+  AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminReservasRoute: typeof AdminReservasRoute
@@ -546,6 +559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/newsletter': {
+      id: '/admin_/newsletter'
+      path: '/admin/newsletter'
+      fullPath: '/admin/newsletter'
+      preLoaderRoute: typeof AdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/encomendas': {
       id: '/admin_/encomendas'
       path: '/admin/encomendas'
@@ -597,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminEncomendasRoute: AdminEncomendasRoute,
+  AdminNewsletterRoute: AdminNewsletterRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminReservasRoute: AdminReservasRoute,

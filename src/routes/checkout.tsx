@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Lock } from "lucide-react";
 import { createOrder } from "@/server/orders";
+import { validateDiscountCode } from "@/server/discountCodes";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Boutique Antónia Lage" }] }),
@@ -81,6 +82,11 @@ function CheckoutPage() {
   const createOrderFn = useServerFn(createOrder);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [discountInput, setDiscountInput] = useState("");
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [discount, setDiscount] = useState<{ code: string; percent: number } | null>(null);
+  const [discountBusy, setDiscountBusy] = useState(false);
+  const validateDiscount = useServerFn(validateDiscountCode);
   const [address, setAddress] = useState<Address>({
     full_name: "",
     email: "",
@@ -129,7 +135,8 @@ function CheckoutPage() {
   const shipping = shippingForZone(subtotal, zone);
   // Shipping is only "known" once user reaches the address step
   const shippingKnown = step >= 2;
-  const total = subtotal + (shippingKnown ? shipping : 0);
+  const discountAmount = discount ? +(subtotal * (discount.percent / 100)).toFixed(2) : 0;
+  const total = Math.max(0, subtotal - discountAmount + (shippingKnown ? shipping : 0));
 
   const canSubmitAddress =
     address.full_name.trim().length > 1 &&
@@ -176,6 +183,8 @@ function CheckoutPage() {
           subtotal,
           shipping_cost: shipping,
           total,
+          discount_code: discount?.code ?? null,
+          discount_amount: discountAmount,
         },
       });
       await clear();
@@ -186,6 +195,21 @@ function CheckoutPage() {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível registar a encomenda.");
+    }
+  };
+
+  const applyDiscount = async () => {
+    if (!discountInput.trim()) return;
+    setDiscountBusy(true);
+    try {
+      const r = await validateDiscount({ data: { code: discountInput.trim() } });
+      setDiscount({ code: r.code, percent: r.discount_percent });
+      toast.success(`Desconto de ${r.discount_percent}% aplicado`);
+    } catch (e) {
+      setDiscount(null);
+      toast.error(e instanceof Error ? e.message : "Código inválido");
+    } finally {
+      setDiscountBusy(false);
     }
   };
 
@@ -383,6 +407,21 @@ function CheckoutPage() {
                   <dt>Subtotal</dt>
                   <dd>€{subtotal.toFixed(2)}</dd>
                 </div>
+                {discount && (
+                  <div className="flex justify-between text-emerald-700">
+                    <dt>
+                      Desconto ({discount.percent}%)
+                      <button
+                        type="button"
+                        onClick={() => { setDiscount(null); setDiscountInput(""); }}
+                        className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                      >
+                        Remover
+                      </button>
+                    </dt>
+                    <dd>−€{discountAmount.toFixed(2)}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between text-muted-foreground">
                   <dt>Envio</dt>
                   <dd>
@@ -404,6 +443,36 @@ function CheckoutPage() {
                   {shippingKnown ? "Total" : "Subtotal"}
                 </span>
                 <span className="font-display text-2xl italic">€{total.toFixed(2)}</span>
+              </div>
+
+              <div className="mt-5 border-t border-border pt-4">
+                {!discount && (
+                  <button
+                    type="button"
+                    onClick={() => setDiscountOpen((o) => !o)}
+                    className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                  >
+                    {discountOpen ? "− " : "+ "}Tens um código de desconto?
+                  </button>
+                )}
+                {discountOpen && !discount && (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                      placeholder="Código"
+                      className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm uppercase outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyDiscount()}
+                      disabled={discountBusy || !discountInput.trim()}
+                      className="h-10 rounded-full bg-primary px-4 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                    >
+                      {discountBusy ? "…" : "Aplicar"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </aside>

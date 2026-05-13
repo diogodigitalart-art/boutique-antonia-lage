@@ -48,6 +48,8 @@ export const createOrder = createServerFn({ method: "POST" })
       subtotal: number;
       shipping_cost: number;
       total: number;
+      discount_code?: string | null;
+      discount_amount?: number;
     };
   })
   .handler(async ({ data }) => {
@@ -71,6 +73,22 @@ export const createOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // Validate discount code (if provided)
+    let discountCode: string | null = null;
+    let discountAmount = 0;
+    if (data.discount_code && typeof data.discount_code === "string") {
+      const code = data.discount_code.trim().toUpperCase();
+      const { data: dc } = await supabaseAdmin
+        .from("discount_codes")
+        .select("code, discount_percent, status, expires_at")
+        .eq("code", code)
+        .maybeSingle();
+      if (dc && dc.status === "activo" && (!dc.expires_at || new Date(dc.expires_at).getTime() > Date.now())) {
+        discountCode = dc.code;
+        discountAmount = Number(data.discount_amount || 0);
+      }
+    }
+
     // 1) Insert order
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -84,6 +102,8 @@ export const createOrder = createServerFn({ method: "POST" })
         subtotal: data.subtotal,
         shipping_cost: data.shipping_cost,
         total: data.total,
+        discount_code: discountCode,
+        discount_amount: discountAmount,
         status: "Pendente",
       })
       .select("id")
@@ -92,6 +112,14 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error(error?.message || "Failed to create order");
     }
     const orderId = order.id as string;
+
+    // Mark discount code as used
+    if (discountCode) {
+      await supabaseAdmin
+        .from("discount_codes")
+        .update({ status: "utilizado" })
+        .eq("code", discountCode);
+    }
 
     // 2) Remove purchased items from wishlist (silent failure)
     const productIds = Array.from(

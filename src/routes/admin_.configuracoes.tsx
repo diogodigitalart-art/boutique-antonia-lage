@@ -99,7 +99,7 @@ function WhatsAppSettingSection() {
     <section className="rounded-2xl border border-border bg-card p-6">
       <h2 className="font-display text-xl italic mb-1">WhatsApp Business</h2>
       <p className="mb-4 text-xs text-muted-foreground">
-        Número usado pelo botão flutuante e pelos pedidos no WhatsApp. Inclui código do país (ex.: +351253000000).
+        Número usado pelo botão flutuante e pelos pedidos no WhatsApp. Inclui código do país (ex.: +351932196049).
       </p>
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -108,7 +108,7 @@ function WhatsAppSettingSection() {
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="+351253000000"
+            placeholder="+351932196049"
             className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm"
           />
           <button
