@@ -190,6 +190,9 @@ function ProductPage() {
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             className="block w-full overflow-hidden rounded-3xl bg-photo-bg ring-[0.5px] ring-black/5 cursor-zoom-in"
             aria-label="Ampliar fotografia"
           >
