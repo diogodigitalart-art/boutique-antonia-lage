@@ -1576,11 +1576,16 @@ function ImportProductsModal({
   onDone: () => void;
 }) {
   const upsertFn = useServerFn(adminUpsertProduct);
+  const bulkDeactivateFn = useServerFn(adminBulkDeactivateByRefs);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
-  const [existingByRef, setExistingByRef] = useState<Map<string, string>>(new Map());
+  const [existingByRef, setExistingByRef] = useState<
+    Map<string, { id: string; name: string | null; images: string[] | null }>
+  >(new Map());
+  const [syncMode, setSyncMode] = useState(false);
+  const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
 
   const onFile = async (file: File) => {
     setFileName(file.name);
@@ -1597,12 +1602,12 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference")
+        .select("id, reference, name, images")
         .in("reference", refs);
       if (!error && data) {
-        const map = new Map<string, string>();
-        for (const row of data as Array<{ id: string; reference: string }>) {
-          map.set(row.reference, row.id);
+        const map = new Map<string, { id: string; name: string | null; images: string[] | null }>();
+        for (const row of data as Array<{ id: string; reference: string; name: string | null; images: string[] | null }>) {
+          map.set(row.reference, { id: row.id, name: row.name, images: row.images });
         }
         setExistingByRef(map);
       } else {
@@ -1611,12 +1616,29 @@ function ImportProductsModal({
     } else {
       setExistingByRef(new Map());
     }
+    // Count active products with a reference (for sync deactivation preview)
+    const csvRefs = new Set(refs);
+    const { data: allRefRows } = await supabase
+      .from("products" as never)
+      .select("reference, is_active")
+      .not("reference", "is", null)
+      .neq("reference", "")
+      .eq("is_active", true);
+    if (allRefRows) {
+      const willDeactivate = (allRefRows as Array<{ reference: string }>).filter(
+        (r) => r.reference && !csvRefs.has(r.reference),
+      ).length;
+      setRefsInDbWithRef(willDeactivate);
+    } else {
+      setRefsInDbWithRef(0);
+    }
   };
 
   const valid = rows.filter((r) => !r._error);
   const invalid = rows.length - valid.length;
   const updateCount = valid.filter((r) => existingByRef.has(r.reference)).length;
   const createCount = valid.length - updateCount;
+  const deactivateCount = syncMode ? refsInDbWithRef : 0;
 
   const start = async () => {
     if (valid.length === 0) return;
@@ -1628,14 +1650,23 @@ function ImportProductsModal({
       for (let i = 0; i < valid.length; i++) {
         const r = valid[i];
         try {
-          const existingId = existingByRef.get(r.reference);
+          const existing = existingByRef.get(r.reference);
+          // In sync mode, preserve existing name and images if already set.
+          const preservedName =
+            syncMode && existing && existing.name && existing.name.trim().length > 0
+              ? existing.name
+              : r.name;
+          const preservedImages =
+            syncMode && existing && existing.images && existing.images.length > 0
+              ? existing.images
+              : [];
           await upsertFn({
             data: {
               token,
               product: {
-                id: existingId,
+                id: existing?.id,
                 brand: r.brand,
-                name: r.name,
+                name: preservedName,
                 reference: r.reference,
                 description: r.description,
                 price: r.price,
@@ -1643,7 +1674,7 @@ function ImportProductsModal({
                 discount_percent: null,
                 category: r.category,
                 season: r.season,
-                images: [],
+                images: preservedImages,
                 sizes: r.sizes,
                 is_active: true,
                 barcode: r.barcodes[0] || null,
@@ -1657,8 +1688,20 @@ function ImportProductsModal({
         }
         setProgress({ done: i + 1, ok, err });
       }
+      let deactivated = 0;
+      if (syncMode) {
+        try {
+          const keepRefs = Array.from(
+            new Set(valid.map((r) => r.reference).filter((x) => !!x)),
+          );
+          const res = await bulkDeactivateFn({ data: { token, keepRefs } });
+          deactivated = res.deactivated;
+        } catch (e) {
+          console.error("bulk deactivate failed", e);
+        }
+      }
       toast.success(
-        `Importação concluída: ${ok} processado(s) (${createCount} novo(s), ${updateCount} actualizado(s)), ${err} erro(s)`,
+        `Importação: ${ok} ok (${createCount} novo(s), ${updateCount} actualizado(s))${syncMode ? `, ${deactivated} desactivado(s)` : ""}, ${err} erro(s)`,
       );
       if (ok > 0) onDone();
     } finally {
