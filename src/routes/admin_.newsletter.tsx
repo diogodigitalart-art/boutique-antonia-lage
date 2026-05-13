@@ -148,7 +148,7 @@ function NewsletterPage() {
       <section className="mt-8 rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-xl italic">Criar código manual</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-          Define um código promocional curto e memorável, escolhe a percentagem de desconto a aplicar no checkout e, se necessário, adiciona uma data de expiração para campanhas temporárias.
+          Código promocional é o texto que a cliente vai inserir no checkout; Desconto (%) define a percentagem aplicada ao total; Data de expiração é opcional e limita campanhas temporárias.
         </p>
         <form onSubmit={handleCreate} className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px_220px_auto] sm:items-end">
           <label className="grid gap-1.5 text-xs font-medium text-foreground">
@@ -212,7 +212,6 @@ function NewsletterPage() {
                   <th className="py-2 pr-4">Desconto</th>
                   <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Data de subscrição</th>
-                  <th className="py-2 pr-4">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,27 +222,23 @@ function NewsletterPage() {
                       <td className="py-2 pr-4">{r.email ?? <span className="text-muted-foreground">— geral —</span>}</td>
                       <td className="py-2 pr-4 font-mono text-xs">{r.code}</td>
                       <td className="py-2 pr-4">{r.discount_percent}%</td>
-                      <td className="py-2 pr-4">
+                      <td className="py-2 pr-4 align-top">
                         <StatusBadge status={effectiveStatus} />
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-muted-foreground">
-                        {new Date(r.created_at).toLocaleDateString("pt-PT")}
-                        {r.expires_at ? ` · expira ${new Date(r.expires_at).toLocaleDateString("pt-PT")}` : ""}
-                      </td>
-                      <td className="py-2 pr-4">
                         {r.source === "manual" ? (
                           <select
                             value={r.status}
                             onChange={(e) => handleStatus(r.id, e.target.value)}
-                            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                            className="mt-2 block rounded-md border border-border bg-background px-2 py-1 text-xs"
                           >
                             <option value="activo">Activo</option>
                             <option value="utilizado">Utilizado</option>
                             <option value="expirado">Expirado</option>
                           </select>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Newsletter</span>
-                        )}
+                        ) : null}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString("pt-PT")}
+                        {r.expires_at ? ` · expira ${new Date(r.expires_at).toLocaleDateString("pt-PT")}` : ""}
                       </td>
                     </tr>
                   );
