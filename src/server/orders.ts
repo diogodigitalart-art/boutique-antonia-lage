@@ -76,16 +76,27 @@ export const createOrder = createServerFn({ method: "POST" })
     // Validate discount code (if provided)
     let discountCode: string | null = null;
     let discountAmount = 0;
+    let usedDiscountRowId: string | null = null;
+    let usedDiscountUseCount = 0;
+    let usedDiscountUseLimit: number | null = null;
     if (data.discount_code && typeof data.discount_code === "string") {
       const code = data.discount_code.trim().toUpperCase();
       const { data: dc } = await supabaseAdmin
         .from("discount_codes")
-        .select("code, discount_percent, status, expires_at")
+        .select("id, code, discount_percent, status, expires_at, use_limit, use_count")
         .eq("code", code)
         .maybeSingle();
-      if (dc && dc.status === "activo" && (!dc.expires_at || new Date(dc.expires_at).getTime() > Date.now())) {
+      if (
+        dc &&
+        dc.status === "activo" &&
+        (!dc.expires_at || new Date(dc.expires_at).getTime() > Date.now()) &&
+        (dc.use_limit == null || (dc.use_count ?? 0) < dc.use_limit)
+      ) {
         discountCode = dc.code;
         discountAmount = Number(data.discount_amount || 0);
+        usedDiscountRowId = dc.id as string;
+        usedDiscountUseCount = Number(dc.use_count ?? 0);
+        usedDiscountUseLimit = dc.use_limit ?? null;
       } else {
         // Fall back to newsletter welcome code (10%)
         const { data: sub } = await supabaseAdmin
@@ -124,12 +135,17 @@ export const createOrder = createServerFn({ method: "POST" })
     }
     const orderId = order.id as string;
 
-    // Mark discount code as used
-    if (discountCode) {
+    // Increment usage on the discount code row; mark utilizado if limit reached
+    if (usedDiscountRowId) {
+      const newCount = usedDiscountUseCount + 1;
+      const reachedLimit = usedDiscountUseLimit != null && newCount >= usedDiscountUseLimit;
       await supabaseAdmin
         .from("discount_codes")
-        .update({ status: "utilizado" })
-        .eq("code", discountCode);
+        .update({
+          use_count: newCount,
+          status: reachedLimit ? "utilizado" : "activo",
+        })
+        .eq("id", usedDiscountRowId);
     }
 
     // 2) Remove purchased items from wishlist (silent failure)
