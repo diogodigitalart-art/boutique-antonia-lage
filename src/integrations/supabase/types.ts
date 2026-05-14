@@ -118,34 +118,46 @@ export type Database = {
       }
       discount_codes: {
         Row: {
+          applies_to: string
           code: string
           created_at: string
           discount_percent: number
           email: string | null
           expires_at: string | null
           id: string
+          product_ids: string[] | null
           status: string
           updated_at: string
+          use_count: number
+          use_limit: number | null
         }
         Insert: {
+          applies_to?: string
           code: string
           created_at?: string
           discount_percent?: number
           email?: string | null
           expires_at?: string | null
           id?: string
+          product_ids?: string[] | null
           status?: string
           updated_at?: string
+          use_count?: number
+          use_limit?: number | null
         }
         Update: {
+          applies_to?: string
           code?: string
           created_at?: string
           discount_percent?: number
           email?: string | null
           expires_at?: string | null
           id?: string
+          product_ids?: string[] | null
           status?: string
           updated_at?: string
+          use_count?: number
+          use_limit?: number | null
         }
         Relationships: []
       }

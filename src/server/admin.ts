@@ -80,6 +80,12 @@ export type AdminUser = {
     line_total: number;
     added_at: string;
   }>;
+  orders: Array<{
+    id: string;
+    total: number;
+    status: string;
+    created_at: string;
+  }>;
 };
 
 export type AdminPayload = {
@@ -129,7 +135,8 @@ export const getAdminData = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("orders")
-        .select("id, total, created_at, status"),
+        .select("id, user_id, total, created_at, status")
+        .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("cart_items")
         .select("id, user_id, product_id, product_uuid, size, quantity, added_at")
@@ -265,6 +272,14 @@ export const getAdminData = createServerFn({ method: "POST" })
             added_at: c.added_at,
           };
         });
+      const userOrders = orders
+        .filter((o) => (o as { user_id?: string }).user_id === p.id)
+        .map((o) => ({
+          id: o.id as string,
+          total: Number(o.total ?? 0),
+          status: o.status as string,
+          created_at: o.created_at as string,
+        }));
       return {
         id: p.id,
         full_name: p.full_name,
@@ -284,6 +299,7 @@ export const getAdminData = createServerFn({ method: "POST" })
         feedback: userFeedback,
         contactMessages: userContacts,
         cart: userCart,
+        orders: userOrders,
       };
     });
 
