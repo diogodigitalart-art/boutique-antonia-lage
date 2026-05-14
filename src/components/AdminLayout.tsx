@@ -6,7 +6,7 @@ import {
   Calendar,
   Tag,
   Users,
-  Mail,
+  Percent,
   BarChart3,
   Settings,
   LogOut,
@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { to: "/admin/reservas", label: "Reservas", icon: Calendar, exact: false },
   { to: "/admin/produtos", label: "Produtos", icon: Tag, exact: false },
   { to: "/admin/clientes", label: "Clientes", icon: Users, exact: false },
-  { to: "/admin/newsletter", label: "Newsletter", icon: Mail, exact: false },
+  { to: "/admin/promocoes", label: "Promoções", icon: Percent, exact: false },
   { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3, exact: false },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, exact: false },
 ] as const;
