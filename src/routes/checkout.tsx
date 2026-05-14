@@ -84,7 +84,12 @@ function CheckoutPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [discountInput, setDiscountInput] = useState("");
   const [discountOpen, setDiscountOpen] = useState(false);
-  const [discount, setDiscount] = useState<{ code: string; percent: number } | null>(null);
+  const [discount, setDiscount] = useState<{
+    code: string;
+    percent: number;
+    applies_to: "all" | "colecção" | "arquivo" | "specific";
+    product_ids: string[] | null;
+  } | null>(null);
   const [discountBusy, setDiscountBusy] = useState(false);
   const validateDiscount = useServerFn(validateDiscountCode);
   const [address, setAddress] = useState<Address>({
@@ -135,7 +140,24 @@ function CheckoutPage() {
   const shipping = shippingForZone(subtotal, zone);
   // Shipping is only "known" once user reaches the address step
   const shippingKnown = step >= 2;
-  const discountAmount = discount ? +(subtotal * (discount.percent / 100)).toFixed(2) : 0;
+  const eligibleSubtotal = useMemo(() => {
+    if (!discount) return 0;
+    if (discount.applies_to === "all") return subtotal;
+    return enriched.reduce((s, e) => {
+      const cat = e.product?.category; // "new" => colecção, "archive" => arquivo
+      const ref = e.product?.reference;
+      const uuid = e.product?.uuid;
+      let matches = false;
+      if (discount.applies_to === "colecção") matches = cat === "new";
+      else if (discount.applies_to === "arquivo") matches = cat === "archive";
+      else if (discount.applies_to === "specific") {
+        const ids = discount.product_ids ?? [];
+        matches = ids.includes(ref ?? "") || ids.includes(uuid ?? "") || ids.includes(e.product_id);
+      }
+      return matches ? s + e.lineTotal : s;
+    }, 0);
+  }, [discount, enriched, subtotal]);
+  const discountAmount = discount ? +(eligibleSubtotal * (discount.percent / 100)).toFixed(2) : 0;
   const total = Math.max(0, subtotal - discountAmount + (shippingKnown ? shipping : 0));
 
   const canSubmitAddress =
@@ -203,7 +225,12 @@ function CheckoutPage() {
     setDiscountBusy(true);
     try {
       const r = await validateDiscount({ data: { code: discountInput.trim() } });
-      setDiscount({ code: r.code, percent: r.discount_percent });
+      setDiscount({
+        code: r.code,
+        percent: r.discount_percent,
+        applies_to: r.applies_to,
+        product_ids: r.product_ids,
+      });
       toast.success(`Desconto de ${r.discount_percent}% aplicado`);
     } catch (e) {
       setDiscount(null);
