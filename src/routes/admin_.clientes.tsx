@@ -45,6 +45,10 @@ function ClientesContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<
+    "recent" | "oldest" | "name_asc" | "name_desc" | "orders" | "inactive"
+  >("recent");
+  const [filter, setFilter] = useState<"all" | "with_orders" | "only_reservations" | "inactive">("all");
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
@@ -69,13 +73,41 @@ function ClientesContent() {
   const filtered = useMemo(() => {
     if (!data) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return data.users;
-    return data.users.filter(
-      (u) =>
-        (u.full_name || "").toLowerCase().includes(q) ||
-        (u.email || "").toLowerCase().includes(q),
-    );
-  }, [data, search]);
+    let arr = data.users.slice();
+    if (q) {
+      arr = arr.filter(
+        (u) =>
+          (u.full_name || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q),
+      );
+    }
+    arr = arr.filter((u) => {
+      const ordersN = u.orders.length;
+      const resN = u.reservations.length;
+      if (filter === "with_orders") return ordersN > 0;
+      if (filter === "only_reservations") return resN > 0 && ordersN === 0;
+      if (filter === "inactive") return ordersN === 0 && resN === 0;
+      return true;
+    });
+    const lastActivity = (u: AdminUser) => {
+      const dates: number[] = [];
+      u.orders.forEach((o) => dates.push(new Date(o.created_at).getTime()));
+      u.reservations.forEach((r) => dates.push(new Date(r.created_at).getTime()));
+      return dates.length ? Math.max(...dates) : new Date(u.created_at).getTime();
+    };
+    arr.sort((a, b) => {
+      switch (sortBy) {
+        case "recent": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name_asc": return (a.full_name || "").localeCompare(b.full_name || "");
+        case "name_desc": return (b.full_name || "").localeCompare(a.full_name || "");
+        case "orders": return b.orders.length - a.orders.length;
+        case "inactive": return lastActivity(a) - lastActivity(b);
+        default: return 0;
+      }
+    });
+    return arr;
+  }, [data, search, sortBy, filter]);
 
   const selected = useMemo(
     () => data?.users.find((u) => u.id === selectedId) ?? null,
@@ -122,6 +154,38 @@ function ClientesContent() {
               className="w-full rounded-full border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none focus:border-primary"
             />
           </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="mb-3 w-full rounded-full border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary"
+          >
+            <option value="recent">Mais recentes primeiro</option>
+            <option value="oldest">Mais antigos primeiro</option>
+            <option value="name_asc">Nome A–Z</option>
+            <option value="name_desc">Nome Z–A</option>
+            <option value="orders">Mais encomendas</option>
+            <option value="inactive">Sem actividade recente</option>
+          </select>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {([
+              ["all", "Todos"],
+              ["with_orders", "Com encomendas"],
+              ["only_reservations", "Só reservas"],
+              ["inactive", "Sem actividade"],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setFilter(k)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                  filter === k
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
             {filtered.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">Sem resultados</p>
@@ -141,6 +205,13 @@ function ClientesContent() {
                   }`}
                 >
                   {u.email || "—"}
+                </p>
+                <p
+                  className={`mt-1 truncate text-[10px] ${
+                    selectedId === u.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                  }`}
+                >
+                  Reg. {new Date(u.created_at).toLocaleDateString("pt-PT")} · {u.reservations.length} res · {u.orders.length} enc
                 </p>
               </button>
             ))}
