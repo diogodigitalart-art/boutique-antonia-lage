@@ -31,6 +31,7 @@ import { Route as EncomendaConfirmadaOrderIdRouteImport } from './routes/encomen
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
+import { Route as AdminPromocoesRouteImport } from './routes/admin_.promocoes'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
@@ -148,6 +149,11 @@ const AdminRelatoriosRoute = AdminRelatoriosRouteImport.update({
   path: '/admin/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPromocoesRoute = AdminPromocoesRouteImport.update({
+  id: '/admin_/promocoes',
+  path: '/admin/promocoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminProdutosRoute = AdminProdutosRouteImport.update({
   id: '/admin_/produtos',
   path: '/admin/produtos',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/encomendas': typeof AdminEncomendasRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/encomendas': typeof AdminEncomendasRoute
   '/admin_/produtos': typeof AdminProdutosRoute
+  '/admin_/promocoes': typeof AdminPromocoesRoute
   '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/encomendas'
     | '/admin/produtos'
+    | '/admin/promocoes'
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
@@ -315,6 +325,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/encomendas'
     | '/admin/produtos'
+    | '/admin/promocoes'
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/admin_/configuracoes'
     | '/admin_/encomendas'
     | '/admin_/produtos'
+    | '/admin_/promocoes'
     | '/admin_/relatorios'
     | '/admin_/reservas'
     | '/auth/callback'
@@ -374,6 +386,7 @@ export interface RootRouteChildren {
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminEncomendasRoute: typeof AdminEncomendasRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
+  AdminPromocoesRoute: typeof AdminPromocoesRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -539,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/promocoes': {
+      id: '/admin_/promocoes'
+      path: '/admin/promocoes'
+      fullPath: '/admin/promocoes'
+      preLoaderRoute: typeof AdminPromocoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/produtos': {
       id: '/admin_/produtos'
       path: '/admin/produtos'
@@ -598,6 +618,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminEncomendasRoute: AdminEncomendasRoute,
   AdminProdutosRoute: AdminProdutosRoute,
+  AdminPromocoesRoute: AdminPromocoesRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminReservasRoute: AdminReservasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
