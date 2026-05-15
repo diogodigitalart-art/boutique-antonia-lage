@@ -126,6 +126,7 @@ export type Database = {
           expires_at: string | null
           id: string
           product_ids: string[] | null
+          season: string | null
           status: string
           updated_at: string
           use_count: number
@@ -140,6 +141,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           product_ids?: string[] | null
+          season?: string | null
           status?: string
           updated_at?: string
           use_count?: number
@@ -154,6 +156,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           product_ids?: string[] | null
+          season?: string | null
           status?: string
           updated_at?: string
           use_count?: number
