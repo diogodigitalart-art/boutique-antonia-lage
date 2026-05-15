@@ -6,7 +6,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { useProducts } from "@/lib/products";
 import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays, Package, ChevronDown } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type SavedAddress } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EditProfileModal } from "@/components/EditProfileModal";
@@ -312,6 +312,12 @@ function ProfileContent() {
               ctaTo="/"
             />
           )}
+        </div>
+
+        {/* Morada de entrega */}
+        <div>
+          <SectionHeader eyebrow="Entrega" title="Morada de entrega" />
+          <SavedAddressCard />
         </div>
 
         {/* Wishlist */}
