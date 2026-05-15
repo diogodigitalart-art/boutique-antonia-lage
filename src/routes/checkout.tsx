@@ -87,8 +87,9 @@ function CheckoutPage() {
   const [discount, setDiscount] = useState<{
     code: string;
     percent: number;
-    applies_to: "all" | "colecção" | "arquivo" | "specific";
+    applies_to: "all" | "colecção" | "arquivo" | "specific" | "season";
     product_ids: string[] | null;
+    season: string | null;
   } | null>(null);
   const [discountBusy, setDiscountBusy] = useState(false);
   const validateDiscount = useServerFn(validateDiscountCode);
@@ -150,6 +151,9 @@ function CheckoutPage() {
       let matches = false;
       if (discount.applies_to === "colecção") matches = cat === "new";
       else if (discount.applies_to === "arquivo") matches = cat === "archive";
+      else if (discount.applies_to === "season") {
+        matches = !!discount.season && (e.product?.season ?? null) === discount.season;
+      }
       else if (discount.applies_to === "specific") {
         const ids = discount.product_ids ?? [];
         matches = ids.includes(ref ?? "") || ids.includes(uuid ?? "") || ids.includes(e.product_id);
@@ -230,6 +234,7 @@ function CheckoutPage() {
         percent: r.discount_percent,
         applies_to: r.applies_to,
         product_ids: r.product_ids,
+        season: r.season ?? null,
       });
       toast.success(`Desconto de ${r.discount_percent}% aplicado`);
     } catch (e) {
