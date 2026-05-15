@@ -25,12 +25,12 @@ const STATUSES = [
 type Status = (typeof STATUSES)[number];
 
 const STATUS_COLOR: Record<Status, string> = {
-  Pendente: "bg-amber-100 text-amber-800 border-amber-200",
+  Pendente: "bg-rose-100 text-rose-800 border-rose-200",
   Confirmada: "bg-blue-100 text-blue-800 border-blue-200",
   "Em preparação": "bg-violet-100 text-violet-800 border-violet-200",
-  Enviada: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  Enviada: "bg-teal-100 text-teal-800 border-teal-200",
   Entregue: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  Cancelada: "bg-rose-100 text-rose-800 border-rose-200",
+  Cancelada: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 type OrderItem = {
