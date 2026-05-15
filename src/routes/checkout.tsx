@@ -390,6 +390,12 @@ function CheckoutPage() {
             {step === 2 && (
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="font-display text-2xl italic">Dados de entrega</h2>
+                {prefilledFromSaved && (
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-primary-soft/50 px-3 py-2 text-xs text-foreground">
+                    <Pencil size={12} className="text-primary" />
+                    <span>Morada guardada — podes editar se necessário.</span>
+                  </div>
+                )}
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Field label="Nome completo" value={address.full_name} onChange={(v) => setAddress({ ...address, full_name: v })} className="sm:col-span-2" />
                   <Field label="Email" type="email" value={address.email} onChange={(v) => setAddress({ ...address, email: v })} />
@@ -420,6 +426,19 @@ function CheckoutPage() {
                       Envio para esta zona: {shipping === 0 ? "grátis" : `€${shipping.toFixed(2)}`}
                     </span>
                   </label>
+                  {user && (
+                    <label className="flex items-center gap-2 sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={saveAddress}
+                        onChange={(e) => setSaveAddress(e.target.checked)}
+                        className="h-4 w-4 rounded border-border accent-primary"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Guardar esta morada para futuras compras
+                      </span>
+                    </label>
+                  )}
                 </div>
               </section>
             )}
