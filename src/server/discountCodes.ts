@@ -131,7 +131,7 @@ export const validateDiscountCode = createServerFn({ method: "POST" })
     // 1) Check discount_codes table first
     const { data: row, error } = await supabaseAdmin
       .from("discount_codes")
-      .select("id, code, discount_percent, status, expires_at, applies_to, product_ids, use_limit, use_count")
+      .select("id, code, discount_percent, status, expires_at, applies_to, product_ids, use_limit, use_count, season")
       .eq("code", data.code)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -140,15 +140,16 @@ export const validateDiscountCode = createServerFn({ method: "POST" })
       if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
         throw new Error("Código expirado");
       }
-      const r = row as { code: string; discount_percent: number; applies_to: string | null; product_ids: string[] | null; use_limit: number | null; use_count: number | null };
+      const r = row as { code: string; discount_percent: number; applies_to: string | null; product_ids: string[] | null; use_limit: number | null; use_count: number | null; season: string | null };
       if (r.use_limit != null && (r.use_count ?? 0) >= r.use_limit) {
         throw new Error("Código atingiu o limite de utilizações");
       }
       return {
         code: r.code,
         discount_percent: r.discount_percent,
-        applies_to: (r.applies_to as "all" | "colecção" | "arquivo" | "specific") ?? "all",
+        applies_to: (r.applies_to as "all" | "colecção" | "arquivo" | "specific" | "season") ?? "all",
         product_ids: r.product_ids ?? null,
+        season: r.season ?? null,
       };
     }
     // 2) Fall back to newsletter_subscribers welcome codes (10%)
@@ -164,5 +165,5 @@ export const validateDiscountCode = createServerFn({ method: "POST" })
       .eq("discount_code", sub.discount_code)
       .limit(1);
     if (usedInOrder && usedInOrder.length > 0) throw new Error("Código já foi utilizado");
-    return { code: sub.discount_code, discount_percent: 10, applies_to: "all" as const, product_ids: null };
+    return { code: sub.discount_code, discount_percent: 10, applies_to: "all" as const, product_ids: null, season: null };
   });

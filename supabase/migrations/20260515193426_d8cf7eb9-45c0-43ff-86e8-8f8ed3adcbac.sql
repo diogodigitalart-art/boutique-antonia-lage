@@ -1,0 +1,1 @@
+ALTER TABLE public.discount_codes ADD COLUMN IF NOT EXISTS season text;

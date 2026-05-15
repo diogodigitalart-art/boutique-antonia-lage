@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Loader2, Plus, Percent, CheckCircle2, XCircle, Trash2, Power } from "lucide-react";
 import { toast } from "sonner";
 
-type AppliesTo = "all" | "colecção" | "arquivo" | "specific";
+type AppliesTo = "all" | "colecção" | "arquivo" | "season" | "specific";
 
 type CodeRow = {
   id: string;
@@ -14,6 +14,7 @@ type CodeRow = {
   discount_percent: number;
   applies_to: AppliesTo;
   product_ids: string[] | null;
+  season: string | null;
   use_limit: number | null;
   use_count: number;
   status: string;
@@ -34,6 +35,7 @@ const APPLIES_LABEL: Record<AppliesTo, string> = {
   all: "Todos os produtos",
   "colecção": "Colecção",
   arquivo: "Arquivo",
+  season: "Season",
   specific: "Produtos específicos",
 };
 
@@ -49,11 +51,13 @@ function PromocoesPage() {
   const { session, loading: authLoading } = useAuth();
   const [rows, setRows] = useState<CodeRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seasons, setSeasons] = useState<{ id: string; name: string }[]>([]);
 
   const [code, setCode] = useState("");
   const [percent, setPercent] = useState(10);
   const [appliesTo, setAppliesTo] = useState<AppliesTo>("all");
   const [productRefs, setProductRefs] = useState("");
+  const [season, setSeason] = useState("");
   const [useLimit, setUseLimit] = useState<string>("");
   const [expires, setExpires] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,7 +66,7 @@ function PromocoesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("discount_codes")
-      .select("id, code, discount_percent, applies_to, product_ids, use_limit, use_count, status, expires_at, created_at")
+      .select("id, code, discount_percent, applies_to, product_ids, season, use_limit, use_count, status, expires_at, created_at")
       .order("created_at", { ascending: false });
     if (error) {
       toast.error(error.message);
@@ -70,6 +74,8 @@ function PromocoesPage() {
     } else {
       setRows((data ?? []) as CodeRow[]);
     }
+    const { data: ss } = await supabase.from("seasons").select("id, name").order("name");
+    setSeasons((ss ?? []) as { id: string; name: string }[]);
     setLoading(false);
   }, []);
 
@@ -105,6 +111,10 @@ function PromocoesPage() {
       toast.error("Percentagem inválida");
       return;
     }
+    if (appliesTo === "season" && !season.trim()) {
+      toast.error("Selecciona uma season");
+      return;
+    }
     setBusy(true);
     const productIds = appliesTo === "specific"
       ? productRefs.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean)
@@ -114,6 +124,7 @@ function PromocoesPage() {
       discount_percent: Math.floor(percent),
       applies_to: appliesTo,
       product_ids: productIds,
+      season: appliesTo === "season" ? season.trim() : null,
       use_limit: useLimit ? Math.max(1, Math.floor(Number(useLimit))) : null,
       expires_at: expires ? new Date(expires).toISOString() : null,
       status: "activo",
@@ -124,7 +135,7 @@ function PromocoesPage() {
       return;
     }
     toast.success("Código criado");
-    setCode(""); setPercent(10); setAppliesTo("all"); setProductRefs(""); setUseLimit(""); setExpires("");
+    setCode(""); setPercent(10); setAppliesTo("all"); setProductRefs(""); setSeason(""); setUseLimit(""); setExpires("");
     void load();
   };
 
@@ -208,6 +219,18 @@ function PromocoesPage() {
                 className="mt-2 h-10 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
               />
             )}
+            {appliesTo === "season" && (
+              <select
+                value={season}
+                onChange={(e) => setSeason(e.target.value)}
+                className="mt-2 h-10 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+              >
+                <option value="">Selecciona uma season…</option>
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            )}
           </fieldset>
           <label className="grid gap-1.5 text-xs font-medium">
             Limite de usos (opcional)
@@ -272,6 +295,9 @@ function PromocoesPage() {
                         {APPLIES_LABEL[r.applies_to] ?? r.applies_to}
                         {r.applies_to === "specific" && r.product_ids && (
                           <p className="text-[10px] text-muted-foreground">{r.product_ids.join(", ")}</p>
+                        )}
+                        {r.applies_to === "season" && r.season && (
+                          <p className="text-[10px] text-muted-foreground">{r.season}</p>
                         )}
                       </td>
                       <td className="py-2 pr-4">{r.use_count}</td>
