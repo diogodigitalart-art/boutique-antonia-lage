@@ -7,7 +7,7 @@ import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, ChevronLeft, Lock } from "lucide-react";
+import { Check, ChevronLeft, Lock, Pencil } from "lucide-react";
 import { createOrder } from "@/server/orders";
 import { validateDiscountCode } from "@/server/discountCodes";
 
@@ -82,6 +82,8 @@ function CheckoutPage() {
   const createOrderFn = useServerFn(createOrder);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [saveAddress, setSaveAddress] = useState(true);
+  const [prefilledFromSaved, setPrefilledFromSaved] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [discountOpen, setDiscountOpen] = useState(false);
   const [discount, setDiscount] = useState<{
@@ -108,6 +110,22 @@ function CheckoutPage() {
   // Prefill from profile
   useEffect(() => {
     if (profile) {
+      const saved = profile.saved_addresses;
+      if (saved && saved.address1) {
+        setAddress((a) => ({
+          full_name: a.full_name || saved.full_name || profile.full_name || "",
+          email: a.email || saved.email || profile.email || "",
+          phone: a.phone || saved.phone || profile.phone || "",
+          address1: a.address1 || saved.address1 || "",
+          address2: a.address2 || saved.address2 || "",
+          city: a.city || saved.city || "",
+          postal_code: a.postal_code || saved.postal_code || "",
+          country: a.country !== "PT" ? a.country : (saved.country || a.country),
+          country_label: saved.country_label || a.country_label,
+        }));
+        setPrefilledFromSaved(true);
+        return;
+      }
       setAddress((a) => ({
         ...a,
         full_name: a.full_name || profile.full_name || "",
@@ -214,6 +232,29 @@ function CheckoutPage() {
         },
       });
       await clear();
+      // Save delivery address for future purchases
+      if (saveAddress && user) {
+        try {
+          await supabase
+            .from("profiles")
+            .update({
+              saved_addresses: {
+                full_name: address.full_name,
+                email: address.email,
+                phone: address.phone,
+                address1: address.address1,
+                address2: address.address2,
+                city: address.city,
+                postal_code: address.postal_code,
+                country: address.country,
+                country_label: address.country_label,
+              },
+            })
+            .eq("id", user.id);
+        } catch {
+          // non-blocking
+        }
+      }
       toast.success("Encomenda registada. Entraremos em contacto.");
       router.navigate({
         to: "/encomenda-confirmada/$orderId",
@@ -349,6 +390,12 @@ function CheckoutPage() {
             {step === 2 && (
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="font-display text-2xl italic">Dados de entrega</h2>
+                {prefilledFromSaved && (
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-primary-soft/50 px-3 py-2 text-xs text-foreground">
+                    <Pencil size={12} className="text-primary" />
+                    <span>Morada guardada — podes editar se necessário.</span>
+                  </div>
+                )}
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Field label="Nome completo" value={address.full_name} onChange={(v) => setAddress({ ...address, full_name: v })} className="sm:col-span-2" />
                   <Field label="Email" type="email" value={address.email} onChange={(v) => setAddress({ ...address, email: v })} />
@@ -379,6 +426,19 @@ function CheckoutPage() {
                       Envio para esta zona: {shipping === 0 ? "grátis" : `€${shipping.toFixed(2)}`}
                     </span>
                   </label>
+                  {user && (
+                    <label className="flex items-center gap-2 sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={saveAddress}
+                        onChange={(e) => setSaveAddress(e.target.checked)}
+                        className="h-4 w-4 rounded border-border accent-primary"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Guardar esta morada para futuras compras
+                      </span>
+                    </label>
+                  )}
                 </div>
               </section>
             )}

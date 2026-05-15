@@ -6,7 +6,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { useProducts } from "@/lib/products";
 import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays, Package, ChevronDown } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type SavedAddress } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EditProfileModal } from "@/components/EditProfileModal";
@@ -314,6 +314,12 @@ function ProfileContent() {
           )}
         </div>
 
+        {/* Morada de entrega */}
+        <div>
+          <SectionHeader eyebrow="Entrega" title="Morada de entrega" />
+          <SavedAddressCard />
+        </div>
+
         {/* Wishlist */}
         <div>
           <div className="flex items-end justify-between gap-4">
@@ -581,5 +587,118 @@ function OrderCard({
         </div>
       )}
     </div>
+  );
+}
+
+function SavedAddressCard() {
+  const { user, profile, refreshProfile } = useAuth();
+  const saved = profile?.saved_addresses ?? null;
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState<SavedAddress>(saved ?? {});
+
+  useEffect(() => {
+    setForm(saved ?? {});
+  }, [saved]);
+
+  const hasAddress = !!(saved && (saved.address1 || saved.city));
+
+  const save = async () => {
+    if (!user) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ saved_addresses: form })
+      .eq("id", user.id);
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Morada actualizada");
+    setEditing(false);
+    await refreshProfile();
+  };
+
+  if (!editing && !hasAddress) {
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-card px-6 py-8 text-center">
+        <p className="text-sm text-muted-foreground">Ainda não guardaste uma morada de entrega.</p>
+        <button
+          onClick={() => setEditing(true)}
+          className="mt-4 inline-flex items-center gap-2 rounded-full border border-border px-5 py-2 text-xs uppercase tracking-wider hover:bg-muted"
+        >
+          <Pencil size={12} /> Adicionar morada
+        </button>
+      </div>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-start justify-between gap-4 rounded-3xl border border-border bg-card px-6 py-5">
+        <div className="text-sm text-foreground">
+          {saved?.full_name && <p className="font-medium">{saved.full_name}</p>}
+          <p className="text-muted-foreground">
+            {[saved?.address1, saved?.address2].filter(Boolean).join(", ")}
+          </p>
+          <p className="text-muted-foreground">
+            {[saved?.postal_code, saved?.city, saved?.country_label || saved?.country]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          {saved?.phone && <p className="mt-1 text-xs text-muted-foreground">{saved.phone}</p>}
+        </div>
+        <button
+          onClick={() => setEditing(true)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs uppercase tracking-wider hover:bg-muted"
+        >
+          <Pencil size={12} /> Editar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-border bg-card p-6">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <AddrField label="Nome completo" value={form.full_name ?? ""} onChange={(v) => setForm({ ...form, full_name: v })} className="sm:col-span-2" />
+        <AddrField label="Telemóvel" value={form.phone ?? ""} onChange={(v) => setForm({ ...form, phone: v })} />
+        <AddrField label="Email" value={form.email ?? ""} onChange={(v) => setForm({ ...form, email: v })} />
+        <AddrField label="Morada" value={form.address1 ?? ""} onChange={(v) => setForm({ ...form, address1: v })} className="sm:col-span-2" />
+        <AddrField label="Morada (linha 2)" value={form.address2 ?? ""} onChange={(v) => setForm({ ...form, address2: v })} className="sm:col-span-2" />
+        <AddrField label="Código postal" value={form.postal_code ?? ""} onChange={(v) => setForm({ ...form, postal_code: v })} />
+        <AddrField label="Cidade" value={form.city ?? ""} onChange={(v) => setForm({ ...form, city: v })} />
+        <AddrField label="País" value={form.country_label ?? form.country ?? ""} onChange={(v) => setForm({ ...form, country_label: v, country: form.country || v })} className="sm:col-span-2" />
+      </div>
+      <div className="mt-5 flex items-center justify-end gap-2">
+        <button
+          onClick={() => { setEditing(false); setForm(saved ?? {}); }}
+          className="rounded-full border border-border px-4 py-2 text-xs uppercase tracking-wider hover:bg-muted"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => void save()}
+          disabled={busy}
+          className="rounded-full bg-primary px-5 py-2 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        >
+          {busy ? "A guardar…" : "Guardar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddrField({ label, value, onChange, className = "" }: { label: string; value: string; onChange: (v: string) => void; className?: string }) {
+  return (
+    <label className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-11 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+      />
+    </label>
   );
 }
