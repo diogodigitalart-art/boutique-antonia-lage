@@ -16,12 +16,25 @@ type ProfileDetails = {
   };
 };
 
+export type SavedAddress = {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
+  country_label?: string;
+};
+
 type Profile = {
   id: string;
   full_name: string | null;
   email: string | null;
   phone: string | null;
   profile_details: ProfileDetails | null;
+  saved_addresses: SavedAddress | null;
 };
 
 type AuthCtx = {
@@ -72,13 +85,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, full_name, email, phone, profile_details")
+      .select("id, full_name, email, phone, profile_details, saved_addresses")
       .eq("id", userId)
       .maybeSingle();
     if (data) {
       setProfile({
         ...data,
         profile_details: (data.profile_details as ProfileDetails | null) ?? null,
+        saved_addresses: ((data as { saved_addresses?: unknown }).saved_addresses as SavedAddress | null) ?? null,
       });
     }
   };
