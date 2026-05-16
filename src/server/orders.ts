@@ -19,6 +19,8 @@ type OrderItem = {
   product_uuid: string | null;
   brand: string | null;
   name: string | null;
+  reference?: string | null;
+  image?: string | null;
   size: string;
   quantity: number;
   unit_price: number;
@@ -176,12 +178,22 @@ export const createOrder = createServerFn({ method: "POST" })
       if (LOVABLE_API_KEY && RESEND_API_KEY) {
         const orderShort = orderId.slice(0, 8).toUpperCase();
         const addr = data.address;
-        const itemsHtml = data.items
+        const itemsRows = data.items
           .map(
-            (it) => `<li style="margin:6px 0">
-              <strong>${escapeHtml(it.brand ?? "")}</strong> — ${escapeHtml(it.name ?? "")}
-              <br/><span style="color:#666;font-size:12px">Tamanho ${escapeHtml(it.size)} · Qtd ${it.quantity} · €${it.line_total.toFixed(2)}</span>
-            </li>`,
+            (it) => `<tr>
+              <td style="width:72px;padding:8px 12px 8px 0;vertical-align:top">
+                ${
+                  it.image
+                    ? `<img src="${escapeHtml(it.image)}" alt="" width="60" height="80" style="width:60px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #eee;display:block"/>`
+                    : `<div style="width:60px;height:80px;background:#f5f5f5;border-radius:4px"></div>`
+                }
+              </td>
+              <td style="padding:8px 0;vertical-align:top;font-size:13px;line-height:1.5">
+                <div><strong>${escapeHtml(it.brand ?? "")}</strong> — ${escapeHtml(it.name ?? "")}</div>
+                ${it.reference ? `<div style="color:#999;font-family:monospace;font-size:11px;margin-top:2px">Ref: ${escapeHtml(it.reference)}</div>` : ""}
+                <div style="color:#666;font-size:12px;margin-top:4px">Tamanho ${escapeHtml(it.size)} · Qtd ${it.quantity} · €${it.line_total.toFixed(2)}</div>
+              </td>
+            </tr>`,
           )
           .join("");
         const html = `
@@ -195,7 +207,7 @@ export const createOrder = createServerFn({ method: "POST" })
             <p style="margin:0 0 24px">${escapeHtml(addr.phone)}</p>
 
             <h3 style="margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:0.1em">Peças</h3>
-            <ul style="padding-left:18px;margin:0 0 24px">${itemsHtml}</ul>
+            <table style="width:100%;border-collapse:collapse;margin:0 0 24px">${itemsRows}</table>
 
             <h3 style="margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:0.1em">Morada de envio</h3>
             <p style="margin:0 0 4px">${escapeHtml(addr.address1)}${addr.address2 ? `, ${escapeHtml(addr.address2)}` : ""}</p>
