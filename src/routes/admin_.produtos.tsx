@@ -1447,6 +1447,7 @@ type ParsedRow = {
   brand: string;
   name: string;
   reference: string;
+  external_id: string;
   price: number;
   original_price: number | null;
   category: string;
@@ -1528,6 +1529,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
   };
   const iBrand = findIdx("brand");
   const iRef = findIdx("brand product id", "reference");
+  const iExt = findIdx("product id");
   const iSeason = findIdx("season");
   const iPrice = findIdx("local market price", "price");
   const iStock = findIdx("stock available", "stock");
@@ -1541,6 +1543,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
     const brand = cell(iBrand);
     const reference = cell(iRef);
+    const external_id = cell(iExt);
     if (!brand && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
@@ -1556,6 +1559,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         brand,
         name: reference || brand,
         reference,
+        external_id,
         price: Number(priceStr) || 0,
         original_price: null,
         category: "colecção",
