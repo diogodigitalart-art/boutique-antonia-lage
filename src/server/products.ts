@@ -47,6 +47,7 @@ export type AdminProductPayload = {
   color?: string | null;
   composition?: string | null;
   care_instructions?: string | null;
+  external_id?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -89,6 +90,10 @@ function parsePayload(input: unknown): AdminProductPayload {
     care_instructions:
       s(i.care_instructions) && (i.care_instructions as string).trim()
         ? (i.care_instructions as string).trim()
+        : null,
+    external_id:
+      s(i.external_id) && (i.external_id as string).trim()
+        ? (i.external_id as string).trim()
         : null,
   };
 }
@@ -139,6 +144,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       color: p.color ?? null,
       composition: p.composition ?? null,
       care_instructions: p.care_instructions ?? null,
+      external_id: p.external_id ?? null,
     };
     if (p.id) {
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
