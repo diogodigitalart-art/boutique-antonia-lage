@@ -87,6 +87,7 @@ type ProductRow = {
   original_price: number | null;
   category: string;
   reference: string;
+  external_id?: string | null;
   season: string | null;
   discount_percent: number | null;
   images: string[];
