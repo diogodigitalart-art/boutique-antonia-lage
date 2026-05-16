@@ -87,6 +87,7 @@ type ProductRow = {
   original_price: number | null;
   category: string;
   reference: string;
+  external_id?: string | null;
   season: string | null;
   discount_percent: number | null;
   images: string[];
@@ -418,7 +419,12 @@ function Content() {
                       <td className="px-3 py-2 text-foreground">{r.brand}</td>
                       <td className="px-3 py-2 font-medium text-foreground">{r.name}</td>
                       <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
-                        {r.reference}
+                        <div>{r.reference}</div>
+                        {r.external_id && (
+                          <div className="text-[10px] text-muted-foreground/70">
+                            ID: {r.external_id}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {r.season || "—"}
@@ -642,6 +648,7 @@ type FormState = {
   brand: string;
   name: string;
   reference: string;
+  external_id: string;
   barcode: string;
   description: string;
   price: string;
@@ -665,6 +672,7 @@ function emptyForm(brandOptions: string[]): FormState {
     brand: brandOptions[0] ?? "",
     name: "",
     reference: "",
+    external_id: "",
     barcode: "",
     description: "",
     price: "",
@@ -717,6 +725,7 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
+          external_id: row.external_id ?? "",
           barcode: normalizeBarcode(row.barcode ?? ""),
           description: row.description,
           price: String(row.price),
@@ -814,6 +823,7 @@ function ProductForm({
             brand: form.brand.trim(),
             name: form.name.trim(),
             reference: form.reference.trim(),
+            external_id: form.external_id.trim() || null,
             barcode: form.barcode.trim() || null,
             description: form.description.trim(),
             price: Number(form.price),
@@ -943,6 +953,14 @@ function ProductForm({
                 <input
                   value={form.reference}
                   onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                />
+              </Field>
+              <Field label="ID Externo (Farfetch)">
+                <input
+                  value={form.external_id}
+                  onChange={(e) => setForm({ ...form, external_id: e.target.value })}
+                  placeholder="ex: 12345678"
                   className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
                 />
               </Field>
@@ -1429,6 +1447,7 @@ type ParsedRow = {
   brand: string;
   name: string;
   reference: string;
+  external_id: string;
   price: number;
   original_price: number | null;
   category: string;
@@ -1442,10 +1461,10 @@ type ParsedRow = {
 // Farfetch-style export: semicolon-separated, one row per SKU (size).
 // Multiple sizes of the same product share the same "Brand product ID".
 const CSV_TEMPLATE =
-  "Brand;Brand product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
-  "Self-Portrait;SP-001;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
-  "Self-Portrait;SP-001;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
-  "Self-Portrait;SP-001;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
+  "Brand;Brand product ID;Product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
 
 function parseCsv(text: string, delimiter: string = ";"): string[][] {
   const rows: string[][] = [];
@@ -1510,6 +1529,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
   };
   const iBrand = findIdx("brand");
   const iRef = findIdx("brand product id", "reference");
+  const iExt = findIdx("product id");
   const iSeason = findIdx("season");
   const iPrice = findIdx("local market price", "price");
   const iStock = findIdx("stock available", "stock");
@@ -1523,6 +1543,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
     const brand = cell(iBrand);
     const reference = cell(iRef);
+    const external_id = cell(iExt);
     if (!brand && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
@@ -1538,6 +1559,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         brand,
         name: reference || brand,
         reference,
+        external_id,
         price: Number(priceStr) || 0,
         original_price: null,
         category: "colecção",
@@ -1668,6 +1690,7 @@ function ImportProductsModal({
                 brand: r.brand,
                 name: preservedName,
                 reference: r.reference,
+                external_id: r.external_id || null,
                 description: r.description,
                 price: r.price,
                 original_price: r.original_price,

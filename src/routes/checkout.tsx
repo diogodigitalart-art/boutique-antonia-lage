@@ -204,6 +204,8 @@ function CheckoutPage() {
       product_uuid: e.product_uuid,
       brand: e.product?.brand ?? null,
       name: e.product?.name ?? null,
+      reference: e.product?.reference ?? null,
+      image: e.product?.image ?? e.product?.images?.[0] ?? null,
       size: e.size,
       quantity: e.quantity,
       unit_price: e.unitPrice,

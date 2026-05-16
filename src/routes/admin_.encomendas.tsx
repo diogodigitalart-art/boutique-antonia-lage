@@ -37,6 +37,8 @@ type OrderItem = {
   product_id: string;
   brand?: string | null;
   name?: string | null;
+  reference?: string | null;
+  image?: string | null;
   size: string;
   quantity: number;
   unit_price: number;
@@ -183,9 +185,19 @@ function OrdersPage() {
                               <ul className="space-y-1 text-sm">
                                 {o.items?.map((it, i) => (
                                   <li key={i} className="flex justify-between gap-3">
-                                    <span>
-                                      {it.brand ? `${it.brand} — ` : ""}
-                                      {it.name ?? it.product_id} · {it.size} · ×{it.quantity}
+                                    <span className="flex flex-col">
+                                      <span>
+                                        {it.brand ? `${it.brand} — ` : ""}
+                                        {it.name ?? it.product_id}
+                                      </span>
+                                      {it.reference && (
+                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                          Ref: {it.reference}
+                                        </span>
+                                      )}
+                                      <span className="text-xs text-muted-foreground">
+                                        {it.size} · ×{it.quantity}
+                                      </span>
                                     </span>
                                     <span className="text-muted-foreground">
                                       €{Number(it.line_total).toFixed(2)}
