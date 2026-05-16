@@ -419,7 +419,12 @@ function Content() {
                       <td className="px-3 py-2 text-foreground">{r.brand}</td>
                       <td className="px-3 py-2 font-medium text-foreground">{r.name}</td>
                       <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
-                        {r.reference}
+                        <div>{r.reference}</div>
+                        {r.external_id && (
+                          <div className="text-[10px] text-muted-foreground/70">
+                            ID: {r.external_id}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {r.season || "—"}
