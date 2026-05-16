@@ -648,6 +648,7 @@ type FormState = {
   brand: string;
   name: string;
   reference: string;
+  external_id: string;
   barcode: string;
   description: string;
   price: string;
@@ -671,6 +672,7 @@ function emptyForm(brandOptions: string[]): FormState {
     brand: brandOptions[0] ?? "",
     name: "",
     reference: "",
+    external_id: "",
     barcode: "",
     description: "",
     price: "",
@@ -723,6 +725,7 @@ function ProductForm({
           brand: knownBrand ? row.brand : row.brand,
           name: row.name,
           reference: row.reference,
+          external_id: row.external_id ?? "",
           barcode: normalizeBarcode(row.barcode ?? ""),
           description: row.description,
           price: String(row.price),
@@ -820,6 +823,7 @@ function ProductForm({
             brand: form.brand.trim(),
             name: form.name.trim(),
             reference: form.reference.trim(),
+            external_id: form.external_id.trim() || null,
             barcode: form.barcode.trim() || null,
             description: form.description.trim(),
             price: Number(form.price),
