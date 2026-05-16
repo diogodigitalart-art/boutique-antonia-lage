@@ -1690,6 +1690,7 @@ function ImportProductsModal({
                 brand: r.brand,
                 name: preservedName,
                 reference: r.reference,
+                external_id: r.external_id || null,
                 description: r.description,
                 price: r.price,
                 original_price: r.original_price,
