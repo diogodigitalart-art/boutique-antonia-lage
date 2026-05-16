@@ -1461,10 +1461,10 @@ type ParsedRow = {
 // Farfetch-style export: semicolon-separated, one row per SKU (size).
 // Multiple sizes of the same product share the same "Brand product ID".
 const CSV_TEMPLATE =
-  "Brand;Brand product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
-  "Self-Portrait;SP-001;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
-  "Self-Portrait;SP-001;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
-  "Self-Portrait;SP-001;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
+  "Brand;Brand product ID;Product ID;Season;Local Market Price;Stock Available;Size;Category;Partner barcode\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;1;XS;Women > Clothing > Dresses;1234567890001\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;2;S;Women > Clothing > Dresses;1234567890002\n" +
+  "Self-Portrait;SP-001;12345678;SS26;420;1;M;Women > Clothing > Dresses;1234567890003\n";
 
 function parseCsv(text: string, delimiter: string = ";"): string[][] {
   const rows: string[][] = [];
