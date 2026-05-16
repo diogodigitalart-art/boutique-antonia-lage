@@ -956,6 +956,14 @@ function ProductForm({
                   className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
                 />
               </Field>
+              <Field label="ID Externo (Farfetch)">
+                <input
+                  value={form.external_id}
+                  onChange={(e) => setForm({ ...form, external_id: e.target.value })}
+                  placeholder="ex: 12345678"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                />
+              </Field>
               <Field label="Código de barras">
                 <input
                   value={form.barcode}
