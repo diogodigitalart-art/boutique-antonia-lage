@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ShoppingBag, Download } from "lucide-react";
 import { toast } from "sonner";
+import { useProducts } from "@/lib/products";
 
 const STATUSES = [
   "Pendente",
@@ -100,6 +101,7 @@ async function deactivateOutOfStockProducts(items: OrderItem[]) {
 }
 
 export function AdminOrders({ mode }: { mode: Mode }) {
+  const { byId, rows: productRows } = useProducts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -410,11 +412,28 @@ export function AdminOrders({ mode }: { mode: Mode }) {
                                 Artigos
                               </p>
                               <ul className="space-y-3 text-sm">
-                                {o.items?.map((it, i) => (
+                                {o.items?.map((it, i) => {
+                                  const lookup =
+                                    byId(it.product_id) ??
+                                    (it.product_uuid
+                                      ? byId(it.product_uuid)
+                                      : undefined);
+                                  const rowMatch = it.product_uuid
+                                    ? productRows.find((r) => r.id === it.product_uuid)
+                                    : productRows.find(
+                                        (r) => r.legacy_id === it.product_id,
+                                      );
+                                  const imageSrc =
+                                    it.image ||
+                                    lookup?.image ||
+                                    lookup?.images?.[0] ||
+                                    rowMatch?.images?.[0] ||
+                                    null;
+                                  return (
                                   <li key={i} className="flex gap-3">
-                                    {it.image ? (
+                                    {imageSrc ? (
                                       <img
-                                        src={it.image}
+                                        src={imageSrc}
                                         alt=""
                                         className="h-20 w-16 shrink-0 rounded border border-border object-cover"
                                       />
@@ -439,7 +458,8 @@ export function AdminOrders({ mode }: { mode: Mode }) {
                                       </span>
                                     </div>
                                   </li>
-                                ))}
+                                  );
+                                })}
                               </ul>
                             </div>
                             <div>
