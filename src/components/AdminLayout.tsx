@@ -37,8 +37,8 @@ const NAV_ITEMS: NavItem[] = [
     exact: false,
     children: [
       { to: "/admin/encomendas", label: "Activas", countKey: "active" },
-      { to: "/admin/encomendas/historico", label: "Histórico", countKey: "history" },
       { to: "/admin/encomendas/canceladas", label: "Canceladas", countKey: "cancelled" },
+      { to: "/admin/encomendas/historico", label: "Histórico", countKey: "history" },
     ],
   },
   { to: "/admin/reservas", label: "Reservas", icon: Calendar, exact: false },
