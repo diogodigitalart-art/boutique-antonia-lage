@@ -1,14 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Fragment, useEffect, useState } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
-import { ShoppingBag } from "lucide-react";
+import { AdminOrders } from "@/components/AdminOrders";
 
 export const Route = createFileRoute("/admin_/encomendas")({
   head: () => ({ meta: [{ title: "Encomendas | Admin" }] }),
   component: () => (
     <AdminLayout>
-      <OrdersPage />
+      <AdminOrders mode="active" />
     </AdminLayout>
   ),
 });
