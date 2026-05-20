@@ -201,7 +201,7 @@ function SidebarBody({
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
-                  {item.children && item.countKey === undefined && (
+                  {item.children && (
                     <span
                       className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${
                         active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
