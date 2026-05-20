@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { statusBadgeClasses } from "@/lib/reservations";
+import { ReturnRequestModal } from "@/components/ReturnRequestModal";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -37,11 +38,15 @@ type Reservation = {
 
 type OrderItem = {
   product_id?: string;
+  product_uuid?: string | null;
   brand?: string | null;
   name?: string | null;
   size?: string;
   quantity?: number;
   line_total?: number;
+  unit_price?: number;
+  image?: string | null;
+  reference?: string | null;
 };
 type ShipAddr = {
   address1?: string;
@@ -57,6 +62,8 @@ type OrderRow = {
   status: string;
   items: OrderItem[];
   shipping_address: ShipAddr;
+  customer_name?: string;
+  customer_email?: string;
 };
 
 const ORDER_STATUS_COLOR: Record<string, string> = {
