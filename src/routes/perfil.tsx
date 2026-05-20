@@ -142,7 +142,7 @@ function ProfileContent() {
 
       const { data: ord } = await supabase
         .from("orders" as never)
-        .select("id, created_at, total, status, items, shipping_address")
+        .select("id, created_at, total, status, items, shipping_address, customer_name, customer_email")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       setOrders(((ord ?? []) as unknown) as OrderRow[]);
