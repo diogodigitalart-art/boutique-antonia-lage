@@ -477,6 +477,7 @@ function OrderCard({
   formatDate: (iso: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
   const items = order.items ?? [];
   const totalQty = items.reduce((s, it) => s + (it.quantity ?? 1), 0);
   const thumbs = items
@@ -591,8 +592,29 @@ function OrderCard({
               </p>
             </div>
           )}
+          {order.status === "Entregue" && (
+            <div className="border-t border-border px-6 py-4">
+              <button
+                onClick={() => setReturnOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs uppercase tracking-wider hover:bg-muted"
+              >
+                Devolver peça
+              </button>
+            </div>
+          )}
         </div>
       )}
+      <ReturnRequestModal
+        open={returnOpen}
+        order={returnOpen ? {
+          id: order.id,
+          customer_name: order.customer_name,
+          customer_email: order.customer_email,
+          items: order.items,
+        } : null}
+        onClose={() => setReturnOpen(false)}
+        resolveImage={(it) => (it.product_id ? byId(it.product_id)?.image : undefined)}
+      />
     </div>
   );
 }
