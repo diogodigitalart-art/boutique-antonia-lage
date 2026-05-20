@@ -36,6 +36,8 @@ import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
+import { Route as AdminEncomendasHistoricoRouteImport } from './routes/admin_.encomendas.historico'
+import { Route as AdminEncomendasCanceladasRouteImport } from './routes/admin_.encomendas.canceladas'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -174,6 +176,18 @@ const AdminClientesRoute = AdminClientesRouteImport.update({
   path: '/admin/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEncomendasHistoricoRoute =
+  AdminEncomendasHistoricoRouteImport.update({
+    id: '/historico',
+    path: '/historico',
+    getParentRoute: () => AdminEncomendasRoute,
+  } as any)
+const AdminEncomendasCanceladasRoute =
+  AdminEncomendasCanceladasRouteImport.update({
+    id: '/canceladas',
+    path: '/canceladas',
+    getParentRoute: () => AdminEncomendasRoute,
+  } as any)
 const ApiPublicHooksSendFollowupsRoute =
   ApiPublicHooksSendFollowupsRouteImport.update({
     id: '/api/public/hooks/send-followups',
@@ -200,7 +214,7 @@ export interface FileRoutesByFullPath {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
-  '/admin/encomendas': typeof AdminEncomendasRoute
+  '/admin/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -209,6 +223,8 @@ export interface FileRoutesByFullPath {
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/admin/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
+  '/admin/encomendas/historico': typeof AdminEncomendasHistoricoRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRoutesByTo {
@@ -230,7 +246,7 @@ export interface FileRoutesByTo {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
-  '/admin/encomendas': typeof AdminEncomendasRoute
+  '/admin/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -239,6 +255,8 @@ export interface FileRoutesByTo {
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/admin/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
+  '/admin/encomendas/historico': typeof AdminEncomendasHistoricoRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRoutesById {
@@ -261,7 +279,7 @@ export interface FileRoutesById {
   '/wishlist': typeof WishlistRoute
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
-  '/admin_/encomendas': typeof AdminEncomendasRoute
+  '/admin_/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/promocoes': typeof AdminPromocoesRoute
   '/admin_/relatorios': typeof AdminRelatoriosRoute
@@ -270,6 +288,8 @@ export interface FileRoutesById {
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/admin_/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
+  '/admin_/encomendas/historico': typeof AdminEncomendasHistoricoRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
 export interface FileRouteTypes {
@@ -302,6 +322,8 @@ export interface FileRouteTypes {
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
+    | '/admin/encomendas/canceladas'
+    | '/admin/encomendas/historico'
     | '/api/public/hooks/send-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -332,6 +354,8 @@ export interface FileRouteTypes {
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
+    | '/admin/encomendas/canceladas'
+    | '/admin/encomendas/historico'
     | '/api/public/hooks/send-followups'
   id:
     | '__root__'
@@ -362,6 +386,8 @@ export interface FileRouteTypes {
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
+    | '/admin_/encomendas/canceladas'
+    | '/admin_/encomendas/historico'
     | '/api/public/hooks/send-followups'
   fileRoutesById: FileRoutesById
 }
@@ -384,7 +410,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
-  AdminEncomendasRoute: typeof AdminEncomendasRoute
+  AdminEncomendasRoute: typeof AdminEncomendasRouteWithChildren
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
@@ -587,6 +613,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/encomendas/historico': {
+      id: '/admin_/encomendas/historico'
+      path: '/historico'
+      fullPath: '/admin/encomendas/historico'
+      preLoaderRoute: typeof AdminEncomendasHistoricoRouteImport
+      parentRoute: typeof AdminEncomendasRoute
+    }
+    '/admin_/encomendas/canceladas': {
+      id: '/admin_/encomendas/canceladas'
+      path: '/canceladas'
+      fullPath: '/admin/encomendas/canceladas'
+      preLoaderRoute: typeof AdminEncomendasCanceladasRouteImport
+      parentRoute: typeof AdminEncomendasRoute
+    }
     '/api/public/hooks/send-followups': {
       id: '/api/public/hooks/send-followups'
       path: '/api/public/hooks/send-followups'
@@ -596,6 +636,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminEncomendasRouteChildren {
+  AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
+  AdminEncomendasHistoricoRoute: typeof AdminEncomendasHistoricoRoute
+}
+
+const AdminEncomendasRouteChildren: AdminEncomendasRouteChildren = {
+  AdminEncomendasCanceladasRoute: AdminEncomendasCanceladasRoute,
+  AdminEncomendasHistoricoRoute: AdminEncomendasHistoricoRoute,
+}
+
+const AdminEncomendasRouteWithChildren = AdminEncomendasRoute._addFileChildren(
+  AdminEncomendasRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -616,7 +670,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
-  AdminEncomendasRoute: AdminEncomendasRoute,
+  AdminEncomendasRoute: AdminEncomendasRouteWithChildren,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,

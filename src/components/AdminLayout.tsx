@@ -15,19 +15,39 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 
-const NAV_ITEMS = [
+type NavChild = { to: string; label: string; countKey?: "active" | "history" | "cancelled" };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact: boolean;
+  children?: NavChild[];
+};
+
+const NAV_ITEMS: NavItem[] = [
   { to: "/admin", label: "Visão Geral", icon: LayoutDashboard, exact: true },
-  { to: "/admin/encomendas", label: "Encomendas", icon: ShoppingBag, exact: false },
+  {
+    to: "/admin/encomendas",
+    label: "Encomendas",
+    icon: ShoppingBag,
+    exact: false,
+    children: [
+      { to: "/admin/encomendas", label: "Activas", countKey: "active" },
+      { to: "/admin/encomendas/historico", label: "Histórico", countKey: "history" },
+      { to: "/admin/encomendas/canceladas", label: "Canceladas", countKey: "cancelled" },
+    ],
+  },
   { to: "/admin/reservas", label: "Reservas", icon: Calendar, exact: false },
   { to: "/admin/produtos", label: "Produtos", icon: Tag, exact: false },
   { to: "/admin/clientes", label: "Clientes", icon: Users, exact: false },
   { to: "/admin/promocoes", label: "Promoções", icon: Percent, exact: false },
   { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3, exact: false },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, exact: false },
-] as const;
+];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
@@ -132,6 +152,30 @@ function SidebarBody({
   onNavigate?: () => void;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [counts, setCounts] = useState<{ active: number; history: number; cancelled: number }>({
+    active: 0,
+    history: 0,
+    cancelled: 0,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase.from("orders" as never).select("status");
+      if (cancelled || !data) return;
+      const c = { active: 0, history: 0, cancelled: 0 };
+      for (const r of data as Array<{ status: string }>) {
+        if (["Pendente", "Confirmada", "Em preparação"].includes(r.status)) c.active++;
+        else if (["Enviada", "Entregue"].includes(r.status)) c.history++;
+        else if (r.status === "Cancelada") c.cancelled++;
+      }
+      setCounts(c);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   const isActive = (to: string, exact: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -143,6 +187,7 @@ function SidebarBody({
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.to, item.exact);
             const Icon = item.icon;
+            const showChildren = !!item.children && active;
             return (
               <li key={item.to}>
                 <Link
@@ -156,7 +201,44 @@ function SidebarBody({
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
+                  {item.children && (
+                    <span
+                      className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {counts.active}
+                    </span>
+                  )}
                 </Link>
+                {showChildren && (
+                  <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
+                    {item.children!.map((c) => {
+                      const cActive = pathname === c.to;
+                      const n = c.countKey ? counts[c.countKey] : null;
+                      return (
+                        <li key={c.to}>
+                          <Link
+                            to={c.to}
+                            onClick={onNavigate}
+                            className={`flex items-center justify-between rounded-md px-3 py-1.5 text-xs transition ${
+                              cActive
+                                ? "bg-muted font-medium text-foreground"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <span>{c.label}</span>
+                            {n !== null && (
+                              <span className="rounded-full bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {n}
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}
