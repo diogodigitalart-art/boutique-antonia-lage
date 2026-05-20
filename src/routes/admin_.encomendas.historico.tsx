@@ -1,12 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminLayout } from "@/components/AdminLayout";
 import { AdminOrders } from "@/components/AdminOrders";
 
 export const Route = createFileRoute("/admin_/encomendas/historico")({
   head: () => ({ meta: [{ title: "Histórico | Admin" }] }),
-  component: () => (
-    <AdminLayout>
-      <AdminOrders mode="history" />
-    </AdminLayout>
-  ),
+  component: () => <AdminOrders mode="history" />,
 });
