@@ -6,7 +6,7 @@ import { useProducts } from "@/lib/products";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyReturnStatus } from "@/server/returns";
-import { RotateCcw, Search } from "lucide-react";
+import { RotateCcw, Search, Archive, ArchiveRestore } from "lucide-react";
 
 export const Route = createFileRoute("/admin_/devolucoes")({
   head: () => ({ meta: [{ title: "Devoluções | Admin" }] }),
@@ -57,6 +57,7 @@ type ReturnRow = {
   notes: string | null;
   status: Status;
   stock_restored: boolean;
+  archived: boolean;
   created_at: string;
 };
 
@@ -77,6 +78,7 @@ function AdminReturns() {
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<"active" | "archived">("active");
   const notify = useServerFn(notifyReturnStatus);
 
   const refresh = async () => {
@@ -97,6 +99,7 @@ function AdminReturns() {
     let approved = 0;
     let rejected = 0;
     for (const r of items) {
+      if (r.archived) continue;
       if (["Aguarda recepção", "Peça recebida", "Em análise"].includes(r.status)) pending++;
       else if (r.status === "Aprovada") approved++;
       else if (r.status === "Rejeitada") rejected++;
@@ -105,16 +108,34 @@ function AdminReturns() {
   }, [items]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return items;
+    const base = items.filter((r) => (view === "archived" ? r.archived : !r.archived));
+    if (!search.trim()) return base;
     const q = search.trim().toLowerCase();
-    return items.filter(
+    return base.filter(
       (r) =>
         r.id.toLowerCase().includes(q) ||
         r.order_id.toLowerCase().includes(q) ||
         (r.customer_name ?? "").toLowerCase().includes(q) ||
         (r.customer_email ?? "").toLowerCase().includes(q),
     );
-  }, [items, search]);
+  }, [items, search, view]);
+
+  const archivedCount = items.filter((r) => r.archived).length;
+  const activeCount = items.filter((r) => !r.archived).length;
+
+  const toggleArchive = async (r: ReturnRow) => {
+    const next = !r.archived;
+    const { error } = await supabase
+      .from("returns" as never)
+      .update({ archived: next } as never)
+      .eq("id", r.id);
+    if (error) {
+      toast.error("Erro a arquivar");
+      return;
+    }
+    toast.success(next ? "Devolução arquivada" : "Devolução restaurada");
+    await refresh();
+  };
 
   const updateStatus = async (r: ReturnRow, status: Status) => {
     const prev = r.status;
@@ -189,14 +210,28 @@ function AdminReturns() {
         <StatCard label="Rejeitadas" value={stats.rejected} tone="rose" />
       </div>
 
-      <div className="mb-4 max-w-md">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-full border border-border bg-card p-1 text-xs">
+          <button
+            onClick={() => setView("active")}
+            className={`rounded-full px-3 py-1.5 uppercase tracking-wider ${view === "active" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Activas ({activeCount})
+          </button>
+          <button
+            onClick={() => setView("archived")}
+            className={`rounded-full px-3 py-1.5 uppercase tracking-wider ${view === "archived" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Arquivadas ({archivedCount})
+          </button>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar nº devolução, encomenda, cliente…"
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-72 max-w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>
@@ -261,12 +296,29 @@ function AdminReturns() {
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => setOpenId(open ? null : r.id)}
-                          className="text-xs uppercase tracking-wider text-primary hover:underline"
-                        >
-                          {open ? "Fechar" : "Detalhes"}
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => void toggleArchive(r)}
+                            className="inline-flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                            title={r.archived ? "Restaurar" : "Arquivar"}
+                          >
+                            {r.archived ? (
+                              <>
+                                <ArchiveRestore className="h-3.5 w-3.5" /> Restaurar
+                              </>
+                            ) : (
+                              <>
+                                <Archive className="h-3.5 w-3.5" /> Arquivar
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setOpenId(open ? null : r.id)}
+                            className="text-xs uppercase tracking-wider text-primary hover:underline"
+                          >
+                            {open ? "Fechar" : "Detalhes"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {open && (

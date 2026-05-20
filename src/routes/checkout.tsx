@@ -148,10 +148,15 @@ function CheckoutPage() {
       items.map((it) => {
         const p = byId(it.product_id);
         const unitPrice = p?.price ?? 0;
-        return { ...it, product: p, unitPrice, lineTotal: unitPrice * it.quantity };
+        const sizeAv = p?.sizeAvailability?.find((s) => s.size === it.size);
+        const available = sizeAv ? sizeAv.available : p ? 0 : it.quantity;
+        const outOfStock = !!p && it.quantity > available;
+        return { ...it, product: p, unitPrice, lineTotal: unitPrice * it.quantity, available, outOfStock };
       }),
     [items, byId],
   );
+  const outOfStockItems = enriched.filter((e) => e.outOfStock);
+  const hasOutOfStock = outOfStockItems.length > 0;
 
   const subtotal = enriched.reduce((s, e) => s + e.lineTotal, 0);
   const zone: Zone =
@@ -365,6 +370,27 @@ function CheckoutPage() {
             {step === 1 && (
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="font-display text-2xl italic">Resumo da encomenda</h2>
+                {hasOutOfStock && (
+                  <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                    <p className="font-medium">
+                      Atenção: algumas peças já não têm stock disponível.
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs">
+                      {outOfStockItems.map((it) => (
+                        <li key={`${it.product_id}-${it.size}`}>
+                          {it.product?.brand ? `${it.product.brand} — ` : ""}
+                          {it.product?.name ?? "Peça"} (tamanho {it.size})
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      to="/carrinho"
+                      className="mt-2 inline-block text-xs font-medium underline"
+                    >
+                      Editar carrinho
+                    </Link>
+                  </div>
+                )}
                 <ul className="mt-4 divide-y divide-border">
                   {enriched.map((it) => (
                     <li key={`${it.product_id}-${it.size}`} className="flex gap-4 py-4">
@@ -483,8 +509,16 @@ function CheckoutPage() {
               </button>
               {step < 3 && (
                 <button
-                  onClick={() => setStep((step + 1) as 1 | 2 | 3)}
-                  disabled={step === 2 && !canSubmitAddress}
+                  onClick={() => {
+                    if (step === 1 && hasOutOfStock) {
+                      toast.error(
+                        "Algumas peças já não têm stock. Remove-as do carrinho para continuar.",
+                      );
+                      return;
+                    }
+                    setStep((step + 1) as 1 | 2 | 3);
+                  }}
+                  disabled={(step === 1 && hasOutOfStock) || (step === 2 && !canSubmitAddress)}
                   className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
                 >
                   Continuar
