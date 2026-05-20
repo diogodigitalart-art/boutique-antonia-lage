@@ -527,6 +527,7 @@ export type Database = {
       }
       returns: {
         Row: {
+          archived: boolean
           created_at: string
           customer_email: string | null
           customer_name: string | null
@@ -542,6 +543,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
@@ -557,6 +559,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived?: boolean
           created_at?: string
           customer_email?: string | null
           customer_name?: string | null
