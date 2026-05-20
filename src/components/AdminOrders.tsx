@@ -153,20 +153,34 @@ export function AdminOrders({ mode }: { mode: Mode }) {
     }
     if (shouldRestore) {
       try {
+        let restored = 0;
         for (const it of o.items ?? []) {
-          if (!it.product_uuid || !it.size) continue;
+          if (!it.size) continue;
+          // Resolve uuid: prefer stored product_uuid, fall back to lookup via product_id (legacy_id or uuid)
+          let uuid: string | undefined = it.product_uuid ?? undefined;
+          if (!uuid && it.product_id) {
+            const row = productRows.find(
+              (r) => r.id === it.product_id || r.legacy_id === it.product_id,
+            );
+            uuid = row?.id;
+          }
+          if (!uuid) {
+            console.warn("Could not resolve product uuid for cancellation restore", it);
+            continue;
+          }
           const qty = Math.max(1, Number(it.quantity) || 1);
           const { error: rpcErr } = await supabase.rpc(
             "increment_product_stock" as never,
-            { _product_id: it.product_uuid, _size: it.size, _qty: qty } as never,
+            { _product_id: uuid, _size: it.size, _qty: qty } as never,
           );
           if (rpcErr) console.error("increment_product_stock failed", rpcErr);
+          else restored++;
         }
         await supabase
           .from("orders" as never)
           .update({ stock_restored: true } as never)
           .eq("id", o.id);
-        toast.success("Stock reposto automaticamente");
+        toast.success(`Stock reposto (${restored} ${restored === 1 ? "peça" : "peças"})`);
       } catch (e) {
         console.error("auto stock restore failed", e);
       }
