@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
 import { useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/products";
-import { Trash2, Minus, Plus, ShoppingBag } from "lucide-react";
+import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({ meta: [{ title: "Carrinho | Boutique Antónia Lage" }] }),
@@ -17,10 +17,14 @@ function CartPage() {
   const enriched = items.map((it) => {
     const p = byId(it.product_id);
     const unitPrice = p?.price ?? 0;
-    return { ...it, product: p, unitPrice, lineTotal: unitPrice * it.quantity };
+    const sizeAv = p?.sizeAvailability?.find((s) => s.size === it.size);
+    const available = sizeAv ? sizeAv.available : p ? 0 : it.quantity;
+    const outOfStock = !!p && it.quantity > available;
+    return { ...it, product: p, unitPrice, lineTotal: unitPrice * it.quantity, available, outOfStock };
   });
 
   const total = enriched.reduce((s, e) => s + e.lineTotal, 0);
+  const hasOutOfStock = enriched.some((e) => e.outOfStock);
 
   return (
     <Layout>
@@ -51,10 +55,23 @@ function CartPage() {
         ) : (
           <div className="grid gap-8 md:grid-cols-3">
             <ul className="md:col-span-2 space-y-4">
+              {hasOutOfStock && (
+                <li className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium">
+                      Atenção: algumas peças no teu carrinho já não têm stock disponível.
+                    </p>
+                    <p className="mt-1 text-xs text-rose-800/80">
+                      Remove-as para poderes finalizar a compra.
+                    </p>
+                  </div>
+                </li>
+              )}
               {enriched.map((it) => (
                 <li
                   key={`${it.product_id}-${it.size}`}
-                  className="flex gap-4 rounded-2xl border border-border bg-card p-4"
+                  className={`flex gap-4 rounded-2xl border p-4 ${it.outOfStock ? "border-rose-300 bg-rose-50/40" : "border-border bg-card"}`}
                 >
                   <div className="h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {it.product?.image && (
@@ -75,14 +92,30 @@ function CartPage() {
                           {it.product?.name ?? "Peça"}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">Tamanho: {it.size}</p>
+                        {it.outOfStock && (
+                          <p className="mt-1 text-xs font-medium text-rose-700">
+                            {it.available > 0
+                              ? `Apenas ${it.available} disponível neste tamanho`
+                              : "Sem stock disponível"}
+                          </p>
+                        )}
                       </div>
-                      <button
-                        onClick={() => void remove(it.product_id, it.size)}
-                        aria-label="Remover"
-                        className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {it.outOfStock ? (
+                        <button
+                          onClick={() => void remove(it.product_id, it.size)}
+                          className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1.5 text-xs uppercase tracking-wider text-white hover:bg-rose-700"
+                        >
+                          <Trash2 size={12} /> Remover
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => void remove(it.product_id, it.size)}
+                          aria-label="Remover"
+                          className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                     <div className="mt-auto flex items-end justify-between pt-3">
                       <div className="inline-flex items-center rounded-full border border-border">
@@ -130,7 +163,8 @@ function CartPage() {
                 </div>
                 <button
                   onClick={() => router.navigate({ to: "/checkout" })}
-                  className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                  disabled={hasOutOfStock}
+                  className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-primary text-sm uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Finalizar compra
                 </button>
