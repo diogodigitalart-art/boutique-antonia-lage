@@ -34,6 +34,7 @@ import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
 import { Route as AdminPromocoesRouteImport } from './routes/admin_.promocoes'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
+import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
 import { Route as AdminEncomendasIndexRouteImport } from './routes/admin_.encomendas.index'
@@ -167,6 +168,11 @@ const AdminEncomendasRoute = AdminEncomendasRouteImport.update({
   path: '/admin/encomendas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDevolucoesRoute = AdminDevolucoesRouteImport.update({
+  id: '/admin_/devolucoes',
+  path: '/admin/devolucoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   id: '/admin_/configuracoes',
   path: '/admin/configuracoes',
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/devolucoes': typeof AdminDevolucoesRoute
   '/admin/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/devolucoes': typeof AdminDevolucoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/wishlist': typeof WishlistRoute
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin_/devolucoes': typeof AdminDevolucoesRoute
   '/admin_/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/promocoes': typeof AdminPromocoesRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/devolucoes'
     | '/admin/encomendas'
     | '/admin/produtos'
     | '/admin/promocoes'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/devolucoes'
     | '/admin/produtos'
     | '/admin/promocoes'
     | '/admin/relatorios'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/wishlist'
     | '/admin_/clientes'
     | '/admin_/configuracoes'
+    | '/admin_/devolucoes'
     | '/admin_/encomendas'
     | '/admin_/produtos'
     | '/admin_/promocoes'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminDevolucoesRoute: typeof AdminDevolucoesRoute
   AdminEncomendasRoute: typeof AdminEncomendasRouteWithChildren
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
@@ -609,6 +622,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEncomendasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/devolucoes': {
+      id: '/admin_/devolucoes'
+      path: '/admin/devolucoes'
+      fullPath: '/admin/devolucoes'
+      preLoaderRoute: typeof AdminDevolucoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/configuracoes': {
       id: '/admin_/configuracoes'
       path: '/admin/configuracoes'
@@ -689,6 +709,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminDevolucoesRoute: AdminDevolucoesRoute,
   AdminEncomendasRoute: AdminEncomendasRouteWithChildren,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,
@@ -703,3 +724,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
