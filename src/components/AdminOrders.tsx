@@ -53,6 +53,7 @@ export type Order = {
   items: OrderItem[];
   shipping_address: Record<string, string>;
   notes: string | null;
+  stock_restored?: boolean;
 };
 
 type Mode = "active" | "history" | "cancelled";
@@ -129,6 +130,12 @@ export function AdminOrders({ mode }: { mode: Mode }) {
   }, [mode]);
 
   const updateStatus = async (o: Order, status: Status) => {
+    const prev = o.status;
+    const shouldRestore =
+      status === "Cancelada" &&
+      prev !== "Cancelada" &&
+      (["Pendente", "Confirmada", "Em preparação"] as Status[]).includes(prev) &&
+      !o.stock_restored;
     const { error } = await supabase
       .from("orders" as never)
       .update({ status } as never)
@@ -142,6 +149,26 @@ export function AdminOrders({ mode }: { mode: Mode }) {
         await deactivateOutOfStockProducts(o.items ?? []);
       } catch (e) {
         console.error("deactivate products failed", e);
+      }
+    }
+    if (shouldRestore) {
+      try {
+        for (const it of o.items ?? []) {
+          if (!it.product_uuid || !it.size) continue;
+          const qty = Math.max(1, Number(it.quantity) || 1);
+          const { error: rpcErr } = await supabase.rpc(
+            "increment_product_stock" as never,
+            { _product_id: it.product_uuid, _size: it.size, _qty: qty } as never,
+          );
+          if (rpcErr) console.error("increment_product_stock failed", rpcErr);
+        }
+        await supabase
+          .from("orders" as never)
+          .update({ stock_restored: true } as never)
+          .eq("id", o.id);
+        toast.success("Stock reposto automaticamente");
+      } catch (e) {
+        console.error("auto stock restore failed", e);
       }
     }
     toast.success(`Estado actualizado: ${status}`);
