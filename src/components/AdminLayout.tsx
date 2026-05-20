@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: "/admin/encomendas/historico", label: "Histórico", countKey: "history" },
     ],
   },
+  { to: "/admin/devolucoes", label: "Devoluções", icon: RotateCcw, exact: false },
   { to: "/admin/reservas", label: "Reservas", icon: Calendar, exact: false },
   { to: "/admin/produtos", label: "Produtos", icon: Tag, exact: false },
   { to: "/admin/clientes", label: "Clientes", icon: Users, exact: false },

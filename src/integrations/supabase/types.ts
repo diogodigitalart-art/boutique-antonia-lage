@@ -270,6 +270,7 @@ export type Database = {
           shipping_address: Json
           shipping_cost: number
           status: string
+          stock_restored: boolean
           subtotal: number
           total: number
           updated_at: string
@@ -288,6 +289,7 @@ export type Database = {
           shipping_address?: Json
           shipping_cost?: number
           status?: string
+          stock_restored?: boolean
           subtotal?: number
           total?: number
           updated_at?: string
@@ -306,6 +308,7 @@ export type Database = {
           shipping_address?: Json
           shipping_cost?: number
           status?: string
+          stock_restored?: boolean
           subtotal?: number
           total?: number
           updated_at?: string
@@ -522,6 +525,54 @@ export type Database = {
         }
         Relationships: []
       }
+      returns: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          items: Json
+          method: string
+          notes: string | null
+          order_id: string
+          reason: string
+          status: string
+          stock_restored: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items?: Json
+          method: string
+          notes?: string | null
+          order_id: string
+          reason: string
+          status?: string
+          stock_restored?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items?: Json
+          method?: string
+          notes?: string | null
+          order_id?: string
+          reason?: string
+          status?: string
+          stock_restored?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           created_at: string
@@ -662,6 +713,10 @@ export type Database = {
           product_size: string
           reservation_time: string
         }[]
+      }
+      increment_product_stock: {
+        Args: { _product_id: string; _qty?: number; _size: string }
+        Returns: undefined
       }
       is_product_slot_taken: {
         Args: {
