@@ -32,10 +32,14 @@ export const notifyReturnStatus = createServerFn({ method: "POST" })
     }
 
     const { data: ret } = await supabaseAdmin
-      .from("returns")
+      .from("returns" as never)
       .select("id, order_id, customer_name, customer_email, items, reason, method, notes")
       .eq("id", data.returnId)
-      .maybeSingle();
+      .maybeSingle() as { data: {
+        id: string; order_id: string; customer_name: string | null;
+        customer_email: string | null; items: unknown; reason: string;
+        method: string; notes: string | null;
+      } | null };
     if (!ret) throw new Error("Devolução não encontrada");
     if (!ret.customer_email) return { ok: true, sent: false };
 
