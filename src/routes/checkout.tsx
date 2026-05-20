@@ -370,6 +370,27 @@ function CheckoutPage() {
             {step === 1 && (
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="font-display text-2xl italic">Resumo da encomenda</h2>
+                {hasOutOfStock && (
+                  <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                    <p className="font-medium">
+                      Atenção: algumas peças já não têm stock disponível.
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs">
+                      {outOfStockItems.map((it) => (
+                        <li key={`${it.product_id}-${it.size}`}>
+                          {it.product?.brand ? `${it.product.brand} — ` : ""}
+                          {it.product?.name ?? "Peça"} (tamanho {it.size})
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      to="/carrinho"
+                      className="mt-2 inline-block text-xs font-medium underline"
+                    >
+                      Editar carrinho
+                    </Link>
+                  </div>
+                )}
                 <ul className="mt-4 divide-y divide-border">
                   {enriched.map((it) => (
                     <li key={`${it.product_id}-${it.size}`} className="flex gap-4 py-4">
