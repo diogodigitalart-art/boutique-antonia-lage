@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Heart, ChevronLeft } from "lucide-react";
+import { Heart, ChevronLeft, Ruler } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { useProducts } from "@/lib/products";
 import type { Product } from "@/lib/data";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { WhatsAppLink } from "@/components/WhatsAppButton";
 import {
   Accordion,
@@ -53,6 +54,7 @@ function ProductPage() {
   const [reserveOpen, setReserveOpen] = useState(false);
   const [addedOpen, setAddedOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
@@ -301,6 +303,14 @@ function ProductPage() {
                 })}
               </div>
             )}
+            <button
+              type="button"
+              onClick={() => setSizeGuideOpen(true)}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
+            >
+              <Ruler size={14} />
+              Guia de tamanhos
+            </button>
             {product.fullyReserved && (
               <p className="mt-3 text-xs uppercase tracking-wider text-destructive">
                 Esgotado — todas as peças estão reservadas.
@@ -454,6 +464,12 @@ function ProductPage() {
         onClose={() => setLightboxOpen(false)}
         images={galleryImages}
         alt={`${product.brand} ${product.name}`}
+      />
+      <SizeGuideModal
+        open={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        brand={product.brand}
+        isOneSize={isOneSize}
       />
     </Layout>
   );
