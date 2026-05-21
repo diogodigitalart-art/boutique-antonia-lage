@@ -612,6 +612,30 @@ export type Database = {
         }
         Relationships: []
       }
+      size_guides: {
+        Row: {
+          brand_name: string
+          created_at: string
+          guide_data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          guide_data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          guide_data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       style_profiles: {
         Row: {
           answers: Json
