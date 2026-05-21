@@ -465,6 +465,12 @@ function ProductPage() {
         images={galleryImages}
         alt={`${product.brand} ${product.name}`}
       />
+      <SizeGuideModal
+        open={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        brand={product.brand}
+        isOneSize={isOneSize}
+      />
     </Layout>
   );
 }
