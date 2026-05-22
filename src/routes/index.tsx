@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
