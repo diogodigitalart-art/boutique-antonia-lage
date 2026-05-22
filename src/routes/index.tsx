@@ -235,6 +235,8 @@ function HomePage() {
         </div>
       </section>
 
+      <RecentlyViewed />
+
     </Layout>
   );
 }
