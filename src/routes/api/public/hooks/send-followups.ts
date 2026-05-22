@@ -33,6 +33,21 @@ export const Route = createFileRoute("/api/public/hooks/send-followups")({
       POST: async ({ request }) => {
         const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
         const RESEND_API_KEY = process.env.RESEND_API_KEY;
+        const CRON_SECRET = process.env.CRON_SECRET;
+        if (!CRON_SECRET) {
+          return new Response(
+            JSON.stringify({ error: "CRON_SECRET not configured" }),
+            { status: 503, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        const auth = request.headers.get("authorization") || "";
+        const provided = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        if (provided !== CRON_SECRET) {
+          return new Response(
+            JSON.stringify({ error: "Unauthorized" }),
+            { status: 401, headers: { "Content-Type": "application/json" } },
+          );
+        }
         if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
           return new Response(
             JSON.stringify({ error: "Email provider not configured" }),

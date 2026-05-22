@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const NOTIFY_TO = "diogodigitalart@gmail.com";
 const FROM_ADDRESS = "Antónia Lage <onboarding@resend.dev>";
 
 export type ReservationInput = {
+  token: string;
   itemName: string;
   itemType: "produto" | "experiencia";
   name: string;
@@ -39,6 +41,7 @@ function isStr(v: unknown, max = 500): v is string {
 function validate(input: unknown): ReservationInput {
   if (!input || typeof input !== "object") throw new Error("Invalid payload");
   const i = input as Record<string, unknown>;
+  if (typeof i.token !== "string" || !i.token) throw new Error("Unauthorized");
   if (
     !isStr(i.itemName, 200) ||
     !isStr(i.name, 200) ||
@@ -80,6 +83,7 @@ function validate(input: unknown): ReservationInput {
     };
   }
   return {
+    token: i.token as string,
     itemName: i.itemName,
     itemType: i.itemType,
     name: i.name,
@@ -96,6 +100,8 @@ function validate(input: unknown): ReservationInput {
 export const sendReservationEmail = createServerFn({ method: "POST" })
   .inputValidator(validate)
   .handler(async ({ data }) => {
+    const { data: u, error: ae } = await supabaseAdmin.auth.getUser(data.token);
+    if (ae || !u?.user) throw new Error("Unauthorized");
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -196,7 +202,7 @@ export const sendReservationEmail = createServerFn({ method: "POST" })
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error("Resend send failed", res.status, body);
-      throw new Error(`Resend API call failed [${res.status}]: ${JSON.stringify(body)}`);
+      throw new Error("Não foi possível enviar a reserva. Tenta novamente.");
     }
 
     // Send confirmation email to the customer (best-effort, non-blocking failure)

@@ -219,7 +219,14 @@ export function ReservationModal({
           }
         : undefined;
 
-      await send({ data: { ...payload, experienceDetails: experience_details } });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast.error("Sessão expirada. Inicia sessão novamente.");
+        setSubmitting(false);
+        return;
+      }
+      await send({ data: { ...payload, token, experienceDetails: experience_details } });
       if (user) {
         const { error } = await supabase.from("reservations").insert({
           user_id: user.id,
