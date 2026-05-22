@@ -59,7 +59,47 @@ export const createOrder = createServerFn({ method: "POST" })
     if (ue || !u?.user) throw new Error("Unauthorized");
     const userId = u.user.id;
 
-    // 0) Pre-validate stock for every line and decrement (atomic per-line via FOR UPDATE in RPC)
+    // 0a) Recompute prices server-side from DB to prevent client tampering
+    type Zone = "PT_CONT" | "PT_ILHAS" | "EU" | "WORLD";
+    const ZONE_COST: Record<Zone, number> = { PT_CONT: 5, PT_ILHAS: 12, EU: 15, WORLD: 25 };
+    const COUNTRY_TO_ZONE: Record<string, Zone> = {
+      PT: "PT_CONT", "PT-AC": "PT_ILHAS", "PT-MA": "PT_ILHAS",
+      ES: "EU", FR: "EU", IT: "EU", DE: "EU", NL: "EU", BE: "EU", LU: "EU",
+      IE: "EU", AT: "EU", DK: "EU", SE: "EU", FI: "EU", PL: "EU", GB: "EU",
+      US: "WORLD", BR: "WORLD", CA: "WORLD", OTHER: "WORLD",
+    };
+    const FREE_SHIPPING_THRESHOLD = 150;
+
+    const productUuids = Array.from(
+      new Set(data.items.map((it) => it.product_uuid).filter((x): x is string => !!x)),
+    );
+    const { data: dbProducts, error: prodErr } = await supabaseAdmin
+      .from("products")
+      .select("id, price, discount_percent")
+      .in("id", productUuids);
+    if (prodErr) throw new Error("Failed to validate product prices");
+    const priceById = new Map<string, number>();
+    for (const p of dbProducts ?? []) {
+      const base = Number(p.price) || 0;
+      const pct = p.discount_percent != null ? Number(p.discount_percent) : 0;
+      const final = pct > 0 ? Math.round(base * (1 - pct / 100) * 100) / 100 : base;
+      priceById.set(p.id as string, final);
+    }
+
+    const verifiedItems: OrderItem[] = data.items.map((it) => {
+      const unit = it.product_uuid ? priceById.get(it.product_uuid) : undefined;
+      if (unit == null) throw new Error("Produto inválido na encomenda");
+      const qty = Math.max(1, Math.floor(Number(it.quantity) || 1));
+      const line = Math.round(unit * qty * 100) / 100;
+      return { ...it, quantity: qty, unit_price: unit, line_total: line };
+    });
+    const subtotal = Math.round(verifiedItems.reduce((s, it) => s + it.line_total, 0) * 100) / 100;
+    const zone: Zone = COUNTRY_TO_ZONE[data.address.country] ?? "PT_CONT";
+    let shippingCost = ZONE_COST[zone];
+    if (subtotal === 0) shippingCost = 0;
+    if (zone === "PT_CONT" && subtotal >= FREE_SHIPPING_THRESHOLD) shippingCost = 0;
+
+    // 0b) Pre-validate stock for every line and decrement (atomic per-line via FOR UPDATE in RPC)
     for (const it of data.items) {
       if (!it.product_uuid || !it.size) continue;
       const { error: stockErr } = await supabaseAdmin.rpc("decrement_product_stock", {
@@ -75,7 +115,7 @@ export const createOrder = createServerFn({ method: "POST" })
       }
     }
 
-    // Validate discount code (if provided)
+    // Validate discount code (if provided) — compute discount server-side
     let discountCode: string | null = null;
     let discountAmount = 0;
     let usedDiscountRowId: string | null = null;
@@ -95,7 +135,7 @@ export const createOrder = createServerFn({ method: "POST" })
         (dc.use_limit == null || (dc.use_count ?? 0) < dc.use_limit)
       ) {
         discountCode = dc.code;
-        discountAmount = Number(data.discount_amount || 0);
+        discountAmount = Math.round(((subtotal * Number(dc.discount_percent || 0)) / 100) * 100) / 100;
         usedDiscountRowId = dc.id as string;
         usedDiscountUseCount = Number(dc.use_count ?? 0);
         usedDiscountUseLimit = dc.use_limit ?? null;
@@ -108,10 +148,12 @@ export const createOrder = createServerFn({ method: "POST" })
           .maybeSingle();
         if (sub) {
           discountCode = sub.discount_code;
-          discountAmount = Number(data.discount_amount || 0);
+          discountAmount = Math.round(subtotal * 0.1 * 100) / 100;
         }
       }
     }
+
+    const total = Math.max(0, Math.round((subtotal - discountAmount + shippingCost) * 100) / 100);
 
     // 1) Insert order
     const { data: order, error } = await supabaseAdmin
@@ -121,11 +163,11 @@ export const createOrder = createServerFn({ method: "POST" })
         customer_name: data.address.full_name,
         customer_email: data.address.email,
         customer_phone: data.address.phone,
-        items: data.items,
+        items: verifiedItems,
         shipping_address: data.address,
-        subtotal: data.subtotal,
-        shipping_cost: data.shipping_cost,
-        total: data.total,
+        subtotal,
+        shipping_cost: shippingCost,
+        total,
         discount_code: discountCode,
         discount_amount: discountAmount,
         status: "Pendente",
