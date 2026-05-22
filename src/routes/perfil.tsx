@@ -383,6 +383,7 @@ function ProfileContent() {
               />
             )}
           </div>
+          <WishlistShareManager hasItems={wishItems.length > 0} />
         </div>
 
         {/* Language toggle */}
