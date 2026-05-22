@@ -738,3 +738,121 @@ function AddrField({ label, value, onChange, className = "" }: { label: string; 
     </label>
   );
 }
+
+function WishlistShareManager({ hasItems }: { hasItems: boolean }) {
+  const getShare = useServerFn(getMyWishlistShare);
+  const ensureShare = useServerFn(ensureMyWishlistShare);
+  const setActive = useServerFn(setMyWishlistShareActive);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [isActive, setIsActive] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const getAccessToken = async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const t = await getAccessToken();
+        if (!t) return;
+        const res = await getShare({ data: { token: t } });
+        setToken(res.token);
+        setIsActive(res.is_active);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const url = token ? `${typeof window !== "undefined" ? window.location.origin : ""}/wishlist/share/${token}` : "";
+
+  const onToggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const t = await getAccessToken();
+      if (!t) throw new Error("Sessão expirada.");
+      if (!token) {
+        const res = await ensureShare({ data: { token: t } });
+        setToken(res.token);
+        setIsActive(true);
+        toast.success("Partilha activada.");
+      } else {
+        const next = !isActive;
+        await setActive({ data: { token: t, active: next } });
+        setIsActive(next);
+        toast.success(next ? "Partilha activada." : "Partilha desactivada.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCopy = async () => {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado!");
+    } catch {
+      toast.message("Copia o link", { description: url });
+    }
+  };
+
+  if (!hasItems && !token) return null;
+
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            <Share2 size={13} /> Partilhar wishlist
+          </p>
+          <p className="mt-2 text-sm text-foreground">
+            {loading
+              ? "A carregar…"
+              : isActive
+                ? "O teu link está activo. Quem o tiver pode ver as tuas peças favoritas."
+                : "Activa a partilha para gerar um link público para a tua wishlist."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          disabled={busy || loading}
+          aria-pressed={isActive}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+            isActive ? "bg-primary" : "bg-border"
+          } disabled:opacity-50`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-background shadow transition ${
+              isActive ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+      {isActive && token && (
+        <div className="mt-4 flex items-center gap-2">
+          <input
+            value={url}
+            readOnly
+            className="h-10 flex-1 truncate rounded-lg border border-border bg-background px-3 text-xs text-foreground"
+          />
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-foreground hover:bg-foreground hover:text-background"
+          >
+            <Copy size={12} /> Copiar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
