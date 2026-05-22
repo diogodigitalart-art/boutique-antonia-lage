@@ -38,6 +38,7 @@ import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
 import { Route as AdminEncomendasIndexRouteImport } from './routes/admin_.encomendas.index'
+import { Route as WishlistShareTokenRouteImport } from './routes/wishlist.share.$token'
 import { Route as AdminEncomendasHistoricoRouteImport } from './routes/admin_.encomendas.historico'
 import { Route as AdminEncomendasCanceladasRouteImport } from './routes/admin_.encomendas.canceladas'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
@@ -188,6 +189,11 @@ const AdminEncomendasIndexRoute = AdminEncomendasIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminEncomendasRoute,
 } as any)
+const WishlistShareTokenRoute = WishlistShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => WishlistRoute,
+} as any)
 const AdminEncomendasHistoricoRoute =
   AdminEncomendasHistoricoRouteImport.update({
     id: '/historico',
@@ -223,7 +229,7 @@ export interface FileRoutesByFullPath {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRoute
+  '/wishlist': typeof WishlistRouteWithChildren
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
   '/admin/encomendas/historico': typeof AdminEncomendasHistoricoRoute
+  '/wishlist/share/$token': typeof WishlistShareTokenRoute
   '/admin/encomendas/': typeof AdminEncomendasIndexRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
@@ -257,7 +264,7 @@ export interface FileRoutesByTo {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRoute
+  '/wishlist': typeof WishlistRouteWithChildren
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
   '/admin/encomendas/historico': typeof AdminEncomendasHistoricoRoute
+  '/wishlist/share/$token': typeof WishlistShareTokenRoute
   '/admin/encomendas': typeof AdminEncomendasIndexRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
@@ -291,7 +299,7 @@ export interface FileRoutesById {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRoute
+  '/wishlist': typeof WishlistRouteWithChildren
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/devolucoes': typeof AdminDevolucoesRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin_/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
   '/admin_/encomendas/historico': typeof AdminEncomendasHistoricoRoute
+  '/wishlist/share/$token': typeof WishlistShareTokenRoute
   '/admin_/encomendas/': typeof AdminEncomendasIndexRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
@@ -342,6 +351,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/encomendas/canceladas'
     | '/admin/encomendas/historico'
+    | '/wishlist/share/$token'
     | '/admin/encomendas/'
     | '/api/public/hooks/send-followups'
   fileRoutesByTo: FileRoutesByTo
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/encomendas/canceladas'
     | '/admin/encomendas/historico'
+    | '/wishlist/share/$token'
     | '/admin/encomendas'
     | '/api/public/hooks/send-followups'
   id:
@@ -409,6 +420,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin_/encomendas/canceladas'
     | '/admin_/encomendas/historico'
+    | '/wishlist/share/$token'
     | '/admin_/encomendas/'
     | '/api/public/hooks/send-followups'
   fileRoutesById: FileRoutesById
@@ -429,7 +441,7 @@ export interface RootRouteChildren {
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
-  WishlistRoute: typeof WishlistRoute
+  WishlistRoute: typeof WishlistRouteWithChildren
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDevolucoesRoute: typeof AdminDevolucoesRoute
@@ -650,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEncomendasIndexRouteImport
       parentRoute: typeof AdminEncomendasRoute
     }
+    '/wishlist/share/$token': {
+      id: '/wishlist/share/$token'
+      path: '/share/$token'
+      fullPath: '/wishlist/share/$token'
+      preLoaderRoute: typeof WishlistShareTokenRouteImport
+      parentRoute: typeof WishlistRoute
+    }
     '/admin_/encomendas/historico': {
       id: '/admin_/encomendas/historico'
       path: '/historico'
@@ -673,6 +692,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface WishlistRouteChildren {
+  WishlistShareTokenRoute: typeof WishlistShareTokenRoute
+}
+
+const WishlistRouteChildren: WishlistRouteChildren = {
+  WishlistShareTokenRoute: WishlistShareTokenRoute,
+}
+
+const WishlistRouteWithChildren = WishlistRoute._addFileChildren(
+  WishlistRouteChildren,
+)
 
 interface AdminEncomendasRouteChildren {
   AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
@@ -706,7 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
-  WishlistRoute: WishlistRoute,
+  WishlistRoute: WishlistRouteWithChildren,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDevolucoesRoute: AdminDevolucoesRoute,
