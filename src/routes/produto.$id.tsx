@@ -420,6 +420,8 @@ function ProductPage() {
         </div>
       </div>
 
+      <RecentlyViewed excludeId={product.id} />
+
       {related.length > 0 && (
         <section className="mt-16">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -434,8 +436,6 @@ function ProductPage() {
           </div>
         </section>
       )}
-
-      <RecentlyViewed excludeId={product.id} />
 
       {youMayLike.length > 0 && (
         <section className="mt-16">
