@@ -220,7 +220,7 @@ export const createOrder = createServerFn({ method: "POST" })
       if (LOVABLE_API_KEY && RESEND_API_KEY) {
         const orderShort = orderId.slice(0, 8).toUpperCase();
         const addr = data.address;
-        const itemsRows = data.items
+        const itemsRows = verifiedItems
           .map(
             (it) => `<tr>
               <td style="width:72px;padding:8px 12px 8px 0;vertical-align:top">
@@ -257,9 +257,9 @@ export const createOrder = createServerFn({ method: "POST" })
             <p style="margin:0 0 24px">${escapeHtml(addr.country)}</p>
 
             <table style="width:100%;border-top:1px solid #e5e5e5;padding-top:16px;font-size:14px">
-              <tr><td style="color:#666">Subtotal</td><td style="text-align:right">€${data.subtotal.toFixed(2)}</td></tr>
-              <tr><td style="color:#666">Envio</td><td style="text-align:right">€${data.shipping_cost.toFixed(2)}</td></tr>
-              <tr><td style="font-weight:600;padding-top:8px">Total</td><td style="text-align:right;font-weight:600;padding-top:8px">€${data.total.toFixed(2)}</td></tr>
+              <tr><td style="color:#666">Subtotal</td><td style="text-align:right">€${subtotal.toFixed(2)}</td></tr>
+              <tr><td style="color:#666">Envio</td><td style="text-align:right">€${shippingCost.toFixed(2)}</td></tr>
+              <tr><td style="font-weight:600;padding-top:8px">Total</td><td style="text-align:right;font-weight:600;padding-top:8px">€${total.toFixed(2)}</td></tr>
             </table>
           </div>`;
         const res = await fetch(`${GATEWAY_URL}/emails`, {
@@ -272,7 +272,7 @@ export const createOrder = createServerFn({ method: "POST" })
           body: JSON.stringify({
             from: FROM_ADDRESS,
             to: [NOTIFY_TO],
-            subject: `Nova encomenda #${orderShort} — €${data.total.toFixed(2)}`,
+            subject: `Nova encomenda #${orderShort} — €${total.toFixed(2)}`,
             html,
           }),
         });
