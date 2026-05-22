@@ -15,6 +15,8 @@ import { AddedToCartDrawer } from "@/components/AddedToCartDrawer";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { SizeGuideModal } from "@/components/SizeGuideModal";
 import { WhatsAppLink } from "@/components/WhatsAppButton";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { pushRecentlyViewed } from "@/lib/recentlyViewed";
 import {
   Accordion,
   AccordionContent,
@@ -65,6 +67,11 @@ function ProductPage() {
     setActiveImage(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Track recently viewed
+  useEffect(() => {
+    if (product?.id) pushRecentlyViewed(product.id);
+  }, [product?.id]);
 
   // Auto-select "U" when product loads as one-size.
   useEffect(() => {
@@ -412,6 +419,8 @@ function ProductPage() {
           </button>
         </div>
       </div>
+
+      <RecentlyViewed excludeId={product.id} />
 
       {related.length > 0 && (
         <section className="mt-16">

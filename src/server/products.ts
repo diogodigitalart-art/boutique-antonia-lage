@@ -2,6 +2,98 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+const FROM_ADDRESS = "Antónia Lage <onboarding@resend.dev>";
+const SITE_URL = "https://boutique-antonia-lage.lovable.app";
+
+function escapeHtml(input: string) {
+  return String(input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function notifyWishlistDiscount(productUuid: string) {
+  const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!LOVABLE_API_KEY || !RESEND_API_KEY) return;
+
+  const { data: prod } = await supabaseAdmin
+    .from("products")
+    .select("id, legacy_id, name, brand, price, original_price, discount_percent, images")
+    .eq("id", productUuid)
+    .maybeSingle();
+  if (!prod) return;
+
+  const candidateIds = [prod.id, prod.legacy_id].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (candidateIds.length === 0) return;
+
+  const { data: rows } = await supabaseAdmin
+    .from("wishlists")
+    .select("user_id")
+    .in("product_id", candidateIds);
+  const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id as string)));
+  if (userIds.length === 0) return;
+
+  const { data: profiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("id", userIds);
+  const recipients = (profiles ?? []).filter(
+    (p) => typeof p.email === "string" && p.email.includes("@"),
+  );
+  if (recipients.length === 0) return;
+
+  const image = Array.isArray(prod.images) && prod.images.length > 0
+    ? String(prod.images[0])
+    : "";
+  const productLink = `${SITE_URL}/produto/${prod.legacy_id || prod.id}`;
+  const original = prod.original_price ?? prod.price;
+  const subject = "Uma peça que guardaste está em promoção 🎉";
+
+  for (const r of recipients) {
+    const html = `
+      <div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <h2 style="font-style:italic;font-weight:400;margin:0 0 8px">Boas notícias${r.full_name ? `, ${escapeHtml(String(r.full_name).split(" ")[0])}` : ""}!</h2>
+        <p style="color:#666;margin:0 0 20px">Uma peça da tua wishlist acabou de descer de preço.</p>
+        ${image ? `<a href="${productLink}" style="display:block;margin:0 0 16px"><img src="${escapeHtml(image)}" alt="" style="width:100%;max-width:520px;border-radius:8px;display:block"/></a>` : ""}
+        <p style="margin:0;font-size:12px;text-transform:uppercase;letter-spacing:0.15em;color:#999">${escapeHtml(String(prod.brand ?? ""))}</p>
+        <h3 style="margin:4px 0 12px;font-style:italic;font-weight:400;font-size:22px">${escapeHtml(String(prod.name ?? ""))}</h3>
+        <p style="margin:0 0 20px;font-size:18px">
+          <span style="color:#999;text-decoration:line-through;margin-right:8px">€${Number(original).toFixed(0)}</span>
+          <span style="color:#b91c1c;font-weight:500">€${Number(prod.price).toFixed(0)}</span>
+          ${prod.discount_percent ? `<span style="margin-left:8px;background:#dc2626;color:#fff;font-size:11px;padding:3px 8px;border-radius:999px;letter-spacing:0.05em">−${prod.discount_percent}%</span>` : ""}
+        </p>
+        <p style="margin:0 0 28px">
+          <a href="${productLink}" style="display:inline-block;background:#1a1a1a;color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-size:13px;letter-spacing:0.1em;text-transform:uppercase">Ver peça</a>
+        </p>
+        <p style="color:#999;font-size:12px;margin:24px 0 0">Boutique Antónia Lage · Stock limitado, não esperes muito.</p>
+      </div>`;
+
+    try {
+      await fetch(`${GATEWAY_URL}/emails`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Connection-Api-Key": RESEND_API_KEY,
+        },
+        body: JSON.stringify({
+          from: FROM_ADDRESS,
+          to: [r.email],
+          subject,
+          html,
+        }),
+      });
+    } catch (err) {
+      console.error("wishlist discount email failed", err);
+    }
+  }
+}
 
 async function assertAdmin(token: string): Promise<string> {
   if (!token) throw new Error("Unauthorized");
@@ -147,8 +239,23 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       external_id: p.external_id ?? null,
     };
     if (p.id) {
+      // Read previous discount to detect increase
+      const { data: prev } = await supabaseAdmin
+        .from("products")
+        .select("discount_percent")
+        .eq("id", p.id)
+        .maybeSingle();
+      const prevDiscount = Number(prev?.discount_percent ?? 0) || 0;
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
       if (error) throw new Error(error.message);
+      const newDiscount = Number(p.discount_percent ?? 0) || 0;
+      if (newDiscount > 0 && newDiscount > prevDiscount) {
+        try {
+          await notifyWishlistDiscount(p.id);
+        } catch (err) {
+          console.error("notifyWishlistDiscount failed", err);
+        }
+      }
       return { ok: true, id: p.id };
     }
     const { data: inserted, error } = await supabaseAdmin
@@ -157,6 +264,14 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    const newDiscount = Number(p.discount_percent ?? 0) || 0;
+    if (newDiscount > 0) {
+      try {
+        await notifyWishlistDiscount(inserted.id);
+      } catch (err) {
+        console.error("notifyWishlistDiscount failed", err);
+      }
+    }
     return { ok: true, id: inserted.id };
   });
 
