@@ -4,7 +4,7 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useWishlist } from "@/lib/wishlist";
 import { useProducts } from "@/lib/products";
-import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays, Package, ChevronDown } from "lucide-react";
+import { Sparkles, Calendar, Heart, Shirt, Wallet, ArrowRight, CalendarCheck, LogOut, Pencil, Music, CalendarDays, Package, ChevronDown, Share2, Copy } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth, type SavedAddress } from "@/lib/auth";
 import { toast } from "sonner";
@@ -13,6 +13,12 @@ import { EditProfileModal } from "@/components/EditProfileModal";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { statusBadgeClasses } from "@/lib/reservations";
 import { ReturnRequestModal } from "@/components/ReturnRequestModal";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  getMyWishlistShare,
+  ensureMyWishlistShare,
+  setMyWishlistShareActive,
+} from "@/server/wishlistShare";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
