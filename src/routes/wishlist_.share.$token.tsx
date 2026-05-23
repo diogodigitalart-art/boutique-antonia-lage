@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { getSharedWishlist } from "@/server/wishlistShare";
 import { Heart, Loader2, ShoppingBag } from "lucide-react";
 
-export const Route = createFileRoute("/wishlist_/share/$token")({
+export const Route = createFileRoute("/wishlist/share/$token")({
   head: () => ({
     meta: [
       { title: "Lista de desejos partilhada | Boutique Antónia Lage" },
