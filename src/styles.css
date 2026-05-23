@@ -207,3 +207,28 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Marquee for brand strip */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+/* Hero gradient sheen */
+@keyframes hero-sheen {
+  0%, 100% { transform: translate(0%, 0%) scale(1); opacity: 0.5; }
+  50% { transform: translate(5%, -3%) scale(1.1); opacity: 0.75; }
+}
+.animate-hero-sheen {
+  animation: hero-sheen 14s ease-in-out infinite;
+}
+@keyframes hero-sheen-2 {
+  0%, 100% { transform: translate(0%, 0%) scale(1.1); opacity: 0.4; }
+  50% { transform: translate(-6%, 4%) scale(1); opacity: 0.65; }
+}
+.animate-hero-sheen-2 {
+  animation: hero-sheen-2 18s ease-in-out infinite;
+}
