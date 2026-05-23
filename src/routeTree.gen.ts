@@ -38,7 +38,7 @@ import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
 import { Route as AdminEncomendasIndexRouteImport } from './routes/admin_.encomendas.index'
-import { Route as WishlistShareTokenRouteImport } from './routes/wishlist.share.$token'
+import { Route as WishlistShareTokenRouteImport } from './routes/wishlist_.share.$token'
 import { Route as AdminEncomendasHistoricoRouteImport } from './routes/admin_.encomendas.historico'
 import { Route as AdminEncomendasCanceladasRouteImport } from './routes/admin_.encomendas.canceladas'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
@@ -190,9 +190,9 @@ const AdminEncomendasIndexRoute = AdminEncomendasIndexRouteImport.update({
   getParentRoute: () => AdminEncomendasRoute,
 } as any)
 const WishlistShareTokenRoute = WishlistShareTokenRouteImport.update({
-  id: '/share/$token',
-  path: '/share/$token',
-  getParentRoute: () => WishlistRoute,
+  id: '/wishlist_/share/$token',
+  path: '/wishlist/share/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEncomendasHistoricoRoute =
   AdminEncomendasHistoricoRouteImport.update({
@@ -229,7 +229,7 @@ export interface FileRoutesByFullPath {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRouteWithChildren
+  '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -264,7 +264,7 @@ export interface FileRoutesByTo {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRouteWithChildren
+  '/wishlist': typeof WishlistRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -299,7 +299,7 @@ export interface FileRoutesById {
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
-  '/wishlist': typeof WishlistRouteWithChildren
+  '/wishlist': typeof WishlistRoute
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/devolucoes': typeof AdminDevolucoesRoute
@@ -314,7 +314,7 @@ export interface FileRoutesById {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin_/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
   '/admin_/encomendas/historico': typeof AdminEncomendasHistoricoRoute
-  '/wishlist/share/$token': typeof WishlistShareTokenRoute
+  '/wishlist_/share/$token': typeof WishlistShareTokenRoute
   '/admin_/encomendas/': typeof AdminEncomendasIndexRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
 }
@@ -420,7 +420,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin_/encomendas/canceladas'
     | '/admin_/encomendas/historico'
-    | '/wishlist/share/$token'
+    | '/wishlist_/share/$token'
     | '/admin_/encomendas/'
     | '/api/public/hooks/send-followups'
   fileRoutesById: FileRoutesById
@@ -441,7 +441,7 @@ export interface RootRouteChildren {
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
-  WishlistRoute: typeof WishlistRouteWithChildren
+  WishlistRoute: typeof WishlistRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDevolucoesRoute: typeof AdminDevolucoesRoute
@@ -454,6 +454,7 @@ export interface RootRouteChildren {
   EncomendaConfirmadaOrderIdRoute: typeof EncomendaConfirmadaOrderIdRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  WishlistShareTokenRoute: typeof WishlistShareTokenRoute
   ApiPublicHooksSendFollowupsRoute: typeof ApiPublicHooksSendFollowupsRoute
 }
 
@@ -662,12 +663,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEncomendasIndexRouteImport
       parentRoute: typeof AdminEncomendasRoute
     }
-    '/wishlist/share/$token': {
-      id: '/wishlist/share/$token'
-      path: '/share/$token'
+    '/wishlist_/share/$token': {
+      id: '/wishlist_/share/$token'
+      path: '/wishlist/share/$token'
       fullPath: '/wishlist/share/$token'
       preLoaderRoute: typeof WishlistShareTokenRouteImport
-      parentRoute: typeof WishlistRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin_/encomendas/historico': {
       id: '/admin_/encomendas/historico'
@@ -692,18 +693,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface WishlistRouteChildren {
-  WishlistShareTokenRoute: typeof WishlistShareTokenRoute
-}
-
-const WishlistRouteChildren: WishlistRouteChildren = {
-  WishlistShareTokenRoute: WishlistShareTokenRoute,
-}
-
-const WishlistRouteWithChildren = WishlistRoute._addFileChildren(
-  WishlistRouteChildren,
-)
 
 interface AdminEncomendasRouteChildren {
   AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
@@ -737,7 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
-  WishlistRoute: WishlistRouteWithChildren,
+  WishlistRoute: WishlistRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDevolucoesRoute: AdminDevolucoesRoute,
@@ -750,6 +739,7 @@ const rootRouteChildren: RootRouteChildren = {
   EncomendaConfirmadaOrderIdRoute: EncomendaConfirmadaOrderIdRoute,
   FeedbackIdRoute: FeedbackIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  WishlistShareTokenRoute: WishlistShareTokenRoute,
   ApiPublicHooksSendFollowupsRoute: ApiPublicHooksSendFollowupsRoute,
 }
 export const routeTree = rootRouteImport
