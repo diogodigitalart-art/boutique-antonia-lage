@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
@@ -11,17 +12,23 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Boutique Antónia Lage — Moda feminina premium em Braga" },
+      { title: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
       {
         name: "description",
         content:
-          "Descobre as novas chegadas de Zadig & Voltaire, Self-Portrait, BA&SH e mais marcas de luxo curadas pela Boutique Antónia Lage.",
+          "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
       },
-      { property: "og:title", content: "Boutique Antónia Lage — Coleção" },
+      { property: "og:title", content: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
       {
         property: "og:description",
-        content: "Moda feminina premium curada em Braga desde 1984.",
+        content: "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
       },
+      { property: "og:image", content: "https://boutique-antonia-lage.lovable.app/logo.svg" },
+      { name: "twitter:image", content: "https://boutique-antonia-lage.lovable.app/logo.svg" },
+      { property: "og:url", content: "https://boutique-antonia-lage.lovable.app/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://boutique-antonia-lage.lovable.app/" },
     ],
   }),
   component: HomePage,
@@ -29,7 +36,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { t } = useI18n();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
   const newArrivalsAll = products.filter((p) => p.category === "new").filter(
     (p) => activeBrand === "Todas" || p.brand === activeBrand,
@@ -123,11 +130,18 @@ function HomePage() {
           </div>
 
           {/* Uniform grid: 2 cols mobile, 4 cols desktop */}
-          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
-            {newArrivals.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          {loading && products.length === 0 ? (
+            <ProductCardSkeletonGrid
+              count={8}
+              className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4"
+            />
+          ) : (
+            <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
+              {newArrivals.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
           <div className="mt-10 flex justify-center md:hidden">
             <Link
               to="/coleccao"

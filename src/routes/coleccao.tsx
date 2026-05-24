@@ -4,6 +4,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { SimplePagination } from "@/components/SimplePagination";
+import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { useProducts } from "@/lib/products";
 import { BRANDS } from "@/lib/data";
 import { Slider } from "@/components/ui/slider";
@@ -59,16 +60,16 @@ const colorSwatch = (name: string) => {
 export const Route = createFileRoute("/coleccao")({
   head: () => ({
     meta: [
-      { title: "Colecção — Boutique Antónia Lage" },
+      { title: "Colecção | Boutique Antónia Lage" },
       {
         name: "description",
         content:
-          "Descobre toda a colecção da Boutique Antónia Lage — moda feminina premium curada em Braga.",
+          "Explora toda a nossa colecção de moda feminina premium. Filtra por marca, tamanho, cor e preço.",
       },
-      { property: "og:title", content: "Colecção — Antónia Lage" },
+      { property: "og:title", content: "Colecção | Boutique Antónia Lage" },
       {
         property: "og:description",
-        content: "Toda a colecção curada por Antónia Lage.",
+        content: "Explora toda a nossa colecção de moda feminina premium. Filtra por marca, tamanho, cor e preço.",
       },
     ],
   }),
@@ -76,7 +77,7 @@ export const Route = createFileRoute("/coleccao")({
 });
 
 function ColeccaoPage() {
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
   const [page, setPage] = useState(1);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -148,6 +149,18 @@ function ColeccaoPage() {
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const hasActiveFilters =
+    sizeSel.length > 0 ||
+    colorSel.length > 0 ||
+    priceRange !== null ||
+    onlyNew ||
+    onlySale ||
+    activeBrand !== "Todas";
+
+  const suggestions = useMemo(() => {
+    return products.filter((p) => p.category === "new").slice(0, 4);
+  }, [products]);
 
   const toggleArr = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
@@ -309,10 +322,42 @@ function ColeccaoPage() {
             <div className="sticky top-24">{filterPanel}</div>
           </aside>
           <div className="min-w-0 flex-1">
-            {pageItems.length === 0 ? (
-              <p className="py-20 text-center text-sm text-muted-foreground">
-                Sem peças nesta selecção.
-              </p>
+            {loading && products.length === 0 ? (
+              <ProductCardSkeletonGrid count={9} />
+            ) : pageItems.length === 0 ? (
+              <div className="py-12">
+                <div className="text-center">
+                  <p className="font-display text-2xl italic text-foreground">
+                    Não encontrámos peças com estes filtros.
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Experimenta limpar os filtros ou explorar algumas sugestões.
+                  </p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={() => {
+                        clearAll();
+                        setActiveBrand("Todas");
+                      }}
+                      className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-primary-foreground transition hover:bg-primary/90"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+                {suggestions.length > 0 && (
+                  <div className="mt-12">
+                    <p className="mb-6 text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Talvez gostes
+                    </p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 md:gap-x-6">
+                      {suggestions.map((p) => (
+                        <ProductCard key={p.id} product={p} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-2 md:gap-x-6 lg:grid-cols-3">
                 {pageItems.map((p) => (

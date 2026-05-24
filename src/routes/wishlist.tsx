@@ -91,16 +91,21 @@ function WishlistContent() {
 
       <section className="mx-auto mt-10 max-w-7xl px-4 pb-10 md:px-8">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
-              <Heart size={24} strokeWidth={1.5} className="text-primary" />
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-soft">
+              <Heart size={28} strokeWidth={1.5} className="text-primary" />
             </div>
-            <p className="mt-4 text-muted-foreground">{t("empty_wishlist")}</p>
+            <h2 className="mt-6 font-display text-2xl italic text-foreground md:text-3xl">
+              A tua lista de desejos está vazia
+            </h2>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+              Guarda as peças que te fazem sonhar.
+            </p>
             <Link
-              to="/"
-              className="mt-6 rounded-full bg-primary px-6 py-3 text-sm text-primary-foreground"
+              to="/coleccao"
+              className="mt-8 rounded-full bg-primary px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-primary-foreground transition hover:bg-primary/90"
             >
-              Explorar coleção
+              Explorar colecção
             </Link>
           </div>
         ) : (
