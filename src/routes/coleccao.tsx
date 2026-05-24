@@ -59,16 +59,16 @@ const colorSwatch = (name: string) => {
 export const Route = createFileRoute("/coleccao")({
   head: () => ({
     meta: [
-      { title: "Colecção — Boutique Antónia Lage" },
+      { title: "Colecção | Boutique Antónia Lage" },
       {
         name: "description",
         content:
-          "Descobre toda a colecção da Boutique Antónia Lage — moda feminina premium curada em Braga.",
+          "Explora toda a nossa colecção de moda feminina premium. Filtra por marca, tamanho, cor e preço.",
       },
-      { property: "og:title", content: "Colecção — Antónia Lage" },
+      { property: "og:title", content: "Colecção | Boutique Antónia Lage" },
       {
         property: "og:description",
-        content: "Toda a colecção curada por Antónia Lage.",
+        content: "Explora toda a nossa colecção de moda feminina premium. Filtra por marca, tamanho, cor e preço.",
       },
     ],
   }),

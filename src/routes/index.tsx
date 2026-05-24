@@ -11,17 +11,23 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Boutique Antónia Lage — Moda feminina premium em Braga" },
+      { title: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
       {
         name: "description",
         content:
-          "Descobre as novas chegadas de Zadig & Voltaire, Self-Portrait, BA&SH e mais marcas de luxo curadas pela Boutique Antónia Lage.",
+          "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
       },
-      { property: "og:title", content: "Boutique Antónia Lage — Coleção" },
+      { property: "og:title", content: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
       {
         property: "og:description",
-        content: "Moda feminina premium curada em Braga desde 1984.",
+        content: "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
       },
+      { property: "og:image", content: "https://boutique-antonia-lage.lovable.app/logo.svg" },
+      { name: "twitter:image", content: "https://boutique-antonia-lage.lovable.app/logo.svg" },
+      { property: "og:url", content: "https://boutique-antonia-lage.lovable.app/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://boutique-antonia-lage.lovable.app/" },
     ],
   }),
   component: HomePage,

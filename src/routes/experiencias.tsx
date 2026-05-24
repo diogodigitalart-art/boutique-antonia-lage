@@ -17,16 +17,16 @@ import {
 export const Route = createFileRoute("/experiencias")({
   head: () => ({
     meta: [
-      { title: "Experiências exclusivas — Boutique Antónia Lage" },
+      { title: "Experiências | Boutique Antónia Lage" },
       {
         name: "description",
         content:
-          "Boutique Privada e Personal Styling com a nossa equipa, na boutique em Braga.",
+          "Reserve uma sessão privada de moda na Boutique Antónia Lage. Boutique Privada e Personal Styling disponíveis.",
       },
-      { property: "og:title", content: "Experiências exclusivas — Antónia Lage" },
+      { property: "og:title", content: "Experiências | Boutique Antónia Lage" },
       {
         property: "og:description",
-        content: "Eventos íntimos e curados na boutique em Braga.",
+        content: "Reserve uma sessão privada de moda na Boutique Antónia Lage. Boutique Privada e Personal Styling disponíveis.",
       },
     ],
   }),
