@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { t } = useI18n();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
   const newArrivalsAll = products.filter((p) => p.category === "new").filter(
     (p) => activeBrand === "Todas" || p.brand === activeBrand,
@@ -129,11 +130,18 @@ function HomePage() {
           </div>
 
           {/* Uniform grid: 2 cols mobile, 4 cols desktop */}
-          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
-            {newArrivals.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          {loading && products.length === 0 ? (
+            <ProductCardSkeletonGrid
+              count={8}
+              className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4"
+            />
+          ) : (
+            <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
+              {newArrivals.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
           <div className="mt-10 flex justify-center md:hidden">
             <Link
               to="/coleccao"
