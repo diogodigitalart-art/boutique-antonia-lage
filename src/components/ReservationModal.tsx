@@ -557,6 +557,84 @@ export function ReservationModal({
             </div>
           )}
 
+          {collectTailoringDetails && (
+            <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-4 sm:p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-primary">
+                Detalhes do arranjo
+              </p>
+              <h3 className="mt-1 font-display text-xl italic text-foreground">
+                Conta-nos sobre a peça
+              </h3>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Tipo de arranjo
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {[
+                      "Bainha",
+                      "Ajuste de cavas",
+                      "Ajuste de cintura",
+                      "Abertura de costuras",
+                      "Outro — descrever",
+                    ].map((opt) => (
+                      <label key={opt} className="inline-flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="alteration_type"
+                          value={opt}
+                          checked={alterationType === opt}
+                          onChange={(e) => setAlterationType(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="garment_description" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Descrição da peça
+                  </label>
+                  <textarea
+                    id="garment_description"
+                    rows={3}
+                    value={garmentDescription}
+                    onChange={(e) => setGarmentDescription(e.target.value)}
+                    placeholder="Ex.: Vestido midi preto em crepe, bainha a 2cm…"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Origem da peça
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {[
+                      { value: "boutique", label: "Comprada na boutique" },
+                      { value: "external", label: "Peça externa" },
+                    ].map((opt) => (
+                      <label key={opt.value} className="inline-flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="garment_source"
+                          value={opt.value}
+                          checked={garmentSource === opt.value}
+                          onChange={(e) => setGarmentSource(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label htmlFor="message" className="text-xs uppercase tracking-wider text-muted-foreground">
               Mensagem opcional
