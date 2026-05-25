@@ -164,6 +164,45 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_posts: {
+        Row: {
+          created_at: string
+          featured_product_ids: string[]
+          id: string
+          is_published: boolean
+          publish_date: string
+          quote: string
+          teaser_text: string
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          featured_product_ids?: string[]
+          id?: string
+          is_published?: boolean
+          publish_date?: string
+          quote?: string
+          teaser_text?: string
+          title: string
+          updated_at?: string
+          video_url?: string
+        }
+        Update: {
+          created_at?: string
+          featured_product_ids?: string[]
+          id?: string
+          is_published?: boolean
+          publish_date?: string
+          quote?: string
+          teaser_text?: string
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       experience_capacity: {
         Row: {
           created_at: string
@@ -576,6 +615,45 @@ export type Database = {
         }
         Relationships: []
       }
+      review_requests: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string | null
+          id: string
+          order_id: string | null
+          reservation_id: string | null
+          scheduled_for: string
+          sent_at: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name?: string | null
+          id?: string
+          order_id?: string | null
+          reservation_id?: string | null
+          scheduled_for: string
+          sent_at?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string | null
+          id?: string
+          order_id?: string | null
+          reservation_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           created_at: string
@@ -654,6 +732,36 @@ export type Database = {
           created_at?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          notified_at: string | null
+          product_id: string
+          size: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          notified_at?: string | null
+          product_id: string
+          size: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          notified_at?: string | null
+          product_id?: string
+          size?: string
+          user_id?: string | null
         }
         Relationships: []
       }
