@@ -42,6 +42,7 @@ export type AdminUser = {
     message: string | null;
     status: string;
     created_at: string;
+    experience_details: JsonValue;
   }>;
   wishlist: Array<{
     id: string;
