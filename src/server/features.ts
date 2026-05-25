@@ -77,63 +77,6 @@ export const adminGetWaitlistCounts = createServerFn({ method: "POST" })
     return { counts };
   });
 
-/**
- * Called from product upsert flow. For each size that went from 0 available
- * to >0, notify all pending waitlist entries.
- */
-export async function notifyWaitlistRestock(
-  productUuid: string,
-  prevSizes: Array<{ size: string; stock: number; reserved: number }>,
-  newSizes: Array<{ size: string; stock: number; reserved: number }>,
-) {
-  const restockedSizes: string[] = [];
-  for (const ns of newSizes) {
-    const newAvail = Math.max(0, Number(ns.stock) - Number(ns.reserved));
-    if (newAvail <= 0) continue;
-    const prev = prevSizes.find((p) => p.size === ns.size);
-    const prevAvail = prev ? Math.max(0, Number(prev.stock) - Number(prev.reserved)) : 0;
-    if (prevAvail === 0 && newAvail > 0) restockedSizes.push(ns.size);
-  }
-  if (restockedSizes.length === 0) return;
-
-  const { data: prod } = await supabaseAdmin
-    .from("products")
-    .select("id, legacy_id, name, brand, images")
-    .eq("id", productUuid)
-    .maybeSingle();
-  if (!prod) return;
-
-  for (const size of restockedSizes) {
-    const { data: entries } = await supabaseAdmin
-      .from("waitlist")
-      .select("id, email")
-      .eq("product_id", productUuid)
-      .eq("size", size)
-      .is("notified_at", null);
-    if (!entries || entries.length === 0) continue;
-    const link = `${SITE_URL}/produto/${prod.legacy_id || prod.id}`;
-    const html = `
-      <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:32px;color:#1a1a1a;background:#fdfbf7;">
-        <h1 style="font-style:italic;font-size:26px;color:#1d3557;margin:0 0 16px;">Boa notícia!</h1>
-        <p style="font-size:15px;line-height:1.6;">O tamanho <strong>${esc(size)}</strong> de <strong>${esc(prod.name)}</strong> (${esc(prod.brand)}) voltou a estar disponível.</p>
-        <p style="margin:24px 0;text-align:center;">
-          <a href="${link}" style="display:inline-block;background:#1d3557;color:#fff;text-decoration:none;padding:14px 28px;border-radius:9999px;font-size:14px;letter-spacing:1px;text-transform:uppercase;">Ver peça</a>
-        </p>
-        <p style="font-size:12px;color:#888;margin-top:24px;">— Boutique Antónia Lage</p>
-      </div>`;
-    const text = `Boa notícia! O tamanho ${size} de ${prod.name} (${prod.brand}) voltou a estar disponível.\n${link}`;
-    for (const e of entries as Array<{ id: string; email: string }>) {
-      const ok = await sendEmail(e.email, `O tamanho ${size} está de volta`, html, text);
-      if (ok) {
-        await supabaseAdmin
-          .from("waitlist")
-          .update({ notified_at: new Date().toISOString() })
-          .eq("id", e.id);
-      }
-    }
-  }
-}
-
 // ============================================================
 // EDITORIAL POSTS
 // ============================================================
