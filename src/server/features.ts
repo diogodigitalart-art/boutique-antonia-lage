@@ -307,11 +307,14 @@ export async function scheduleReviewRequest(opts: {
 }) {
   if (!opts.customerEmail) return;
   // Avoid duplicates
+  const fkCol = opts.type === "order" ? "order_id" : "reservation_id";
+  const fkVal = opts.type === "order" ? opts.orderId : opts.reservationId;
+  if (!fkVal) return;
   const { data: existing } = await supabaseAdmin
     .from("review_requests")
     .select("id")
     .eq("type", opts.type)
-    .eq(opts.type === "order" ? "order_id" : "reservation_id", opts.type === "order" ? opts.orderId : opts.reservationId)
+    .eq(fkCol, fkVal)
     .maybeSingle();
   if (existing) return;
   const scheduled = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
