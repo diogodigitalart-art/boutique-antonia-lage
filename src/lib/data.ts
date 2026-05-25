@@ -197,6 +197,18 @@ export const EXPERIENCES: Experience[] = [
     image: img("1515886657613-9f3515b0c78f", 1200, 800),
     tag: "Curadoria pessoal",
   },
+  {
+    id: "exp3",
+    title: "Arranjos e Costura",
+    description:
+      "Pequenos ajustes feitos com mãos artesãs. Bainhas, ajustes de cavas e cintura, aberturas de costura — para que cada peça assente como se fosse feita para ti.",
+    duration: "Variável",
+    capacity: "Por peça",
+    location: "Braga",
+    price: 15,
+    image: img("1583744946564-b52ac1c389c8", 1200, 800),
+    tag: "Serviço de atelier",
+  },
 ];
 
 export const getProduct = (id: string) => PRODUCTS.find((p) => p.id === id);
