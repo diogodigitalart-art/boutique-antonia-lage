@@ -8,6 +8,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
 import { ProductCard } from "@/components/ProductCard";
 import { ReservationModal } from "@/components/ReservationModal";
+import { WaitlistModal } from "@/components/WaitlistModal";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
@@ -54,6 +55,7 @@ function ProductPage() {
     !!product && product.sizes.length === 1 && product.sizes[0] === "U";
   const [size, setSize] = useState<string | null>(isOneSize ? "U" : null);
   const [reserveOpen, setReserveOpen] = useState(false);
+  const [waitlistSize, setWaitlistSize] = useState<string | null>(null);
   const [addedOpen, setAddedOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
@@ -294,14 +296,17 @@ function ProductPage() {
                   return (
                     <button
                       key={s}
-                      onClick={() => available && setSize(s)}
-                      disabled={!available}
+                      onClick={() => {
+                        if (available) setSize(s);
+                        else setWaitlistSize(s);
+                      }}
+                      title={!available ? "Esgotado — avisar-me" : undefined}
                       className={`flex h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm transition ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground"
                           : available
                             ? "border-border bg-card text-foreground hover:border-primary"
-                            : "cursor-not-allowed border-border bg-muted text-muted-foreground/50 line-through"
+                            : "border-dashed border-border bg-muted text-muted-foreground/70 line-through hover:text-foreground"
                       }`}
                     >
                       {s}
@@ -461,6 +466,13 @@ function ProductPage() {
         itemType="produto"
         productUuid={product.uuid}
         size={size}
+      />
+      <WaitlistModal
+        open={!!waitlistSize}
+        onClose={() => setWaitlistSize(null)}
+        productUuid={product.uuid}
+        productName={`${product.brand} — ${product.name}`}
+        size={waitlistSize ?? ""}
       />
       <AddedToCartDrawer
         open={addedOpen}
