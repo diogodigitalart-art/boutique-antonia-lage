@@ -105,6 +105,7 @@ async function deactivateOutOfStockProducts(items: OrderItem[]) {
 
 export function AdminOrders({ mode }: { mode: Mode }) {
   const { byId, rows: productRows } = useProducts();
+  const scheduleOrderReview = useServerFn(adminScheduleOrderReview);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -151,6 +152,16 @@ export function AdminOrders({ mode }: { mode: Mode }) {
         await deactivateOutOfStockProducts(o.items ?? []);
       } catch (e) {
         console.error("deactivate products failed", e);
+      }
+      // Schedule 24h Google review email (best-effort)
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const token = sess.session?.access_token;
+        if (token) {
+          await scheduleOrderReview({ data: { token, orderId: o.id } });
+        }
+      } catch (e) {
+        console.error("scheduleOrderReview failed", e);
       }
     }
     if (shouldRestore) {
