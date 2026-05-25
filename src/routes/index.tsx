@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { EditorialSection } from "@/components/EditorialSection";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
@@ -250,6 +251,8 @@ function HomePage() {
       </section>
 
       <RecentlyViewed />
+
+      <EditorialSection />
 
     </Layout>
   );

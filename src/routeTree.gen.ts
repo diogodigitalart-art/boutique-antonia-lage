@@ -18,6 +18,7 @@ import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
+import { Route as EditorialRouteImport } from './routes/editorial'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -86,6 +87,11 @@ const LoginRoute = LoginRouteImport.update({
 const ExperienciasRoute = ExperienciasRouteImport.update({
   id: '/experiencias',
   path: '/experiencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorialRoute = EditorialRouteImport.update({
+  id: '/editorial',
+  path: '/editorial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactosRoute = ContactosRouteImport.update({
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -433,6 +445,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
+  EditorialRoute: typeof EditorialRoute
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
   PerfilRoute: typeof PerfilRoute
@@ -521,6 +534,13 @@ declare module '@tanstack/react-router' {
       path: '/experiencias'
       fullPath: '/experiencias'
       preLoaderRoute: typeof ExperienciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editorial': {
+      id: '/editorial'
+      path: '/editorial'
+      fullPath: '/editorial'
+      preLoaderRoute: typeof EditorialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contactos': {
@@ -718,6 +738,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
+  EditorialRoute: EditorialRoute,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
   PerfilRoute: PerfilRoute,
