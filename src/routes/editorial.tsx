@@ -66,10 +66,11 @@ function EditorialPage() {
                   <p className="mt-4 text-sm text-muted-foreground">{p.teaser_text}</p>
                 )}
                 <Link
-                  to="/"
+                  to="/editorial/$id"
+                  params={{ id: p.id }}
                   className="mt-6 inline-block text-xs uppercase tracking-wider text-primary hover:underline"
                 >
-                  Explorar peças
+                  Ler edição →
                 </Link>
               </li>
             ))}

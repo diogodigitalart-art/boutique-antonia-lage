@@ -29,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as EncomendaConfirmadaOrderIdRouteImport } from './routes/encomenda-confirmada.$orderId'
+import { Route as EditorialIdRouteImport } from './routes/editorial.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
@@ -146,6 +147,11 @@ const EncomendaConfirmadaOrderIdRoute =
     path: '/encomenda-confirmada/$orderId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EditorialIdRoute = EditorialIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => EditorialRoute,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -233,7 +239,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRoute
+  '/editorial': typeof EditorialRouteWithChildren
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -253,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/editorial/$id': typeof EditorialIdRoute
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
@@ -270,7 +277,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRoute
+  '/editorial': typeof EditorialRouteWithChildren
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/admin/relatorios': typeof AdminRelatoriosRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/editorial/$id': typeof EditorialIdRoute
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
@@ -307,7 +315,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRoute
+  '/editorial': typeof EditorialRouteWithChildren
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/editorial/$id': typeof EditorialIdRoute
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
+    | '/editorial/$id'
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/admin/relatorios'
     | '/admin/reservas'
     | '/auth/callback'
+    | '/editorial/$id'
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/admin_/relatorios'
     | '/admin_/reservas'
     | '/auth/callback'
+    | '/editorial/$id'
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
@@ -457,7 +469,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
-  EditorialRoute: typeof EditorialRoute
+  EditorialRoute: typeof EditorialRouteWithChildren
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
   PerfilRoute: typeof PerfilRoute
@@ -626,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EncomendaConfirmadaOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editorial/$id': {
+      id: '/editorial/$id'
+      path: '/$id'
+      fullPath: '/editorial/$id'
+      preLoaderRoute: typeof EditorialIdRouteImport
+      parentRoute: typeof EditorialRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -734,6 +753,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface EditorialRouteChildren {
+  EditorialIdRoute: typeof EditorialIdRoute
+}
+
+const EditorialRouteChildren: EditorialRouteChildren = {
+  EditorialIdRoute: EditorialIdRoute,
+}
+
+const EditorialRouteWithChildren = EditorialRoute._addFileChildren(
+  EditorialRouteChildren,
+)
+
 interface AdminEncomendasRouteChildren {
   AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
   AdminEncomendasHistoricoRoute: typeof AdminEncomendasHistoricoRoute
@@ -758,7 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
-  EditorialRoute: EditorialRoute,
+  EditorialRoute: EditorialRouteWithChildren,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
   PerfilRoute: PerfilRoute,
