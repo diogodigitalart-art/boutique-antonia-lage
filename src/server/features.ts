@@ -230,38 +230,6 @@ export const adminDeleteEditorial = createServerFn({ method: "POST" })
 // REVIEW REQUEST QUEUE (24h delay → Google review email)
 // ============================================================
 
-export async function scheduleReviewRequest(opts: {
-  type: "order" | "reservation";
-  orderId?: string | null;
-  reservationId?: string | null;
-  userId: string | null;
-  customerEmail: string;
-  customerName?: string | null;
-}) {
-  if (!opts.customerEmail) return;
-  // Avoid duplicates
-  const fkCol = opts.type === "order" ? "order_id" : "reservation_id";
-  const fkVal = opts.type === "order" ? opts.orderId : opts.reservationId;
-  if (!fkVal) return;
-  const { data: existing } = await supabaseAdmin
-    .from("review_requests")
-    .select("id")
-    .eq("type", opts.type)
-    .eq(fkCol, fkVal)
-    .maybeSingle();
-  if (existing) return;
-  const scheduled = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  await supabaseAdmin.from("review_requests").insert({
-    type: opts.type,
-    order_id: opts.orderId ?? null,
-    reservation_id: opts.reservationId ?? null,
-    user_id: opts.userId,
-    customer_email: opts.customerEmail,
-    customer_name: opts.customerName ?? null,
-    scheduled_for: scheduled,
-  });
-}
-
 export const processReviewRequestQueue = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
