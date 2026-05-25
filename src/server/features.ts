@@ -4,14 +4,8 @@ import {
   assertAdmin,
   esc,
   isStr,
-  notifyWaitlistRestock,
-  scheduleReviewRequest,
   sendEmail,
-  SITE_URL,
 } from "./features-internals.server";
-
-// Re-export server-only helpers so existing server-side imports keep working.
-export { notifyWaitlistRestock, scheduleReviewRequest };
 
 // ============================================================
 // WAITLIST
