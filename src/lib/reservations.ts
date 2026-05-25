@@ -27,12 +27,14 @@ export function isSunday(dateStr: string): boolean {
 export type ReservationStatus =
   | "Confirmada"
   | "Em visita"
+  | "Concluída"
   | "Cancelada"
   | "Vendida";
 
 export const STATUS_OPTIONS: ReservationStatus[] = [
   "Confirmada",
   "Em visita",
+  "Concluída",
   "Cancelada",
 ];
 
@@ -43,6 +45,8 @@ export function statusBadgeClasses(status: string): string {
   switch (status) {
     case "Em visita":
       return `${base} bg-warning-soft text-warning`;
+    case "Concluída":
+      return `${base} bg-blue-100 text-blue-700`;
     case "Cancelada":
       return `${base} bg-destructive-soft text-destructive`;
     case "Vendida":
