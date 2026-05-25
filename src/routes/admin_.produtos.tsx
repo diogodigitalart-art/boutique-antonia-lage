@@ -35,6 +35,7 @@ import {
   adminAdjustStockByBarcode,
   adminBulkDeactivateByRefs,
 } from "@/server/products";
+import { adminGetWaitlistCounts } from "@/server/features";
 
 const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "colecção", label: "Colecção" },
@@ -115,10 +116,12 @@ function Content() {
   const toggleFn = useServerFn(adminToggleProductActive);
   const listBrandsFn = useServerFn(adminListBrands);
   const listSeasonsFn = useServerFn(adminListSeasons);
+  const waitlistCountsFn = useServerFn(adminGetWaitlistCounts);
 
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [seasons, setSeasons] = useState<BrandRow[]>([]);
+  const [waitlistCounts, setWaitlistCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -135,20 +138,22 @@ function Content() {
   const refresh = useCallback(async () => {
     try {
       const token = await getToken();
-      const [p, b, sRes] = await Promise.all([
+      const [p, b, sRes, w] = await Promise.all([
         listFn({ data: { token } }),
         listBrandsFn({ data: { token } }),
         listSeasonsFn({ data: { token } }),
+        waitlistCountsFn({ data: { token } }).catch(() => ({ counts: {} as Record<string, number> })),
       ]);
       setRows((p.rows as unknown) as ProductRow[]);
       setBrands((b.rows as unknown) as BrandRow[]);
       setSeasons((sRes.rows as unknown) as BrandRow[]);
+      setWaitlistCounts(w.counts || {});
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar");
     } finally {
       setLoading(false);
     }
-  }, [listFn, listBrandsFn, listSeasonsFn]);
+  }, [listFn, listBrandsFn, listSeasonsFn, waitlistCountsFn]);
 
   useEffect(() => {
     refresh();
@@ -417,7 +422,19 @@ function Content() {
                         </div>
                       </td>
                       <td className="px-3 py-2 text-foreground">{r.brand}</td>
-                      <td className="px-3 py-2 font-medium text-foreground">{r.name}</td>
+                      <td className="px-3 py-2 font-medium text-foreground">
+                        <span className="inline-flex items-center gap-2">
+                          {r.name}
+                          {waitlistCounts[r.id] ? (
+                            <span
+                              title={`${waitlistCounts[r.id]} pessoa(s) em lista de espera`}
+                              className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-amber-800"
+                            >
+                              ⏳ {waitlistCounts[r.id]}
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
                       <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
                         <div>{r.reference}</div>
                         {r.external_id && (
