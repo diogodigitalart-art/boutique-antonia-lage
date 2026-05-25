@@ -260,7 +260,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
         }
       }
       try {
-        const { notifyWaitlistRestock } = await import("./features");
+        const { notifyWaitlistRestock } = await import("./features-internals.server");
         await notifyWaitlistRestock(p.id, prevSizes, p.sizes);
       } catch (err) {
         console.error("notifyWaitlistRestock failed", err);
