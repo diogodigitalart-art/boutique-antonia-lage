@@ -390,7 +390,9 @@ export function ReservationModal({
             />
             {itemType === "experiencia" && (
               <p className="mt-1.5 text-[11px] text-muted-foreground">
-                As experiências requerem reserva com mínimo 3 dias de antecedência.
+                {collectTailoringDetails
+                  ? "Os arranjos requerem reserva com mínimo 5 dias de antecedência."
+                  : "As experiências requerem reserva com mínimo 3 dias de antecedência."}
               </p>
             )}
             {dateIsSunday && (
