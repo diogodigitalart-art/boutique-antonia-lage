@@ -63,9 +63,85 @@ function Content() {
         />
         <ExperienceCapacitySection />
         <WhatsAppSettingSection />
+        <SimpleSettingSection
+          settingKey="experience_tailoring_price"
+          title="Preço base — Arranjos e Costura"
+          description="Preço base (€) para o serviço de arranjos. O valor final é confirmado após avaliação da peça."
+          placeholder="15"
+        />
+        <SimpleSettingSection
+          settingKey="google_review_url"
+          title="URL para reviews no Google"
+          description="Link enviado por email 24h após a entrega de encomendas ou conclusão de experiências."
+          placeholder="https://g.page/r/…/review"
+        />
         <SizeGuidesSection />
       </div>
     </div>
+  );
+}
+
+function SimpleSettingSection({
+  settingKey,
+  title,
+  description,
+  placeholder,
+}: {
+  settingKey: string;
+  title: string;
+  description: string;
+  placeholder?: string;
+}) {
+  const fetchSetting = useServerFn(getSetting);
+  const setSetting = useServerFn(adminSetSetting);
+  const [value, setValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetchSetting({ data: { key: settingKey } })
+      .then((r) => setValue(r.value ?? ""))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [fetchSetting, settingKey]);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const token = await getToken();
+      await setSetting({ data: { token, key: settingKey, value: value.trim() } });
+      toast.success("Actualizado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="font-display text-xl italic mb-1">{title}</h2>
+      <p className="mb-4 text-xs text-muted-foreground">{description}</p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <div className="flex gap-2">
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 rounded-full border border-border bg-background px-4 py-2 text-sm"
+          />
+          <button
+            onClick={save}
+            disabled={busy}
+            className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            Guardar
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
