@@ -193,7 +193,11 @@ export function ReservationModal({
       return;
     }
     if (itemType === "experiencia" && payload.date < minDate) {
-      toast.error("As experiências requerem 3 dias de antecedência.");
+      toast.error(
+        collectTailoringDetails
+          ? "Os arranjos requerem 5 dias de antecedência."
+          : "As experiências requerem 3 dias de antecedência.",
+      );
       return;
     }
     if (isSunday(payload.date)) {
@@ -219,7 +223,13 @@ export function ReservationModal({
 
     setSubmitting(true);
     try {
-      const experience_details = collectExperienceDetails
+      const experience_details = collectTailoringDetails
+        ? {
+            alteration_type: alterationType || undefined,
+            garment_description: garmentDescription.trim() || undefined,
+            garment_source: garmentSource || undefined,
+          }
+        : collectExperienceDetails
         ? {
             brands_request: brandsRequest.trim() || undefined,
             special_occasion: specialOccasion.trim() || undefined,
