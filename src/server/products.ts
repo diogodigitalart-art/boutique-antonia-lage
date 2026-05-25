@@ -242,10 +242,13 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       // Read previous discount to detect increase
       const { data: prev } = await supabaseAdmin
         .from("products")
-        .select("discount_percent")
+        .select("discount_percent, sizes")
         .eq("id", p.id)
         .maybeSingle();
       const prevDiscount = Number(prev?.discount_percent ?? 0) || 0;
+      const prevSizes = Array.isArray(prev?.sizes)
+        ? (prev!.sizes as Array<{ size: string; stock: number; reserved: number }>)
+        : [];
       const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
       if (error) throw new Error(error.message);
       const newDiscount = Number(p.discount_percent ?? 0) || 0;
@@ -255,6 +258,12 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
         } catch (err) {
           console.error("notifyWishlistDiscount failed", err);
         }
+      }
+      try {
+        const { notifyWaitlistRestock } = await import("./features");
+        await notifyWaitlistRestock(p.id, prevSizes, p.sizes);
+      } catch (err) {
+        console.error("notifyWaitlistRestock failed", err);
       }
       return { ok: true, id: p.id };
     }
