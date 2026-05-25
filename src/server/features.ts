@@ -1,55 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  assertAdmin,
+  esc,
+  isStr,
+  notifyWaitlistRestock,
+  scheduleReviewRequest,
+  sendEmail,
+  SITE_URL,
+} from "./features-internals.server";
 
-const ADMIN_EMAIL = "diogodigitalart@gmail.com";
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-const FROM_ADDRESS = "Boutique Antónia Lage <onboarding@resend.dev>";
-const SITE_URL = "https://boutique-antonia-lage.lovable.app";
-
-function isStr(v: unknown, max = 4096): v is string {
-  return typeof v === "string" && v.length > 0 && v.length < max;
-}
-
-function esc(s: string) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-async function assertAdmin(token: string) {
-  if (!token) throw new Error("Unauthorized");
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !data?.user) throw new Error("Unauthorized");
-  if ((data.user.email || "").toLowerCase() !== ADMIN_EMAIL) throw new Error("Forbidden");
-  return data.user.id;
-}
-
-async function sendEmail(to: string, subject: string, html: string, text: string) {
-  const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
-    console.warn("Email skipped — keys missing");
-    return false;
-  }
-  const res = await fetch(`${GATEWAY_URL}/emails`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": RESEND_API_KEY,
-    },
-    body: JSON.stringify({ from: FROM_ADDRESS, to: [to], subject, html, text }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    console.error("Email send failed", res.status, body);
-    return false;
-  }
-  return true;
-}
+// Re-export server-only helpers so existing server-side imports keep working.
+export { notifyWaitlistRestock, scheduleReviewRequest };
 
 // ============================================================
 // WAITLIST
