@@ -17,6 +17,8 @@ type Props = {
   itemType: "produto" | "experiencia";
   /** When true, show extra Boutique Privada questions and save them to experience_details. */
   collectExperienceDetails?: boolean;
+  /** When true, show tailoring (Arranjos e Costura) fields and enforce 5-day advance. */
+  collectTailoringDetails?: boolean;
   /** Product UUID — required for stock decrement on product reservations. */
   productUuid?: string;
   /** Selected size — required for stock decrement on product reservations. */
@@ -31,6 +33,7 @@ export function ReservationModal({
   itemName,
   itemType,
   collectExperienceDetails = false,
+  collectTailoringDetails = false,
   productUuid,
   size: selectedSize = null,
 }: Props) {
@@ -43,7 +46,7 @@ export function ReservationModal({
   const minDate = (() => {
     if (itemType !== "experiencia") return today;
     const d = new Date();
-    d.setDate(d.getDate() + 3);
+    d.setDate(d.getDate() + (collectTailoringDetails ? 5 : 3));
     return d.toISOString().split("T")[0];
   })();
   const [date, setDate] = useState("");
@@ -59,6 +62,10 @@ export function ReservationModal({
   const [ambience, setAmbience] = useState("");
   const [musicPref, setMusicPref] = useState("");
   const [companion, setCompanion] = useState("");
+  // Tailoring extra fields
+  const [alterationType, setAlterationType] = useState("");
+  const [garmentDescription, setGarmentDescription] = useState("");
+  const [garmentSource, setGarmentSource] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +77,9 @@ export function ReservationModal({
     setAmbience("");
     setMusicPref("");
     setCompanion("");
+    setAlterationType("");
+    setGarmentDescription("");
+    setGarmentSource("");
     (async () => {
       const { data } = await supabase
         .from("blocked_slots" as never)
@@ -183,7 +193,11 @@ export function ReservationModal({
       return;
     }
     if (itemType === "experiencia" && payload.date < minDate) {
-      toast.error("As experiências requerem 3 dias de antecedência.");
+      toast.error(
+        collectTailoringDetails
+          ? "Os arranjos requerem 5 dias de antecedência."
+          : "As experiências requerem 3 dias de antecedência.",
+      );
       return;
     }
     if (isSunday(payload.date)) {
@@ -209,7 +223,13 @@ export function ReservationModal({
 
     setSubmitting(true);
     try {
-      const experience_details = collectExperienceDetails
+      const experience_details = collectTailoringDetails
+        ? {
+            alteration_type: alterationType || undefined,
+            garment_description: garmentDescription.trim() || undefined,
+            garment_source: garmentSource || undefined,
+          }
+        : collectExperienceDetails
         ? {
             brands_request: brandsRequest.trim() || undefined,
             special_occasion: specialOccasion.trim() || undefined,
@@ -370,7 +390,9 @@ export function ReservationModal({
             />
             {itemType === "experiencia" && (
               <p className="mt-1.5 text-[11px] text-muted-foreground">
-                As experiências requerem reserva com mínimo 3 dias de antecedência.
+                {collectTailoringDetails
+                  ? "Os arranjos requerem reserva com mínimo 5 dias de antecedência."
+                  : "As experiências requerem reserva com mínimo 3 dias de antecedência."}
               </p>
             )}
             {dateIsSunday && (
@@ -530,6 +552,84 @@ export function ReservationModal({
                     <option value="Com familiar">Com familiar</option>
                     <option value="Com parceiro/a">Com parceiro/a</option>
                   </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {collectTailoringDetails && (
+            <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-4 sm:p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-primary">
+                Detalhes do arranjo
+              </p>
+              <h3 className="mt-1 font-display text-xl italic text-foreground">
+                Conta-nos sobre a peça
+              </h3>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Tipo de arranjo
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {[
+                      "Bainha",
+                      "Ajuste de cavas",
+                      "Ajuste de cintura",
+                      "Abertura de costuras",
+                      "Outro — descrever",
+                    ].map((opt) => (
+                      <label key={opt} className="inline-flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="alteration_type"
+                          value={opt}
+                          checked={alterationType === opt}
+                          onChange={(e) => setAlterationType(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="garment_description" className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Descrição da peça
+                  </label>
+                  <textarea
+                    id="garment_description"
+                    rows={3}
+                    value={garmentDescription}
+                    onChange={(e) => setGarmentDescription(e.target.value)}
+                    placeholder="Ex.: Vestido midi preto em crepe, bainha a 2cm…"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Origem da peça
+                  </label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {[
+                      { value: "boutique", label: "Comprada na boutique" },
+                      { value: "external", label: "Peça externa" },
+                    ].map((opt) => (
+                      <label key={opt.value} className="inline-flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="garment_source"
+                          value={opt.value}
+                          checked={garmentSource === opt.value}
+                          onChange={(e) => setGarmentSource(e.target.value)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

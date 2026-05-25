@@ -18,6 +18,7 @@ import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
+import { Route as EditorialRouteImport } from './routes/editorial'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -34,6 +35,7 @@ import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
 import { Route as AdminPromocoesRouteImport } from './routes/admin_.promocoes'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
+import { Route as AdminEditorialRouteImport } from './routes/admin_.editorial'
 import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
@@ -86,6 +88,11 @@ const LoginRoute = LoginRouteImport.update({
 const ExperienciasRoute = ExperienciasRouteImport.update({
   id: '/experiencias',
   path: '/experiencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorialRoute = EditorialRouteImport.update({
+  id: '/editorial',
+  path: '/editorial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactosRoute = ContactosRouteImport.update({
@@ -169,6 +176,11 @@ const AdminEncomendasRoute = AdminEncomendasRouteImport.update({
   path: '/admin/encomendas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEditorialRoute = AdminEditorialRouteImport.update({
+  id: '/admin_/editorial',
+  path: '/admin/editorial',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDevolucoesRoute = AdminDevolucoesRouteImport.update({
   id: '/admin_/devolucoes',
   path: '/admin/devolucoes',
@@ -221,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -233,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
+  '/admin/editorial': typeof AdminEditorialRoute
   '/admin/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
@@ -256,6 +270,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -268,6 +283,7 @@ export interface FileRoutesByTo {
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
+  '/admin/editorial': typeof AdminEditorialRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -291,6 +307,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -303,6 +320,7 @@ export interface FileRoutesById {
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/devolucoes': typeof AdminDevolucoesRoute
+  '/admin_/editorial': typeof AdminEditorialRoute
   '/admin_/encomendas': typeof AdminEncomendasRouteWithChildren
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/promocoes': typeof AdminPromocoesRoute
@@ -328,6 +346,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -340,6 +359,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/devolucoes'
+    | '/admin/editorial'
     | '/admin/encomendas'
     | '/admin/produtos'
     | '/admin/promocoes'
@@ -363,6 +383,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -375,6 +396,7 @@ export interface FileRouteTypes {
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/devolucoes'
+    | '/admin/editorial'
     | '/admin/produtos'
     | '/admin/promocoes'
     | '/admin/relatorios'
@@ -397,6 +419,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/editorial'
     | '/experiencias'
     | '/login'
     | '/perfil'
@@ -409,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin_/clientes'
     | '/admin_/configuracoes'
     | '/admin_/devolucoes'
+    | '/admin_/editorial'
     | '/admin_/encomendas'
     | '/admin_/produtos'
     | '/admin_/promocoes'
@@ -433,6 +457,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
+  EditorialRoute: typeof EditorialRoute
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
   PerfilRoute: typeof PerfilRoute
@@ -445,6 +470,7 @@ export interface RootRouteChildren {
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDevolucoesRoute: typeof AdminDevolucoesRoute
+  AdminEditorialRoute: typeof AdminEditorialRoute
   AdminEncomendasRoute: typeof AdminEncomendasRouteWithChildren
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
@@ -521,6 +547,13 @@ declare module '@tanstack/react-router' {
       path: '/experiencias'
       fullPath: '/experiencias'
       preLoaderRoute: typeof ExperienciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editorial': {
+      id: '/editorial'
+      path: '/editorial'
+      fullPath: '/editorial'
+      preLoaderRoute: typeof EditorialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contactos': {
@@ -635,6 +668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEncomendasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/editorial': {
+      id: '/admin_/editorial'
+      path: '/admin/editorial'
+      fullPath: '/admin/editorial'
+      preLoaderRoute: typeof AdminEditorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/devolucoes': {
       id: '/admin_/devolucoes'
       path: '/admin/devolucoes'
@@ -718,6 +758,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
+  EditorialRoute: EditorialRoute,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
   PerfilRoute: PerfilRoute,
@@ -730,6 +771,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDevolucoesRoute: AdminDevolucoesRoute,
+  AdminEditorialRoute: AdminEditorialRoute,
   AdminEncomendasRoute: AdminEncomendasRouteWithChildren,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,

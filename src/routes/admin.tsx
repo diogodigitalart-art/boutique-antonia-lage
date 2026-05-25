@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdminData, type AdminPayload } from "@/server/admin";
+import { processReviewRequestQueue } from "@/server/features";
 import {
   Users,
   Calendar,
@@ -28,6 +29,7 @@ type FlatReservation = AdminPayload["users"][number]["reservations"][number];
 
 function DashboardContent() {
   const fetchData = useServerFn(getAdminData);
+  const processQueue = useServerFn(processReviewRequestQueue);
   const [data, setData] = useState<AdminPayload | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +41,8 @@ function DashboardContent() {
       try {
         const result = await fetchData({ data: { token } });
         setData(result);
+        // Fire-and-forget: process pending review request emails
+        processQueue({ data: { token } }).catch(() => {});
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro a carregar");
       } finally {

@@ -216,6 +216,7 @@ function ExperiencesPage() {
         itemName={selected?.title ?? ""}
         itemType="experiencia"
         collectExperienceDetails={selected?.title === "Boutique Privada"}
+        collectTailoringDetails={selected?.title === "Arranjos e Costura"}
       />
     </Layout>
   );
