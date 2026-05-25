@@ -237,25 +237,6 @@ export const getEditorialById = createServerFn({ method: "POST" })
     return { post: post as unknown as EditorialPost, products };
   });
 
-export const adminGetWaitlistCounts = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => {
-    const i = (input || {}) as Record<string, unknown>;
-    if (!isStr(i.token)) throw new Error("Missing token");
-    return { token: i.token as string };
-  })
-  .handler(async ({ data }) => {
-    await assertAdmin(data.token);
-    const { data: rows } = await supabaseAdmin
-      .from("waitlist")
-      .select("product_id")
-      .is("notified_at", null);
-    const counts: Record<string, number> = {};
-    for (const r of (rows ?? []) as Array<{ product_id: string }>) {
-      counts[r.product_id] = (counts[r.product_id] || 0) + 1;
-    }
-    return { counts };
-  });
-
 export const adminListEditorials = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
