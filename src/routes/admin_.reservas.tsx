@@ -238,6 +238,24 @@ function ReservasContent() {
                       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                         {r.item_type === "experiencia" ? "Experiência" : "Produto"}
                       </p>
+                      {(() => {
+                        const d = (r.experience_details || {}) as Record<string, unknown>;
+                        const at = typeof d.alteration_type === "string" ? d.alteration_type : "";
+                        const gd = typeof d.garment_description === "string" ? d.garment_description : "";
+                        const gs = typeof d.garment_source === "string" ? d.garment_source : "";
+                        if (!at && !gd && !gs) return null;
+                        return (
+                          <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                            {at && <p>✂ {at}</p>}
+                            {gd && <p className="line-clamp-2">{gd}</p>}
+                            {gs && (
+                              <p className="italic">
+                                {gs === "boutique" ? "Compra da boutique" : "Peça externa"}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-foreground">{r.preferred_date || "—"}</td>
                     <td className="px-4 py-3 text-foreground">{r.reservation_date || "—"}</td>
