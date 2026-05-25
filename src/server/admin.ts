@@ -216,6 +216,7 @@ export const getAdminData = createServerFn({ method: "POST" })
           message: r.message,
           status: r.status,
           created_at: r.created_at,
+          experience_details: ((r as { experience_details?: JsonValue }).experience_details ?? {}) as JsonValue,
         }));
       const userWishlist = wishlist
         .filter((w) => w.user_id === p.id)
