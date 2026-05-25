@@ -209,6 +209,34 @@ export const getLatestEditorial = createServerFn({ method: "GET" }).handler(asyn
   return { post: (data ?? null) as EditorialPost | null };
 });
 
+export const getEditorialById = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    if (!isStr(i.id, 64)) throw new Error("Missing id");
+    return { id: i.id as string };
+  })
+  .handler(async ({ data }) => {
+    const { data: post } = await supabaseAdmin
+      .from("editorial_posts")
+      .select("*")
+      .eq("id", data.id)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (!post) return { post: null, products: [] };
+    const ids = ((post as { featured_product_ids: string[] }).featured_product_ids || []).filter(Boolean);
+    let products: Array<{ id: string; name: string; brand: string; price: number; images: string[] }> = [];
+    if (ids.length) {
+      const { data: rows } = await supabaseAdmin
+        .from("products")
+        .select("id,name,brand,price,images,is_active")
+        .in("id", ids);
+      products = ((rows ?? []) as Array<{ id: string; name: string; brand: string; price: number; images: string[]; is_active: boolean }>)
+        .filter((p) => p.is_active)
+        .map((p) => ({ id: p.id, name: p.name, brand: p.brand, price: Number(p.price) || 0, images: p.images || [] }));
+    }
+    return { post: post as unknown as EditorialPost, products };
+  });
+
 export const adminListEditorials = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
