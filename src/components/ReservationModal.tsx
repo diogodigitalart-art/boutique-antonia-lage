@@ -17,6 +17,8 @@ type Props = {
   itemType: "produto" | "experiencia";
   /** When true, show extra Boutique Privada questions and save them to experience_details. */
   collectExperienceDetails?: boolean;
+  /** When true, show tailoring (Arranjos e Costura) fields and enforce 5-day advance. */
+  collectTailoringDetails?: boolean;
   /** Product UUID — required for stock decrement on product reservations. */
   productUuid?: string;
   /** Selected size — required for stock decrement on product reservations. */
@@ -31,6 +33,7 @@ export function ReservationModal({
   itemName,
   itemType,
   collectExperienceDetails = false,
+  collectTailoringDetails = false,
   productUuid,
   size: selectedSize = null,
 }: Props) {
@@ -43,7 +46,7 @@ export function ReservationModal({
   const minDate = (() => {
     if (itemType !== "experiencia") return today;
     const d = new Date();
-    d.setDate(d.getDate() + 3);
+    d.setDate(d.getDate() + (collectTailoringDetails ? 5 : 3));
     return d.toISOString().split("T")[0];
   })();
   const [date, setDate] = useState("");
@@ -59,6 +62,10 @@ export function ReservationModal({
   const [ambience, setAmbience] = useState("");
   const [musicPref, setMusicPref] = useState("");
   const [companion, setCompanion] = useState("");
+  // Tailoring extra fields
+  const [alterationType, setAlterationType] = useState("");
+  const [garmentDescription, setGarmentDescription] = useState("");
+  const [garmentSource, setGarmentSource] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +77,9 @@ export function ReservationModal({
     setAmbience("");
     setMusicPref("");
     setCompanion("");
+    setAlterationType("");
+    setGarmentDescription("");
+    setGarmentSource("");
     (async () => {
       const { data } = await supabase
         .from("blocked_slots" as never)
