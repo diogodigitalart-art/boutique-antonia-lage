@@ -316,6 +316,8 @@ export const getAdminData = createServerFn({ method: "POST" })
     };
   });
 
+import { scheduleReviewRequest } from "@/server/features";
+
 export const updateReservationStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     if (!input || typeof input !== "object") throw new Error("Invalid payload");
@@ -323,12 +325,12 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     if (!isStr(i.token)) throw new Error("Missing token");
     if (!isStr(i.reservationId)) throw new Error("Missing reservationId");
     if (!isStr(i.status)) throw new Error("Missing status");
-    const allowed = ["Confirmada", "Em visita", "Cancelada", "Vendida"];
+    const allowed = ["Confirmada", "Em visita", "Concluída", "Cancelada", "Vendida"];
     if (!allowed.includes(i.status as string)) throw new Error("Invalid status");
     return {
       token: i.token,
       reservationId: i.reservationId,
-      status: i.status as "Confirmada" | "Em visita" | "Cancelada" | "Vendida",
+      status: i.status as "Confirmada" | "Em visita" | "Concluída" | "Cancelada" | "Vendida",
     };
   })
   .handler(async ({ data }) => {
@@ -337,7 +339,7 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
     // Fetch current reservation to detect status transition and capture product info
     const { data: existing, error: fetchErr } = await supabaseAdmin
       .from("reservations")
-      .select("status, product_id, product_size")
+      .select("status, product_id, product_size, user_id, customer_email, customer_name")
       .eq("id", data.reservationId)
       .maybeSingle();
     if (fetchErr) throw new Error(fetchErr.message);
