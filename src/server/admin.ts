@@ -386,6 +386,25 @@ export const updateReservationStatus = createServerFn({ method: "POST" })
       }
     }
 
+    // Schedule Google review email when reservation is marked Concluída
+    if (
+      data.status === "Concluída" &&
+      existing.status !== "Concluída" &&
+      existing.customer_email
+    ) {
+      try {
+        await scheduleReviewRequest({
+          type: "reservation",
+          reservationId: data.reservationId,
+          userId: existing.user_id ?? null,
+          customerEmail: existing.customer_email,
+          customerName: existing.customer_name ?? null,
+        });
+      } catch (e) {
+        console.error("scheduleReviewRequest failed", e);
+      }
+    }
+
     return { ok: true };
   });
 
