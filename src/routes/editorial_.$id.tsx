@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { QuickBuyModal } from "@/components/QuickBuyModal";
 import { useProducts } from "@/lib/products";
 
-export const Route = createFileRoute("/editorial/$id")({
+export const Route = createFileRoute("/editorial_/$id")({
   head: () => ({
     meta: [
       { title: "Editorial | Boutique Antónia Lage" },
