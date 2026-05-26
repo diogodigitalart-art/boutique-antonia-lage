@@ -50,6 +50,19 @@ export function TopNav() {
               </Link>
             );
           })}
+          <Link
+            to="/editorial"
+            className={`relative text-sm tracking-wide transition-colors ${
+              loc.pathname.startsWith("/editorial")
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Looks
+            {loc.pathname.startsWith("/editorial") && (
+              <span className="absolute -bottom-[17px] left-0 right-0 h-px bg-foreground" />
+            )}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-1">
