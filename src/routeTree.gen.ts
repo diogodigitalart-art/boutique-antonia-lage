@@ -29,7 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as FeedbackIdRouteImport } from './routes/feedback.$id'
 import { Route as EncomendaConfirmadaOrderIdRouteImport } from './routes/encomenda-confirmada.$orderId'
-import { Route as EditorialIdRouteImport } from './routes/editorial.$id'
+import { Route as EditorialIdRouteImport } from './routes/editorial_.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
@@ -148,9 +148,9 @@ const EncomendaConfirmadaOrderIdRoute =
     getParentRoute: () => rootRouteImport,
   } as any)
 const EditorialIdRoute = EditorialIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => EditorialRoute,
+  id: '/editorial_/$id',
+  path: '/editorial/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -239,7 +239,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRouteWithChildren
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -277,7 +277,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRouteWithChildren
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -315,7 +315,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
-  '/editorial': typeof EditorialRouteWithChildren
+  '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
@@ -335,7 +335,7 @@ export interface FileRoutesById {
   '/admin_/relatorios': typeof AdminRelatoriosRoute
   '/admin_/reservas': typeof AdminReservasRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/editorial/$id': typeof EditorialIdRoute
+  '/editorial_/$id': typeof EditorialIdRoute
   '/encomenda-confirmada/$orderId': typeof EncomendaConfirmadaOrderIdRoute
   '/feedback/$id': typeof FeedbackIdRoute
   '/produto/$id': typeof ProdutoIdRoute
@@ -450,7 +450,7 @@ export interface FileRouteTypes {
     | '/admin_/relatorios'
     | '/admin_/reservas'
     | '/auth/callback'
-    | '/editorial/$id'
+    | '/editorial_/$id'
     | '/encomenda-confirmada/$orderId'
     | '/feedback/$id'
     | '/produto/$id'
@@ -469,7 +469,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
-  EditorialRoute: typeof EditorialRouteWithChildren
+  EditorialRoute: typeof EditorialRoute
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
   PerfilRoute: typeof PerfilRoute
@@ -489,6 +489,7 @@ export interface RootRouteChildren {
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  EditorialIdRoute: typeof EditorialIdRoute
   EncomendaConfirmadaOrderIdRoute: typeof EncomendaConfirmadaOrderIdRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
@@ -638,12 +639,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EncomendaConfirmadaOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/editorial/$id': {
-      id: '/editorial/$id'
-      path: '/$id'
+    '/editorial_/$id': {
+      id: '/editorial_/$id'
+      path: '/editorial/$id'
       fullPath: '/editorial/$id'
       preLoaderRoute: typeof EditorialIdRouteImport
-      parentRoute: typeof EditorialRoute
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -753,18 +754,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface EditorialRouteChildren {
-  EditorialIdRoute: typeof EditorialIdRoute
-}
-
-const EditorialRouteChildren: EditorialRouteChildren = {
-  EditorialIdRoute: EditorialIdRoute,
-}
-
-const EditorialRouteWithChildren = EditorialRoute._addFileChildren(
-  EditorialRouteChildren,
-)
-
 interface AdminEncomendasRouteChildren {
   AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
   AdminEncomendasHistoricoRoute: typeof AdminEncomendasHistoricoRoute
@@ -789,7 +778,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
-  EditorialRoute: EditorialRouteWithChildren,
+  EditorialRoute: EditorialRoute,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
   PerfilRoute: PerfilRoute,
@@ -809,6 +798,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRelatoriosRoute: AdminRelatoriosRoute,
   AdminReservasRoute: AdminReservasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  EditorialIdRoute: EditorialIdRoute,
   EncomendaConfirmadaOrderIdRoute: EncomendaConfirmadaOrderIdRoute,
   FeedbackIdRoute: FeedbackIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
@@ -818,3 +808,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
