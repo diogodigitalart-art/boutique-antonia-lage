@@ -12,10 +12,14 @@ function toEmbed(url: string): string | null {
     const u = new URL(url);
     if (u.hostname.includes("youtube.com")) {
       const id = u.searchParams.get("v");
-      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (id) return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
+      const shortsMatch = u.pathname.match(/^\/shorts\/([\w-]{11})/);
+      if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}?rel=0&modestbranding=1`;
+      const embedMatch = u.pathname.match(/^\/embed\/([\w-]{11})/);
+      if (embedMatch) return `https://www.youtube.com/embed/${embedMatch[1]}?rel=0&modestbranding=1`;
     }
     if (u.hostname === "youtu.be") {
-      return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
+      return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}?rel=0&modestbranding=1`;
     }
     if (u.hostname.includes("instagram.com")) {
       const m = u.pathname.match(/^\/(p|reel|tv)\/([^/]+)/);
