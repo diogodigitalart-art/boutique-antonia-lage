@@ -1,10 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
+import { useState } from "react";
 import { useWishlist } from "@/lib/wishlist";
 import type { Product } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { QuickBuyModal } from "@/components/QuickBuyModal";
 
 export function ProductCard({ product }: { product: Product; width?: string }) {
   const { has, toggle } = useWishlist();
@@ -12,6 +14,7 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
   const { session } = useAuth();
   const navigate = useNavigate();
   const liked = has(product.id);
+  const [quickOpen, setQuickOpen] = useState(false);
   const isArchive = product.category === "archive" && product.originalPrice;
   const hasDiscount = !!product.discountPercent && product.discountPercent > 0;
   const showStrikethrough = hasDiscount || isArchive;
@@ -47,6 +50,19 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           {/* low-stock indicator moved below price for a more subtle treatment */}
         </div>
       </Link>
+      {!product.fullyReserved && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            setQuickOpen(true);
+          }}
+          aria-label="Adicionar rápido"
+          className="absolute bottom-[5.5rem] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-background shadow-md transition md:opacity-0 md:group-hover:opacity-100"
+        >
+          <ShoppingBag size={14} strokeWidth={1.5} />
+          Compra rápida
+        </button>
+      )}
       <button
         onClick={async (e) => {
           e.preventDefault();
@@ -66,6 +82,22 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           strokeWidth={1.5}
         />
       </button>
+      <QuickBuyModal
+        open={quickOpen}
+        onOpenChange={setQuickOpen}
+        products={[
+          {
+            id: product.id,
+            uuid: product.uuid,
+            brand: product.brand,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            sizes: product.sizes,
+            availableSizes: product.availableSizes,
+          },
+        ]}
+      />
       <Link to="/produto/$id" params={{ id: product.id }} className="mt-4 block">
         <div className="flex items-center gap-2">
           <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
