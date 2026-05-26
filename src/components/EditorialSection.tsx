@@ -30,12 +30,6 @@ function parseVideo(url: string): { embed: string | null; vertical: boolean } {
   return { embed: url, vertical: false };
 }
 
-// Kept for backward compatibility with previous logic
-function _legacy(url: string): string | null {
-  if (!url) return null;
-  return url;
-}
-
 export function EditorialSection() {
   const fetchLatest = useServerFn(getLatestEditorial);
   const { byId } = useProducts();
