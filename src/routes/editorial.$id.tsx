@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { getEditorialById, type EditorialPost } from "@/server/features";
+import { Button } from "@/components/ui/button";
+import { QuickBuyModal } from "@/components/QuickBuyModal";
+import { useProducts } from "@/lib/products";
 
 export const Route = createFileRoute("/editorial/$id")({
   head: () => ({
@@ -29,6 +32,8 @@ function EditorialDetailPage() {
   const [post, setPost] = useState<EditorialPost | null>(null);
   const [products, setProducts] = useState<Featured[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lookOpen, setLookOpen] = useState(false);
+  const { byId } = useProducts();
 
   useEffect(() => {
     fetchPost({ data: { id } })
@@ -131,6 +136,29 @@ function EditorialDetailPage() {
                 </Link>
               ))}
             </div>
+            <div className="mx-auto mt-8 max-w-2xl text-center">
+              <Button size="lg" onClick={() => setLookOpen(true)}>
+                Comprar este look
+              </Button>
+            </div>
+            <QuickBuyModal
+              open={lookOpen}
+              onOpenChange={setLookOpen}
+              title="Comprar este look"
+              products={products.slice(0, 4).map((p) => {
+                const live = byId(p.id);
+                return {
+                  id: p.id,
+                  uuid: live?.uuid,
+                  brand: p.brand,
+                  name: p.name,
+                  price: p.price,
+                  image: p.images[0] ?? live?.image ?? "",
+                  sizes: live?.sizes ?? [],
+                  availableSizes: live?.availableSizes,
+                };
+              })}
+            />
           </section>
         )}
 
