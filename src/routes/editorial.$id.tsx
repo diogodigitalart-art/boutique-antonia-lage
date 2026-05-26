@@ -16,10 +16,11 @@ export const Route = createFileRoute("/editorial/$id")({
 
 type Featured = { id: string; name: string; brand: string; price: number; images: string[] };
 
-function youtubeEmbed(url: string): string | null {
-  if (!url) return null;
+function youtubeEmbed(url: string): { src: string | null; vertical: boolean } {
+  if (!url) return { src: null, vertical: false };
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1` : null;
+  const vertical = /\/shorts\//.test(url);
+  return { src: m ? `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1` : null, vertical };
 }
 
 function EditorialDetailPage() {
@@ -58,7 +59,7 @@ function EditorialDetailPage() {
     );
   }
 
-  const embed = youtubeEmbed(post.video_url);
+  const { src: embed, vertical } = youtubeEmbed(post.video_url);
 
   return (
     <Layout>
@@ -75,15 +76,27 @@ function EditorialDetailPage() {
         </header>
 
         {embed ? (
-          <div className="aspect-video w-full overflow-hidden rounded-2xl bg-muted shadow-lg">
-            <iframe
-              src={embed}
-              title={post.title}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
+          vertical ? (
+            <div className="mx-auto w-full max-w-[400px] overflow-hidden rounded-2xl bg-muted shadow-lg" style={{ aspectRatio: "9 / 16" }}>
+              <iframe
+                src={embed}
+                title={post.title}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-muted shadow-lg">
+              <iframe
+                src={embed}
+                title={post.title}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )
         ) : post.video_url ? (
           <a href={post.video_url} target="_blank" rel="noreferrer" className="block text-xs uppercase tracking-wider text-primary hover:underline">
             Ver vídeo →
@@ -99,21 +112,21 @@ function EditorialDetailPage() {
         {products.length > 0 && (
           <section className="my-16">
             <p className="mb-6 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Peças em destaque</p>
-            <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 md:gap-6">
-              {products.map((p) => (
+            <div className="mx-auto grid max-w-2xl grid-cols-2 gap-4 md:gap-6">
+              {products.slice(0, 4).map((p) => (
                 <Link
                   key={p.id}
                   to="/produto/$id"
                   params={{ id: p.id }}
-                  className="group w-[60%] flex-shrink-0 snap-start sm:w-[40%] md:w-[28%] lg:w-[22%]"
+                  className="group block"
                 >
-                  <div className="aspect-[3/4] overflow-hidden rounded-xl bg-muted">
+                  <div className="aspect-square overflow-hidden rounded-xl bg-muted">
                     {p.images[0] ? (
                       <img src={p.images[0]} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                     ) : null}
                   </div>
                   <p className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">{p.brand}</p>
-                  <p className="text-sm text-foreground">{p.name}</p>
+                  <p className="text-sm text-foreground line-clamp-1">{p.name}</p>
                   <p className="text-xs text-muted-foreground">€{p.price.toFixed(2)}</p>
                 </Link>
               ))}
