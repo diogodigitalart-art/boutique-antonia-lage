@@ -14,6 +14,10 @@ export function Footer() {
             Contactos
           </Link>
           <span className="opacity-30">·</span>
+          <Link to="/editorial" className="hover:text-foreground">
+            Looks da Semana
+          </Link>
+          <span className="opacity-30">·</span>
           <Link to="/politica-de-privacidade" className="hover:text-foreground">
             Política de privacidade
           </Link>

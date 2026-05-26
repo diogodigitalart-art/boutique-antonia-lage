@@ -100,10 +100,13 @@ function ExperiencesPage() {
         </p>
       </section>
 
-      {/* Experience cards */}
+      {/* Experiences section */}
       <section className="mx-auto mt-10 max-w-7xl px-4 md:px-8">
+        <p className="mb-4 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+          Experiências
+        </p>
         <div className="space-y-6">
-          {EXPERIENCES.map((e) => (
+          {EXPERIENCES.filter((e) => e.title !== "Arranjos e Costura").map((e) => (
             <article
               key={e.id}
               className="overflow-hidden rounded-3xl bg-card md:grid md:grid-cols-2"
@@ -146,6 +149,47 @@ function ExperiencesPage() {
           ))}
         </div>
       </section>
+
+      {/* Services section — Tailoring */}
+      {EXPERIENCES.filter((e) => e.title === "Arranjos e Costura").map((e) => (
+        <section key={e.id} className="mx-auto mt-16 max-w-7xl px-4 md:px-8">
+          <div className="mb-6 border-t border-border pt-10">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-[#9b7e6b]">Serviços</p>
+          </div>
+          <article className="overflow-hidden rounded-2xl border border-[#e6dcd2] bg-[#f7f1ea] md:grid md:grid-cols-[2fr_3fr]">
+            <div className="aspect-[4/3] overflow-hidden md:aspect-auto md:h-full">
+              <img src={e.image} alt={e.title} className="h-full w-full object-cover" />
+            </div>
+            <div className="flex flex-col justify-between p-6 md:p-8">
+              <div>
+                <div className="mb-3 inline-block rounded-full bg-[#e6dcd2] px-3 py-1 text-xs text-[#7a5a44]">
+                  a partir de €{e.price}
+                </div>
+                <h2 className="font-display text-2xl italic text-[#3d2e22] md:text-3xl">
+                  {e.title}
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-[#6b5644]">{e.description}</p>
+                <div className="mt-5 grid grid-cols-2 gap-3 text-xs text-[#5a4838]">
+                  <span className="inline-flex items-center gap-2">
+                    <Clock size={14} strokeWidth={1.5} className="text-[#9b7e6b]" />
+                    {e.duration}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin size={14} strokeWidth={1.5} className="text-[#9b7e6b]" />
+                    {e.location}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleBook(e)}
+                className="mt-6 h-11 rounded-full bg-[#7a5a44] text-xs uppercase tracking-wider text-white transition hover:bg-[#5e4634]"
+              >
+                Pedir orçamento
+              </button>
+            </div>
+          </article>
+        </section>
+      ))}
 
       {/* How it works */}
       <section className="mx-auto mt-20 max-w-7xl px-4 md:px-8">

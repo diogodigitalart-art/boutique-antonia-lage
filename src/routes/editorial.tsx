@@ -7,12 +7,18 @@ import { listPublishedEditorials, type EditorialPost } from "@/server/features";
 export const Route = createFileRoute("/editorial")({
   head: () => ({
     meta: [
-      { title: "Editorial | Boutique Antónia Lage" },
+      { title: "Looks da Semana | Boutique Antónia Lage" },
       { name: "description", content: "Histórias, peças e curadoria semanal da Boutique Antónia Lage." },
     ],
   }),
   component: EditorialPage,
 });
+
+function extractYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
 
 function EditorialPage() {
   const fetchPosts = useServerFn(listPublishedEditorials);
@@ -28,52 +34,63 @@ function EditorialPage() {
 
   return (
     <Layout>
-      <section className="mx-auto max-w-5xl px-4 pt-10 md:px-8 md:pt-16">
+      <section className="mx-auto max-w-6xl px-4 pt-10 md:px-8 md:pt-16">
         <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Editorial</p>
         <h1 className="mt-2 font-display text-4xl italic text-foreground md:text-6xl">
-          Esta semana na Boutique
+          Looks da Semana
         </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground">
           Curadoria semanal de peças, histórias e inspiração.
         </p>
       </section>
 
-      <section className="mx-auto mt-12 max-w-5xl px-4 pb-20 md:px-8">
+      <section className="mx-auto mt-12 max-w-6xl px-4 pb-20 md:px-8">
         {loading ? (
           <p className="text-sm text-muted-foreground">A carregar…</p>
         ) : posts.length === 0 ? (
           <p className="text-sm text-muted-foreground">Ainda sem edições publicadas.</p>
         ) : (
-          <ul className="space-y-10">
-            {posts.map((p) => (
-              <li key={p.id} className="rounded-3xl border border-border bg-card p-6 md:p-10">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                  {new Date(p.publish_date).toLocaleDateString("pt-PT", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-                <h2 className="mt-2 font-display text-3xl italic text-foreground md:text-4xl">
-                  {p.title}
-                </h2>
-                {p.quote && (
-                  <blockquote className="mt-4 border-l-2 border-primary pl-4 font-display text-lg italic text-muted-foreground">
-                    "{p.quote}"
-                  </blockquote>
-                )}
-                {p.teaser_text && (
-                  <p className="mt-4 text-sm text-muted-foreground">{p.teaser_text}</p>
-                )}
-                <Link
-                  to="/editorial/$id"
-                  params={{ id: p.id }}
-                  className="mt-6 inline-block text-xs uppercase tracking-wider text-primary hover:underline"
-                >
-                  Ler edição →
-                </Link>
-              </li>
-            ))}
+          <ul className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-12">
+            {posts.map((p) => {
+              const vid = extractYouTubeId(p.video_url);
+              const thumb = vid ? `https://img.youtube.com/vi/${vid}/maxresdefault.jpg` : null;
+              return (
+                <li key={p.id}>
+                  <Link to="/editorial/$id" params={{ id: p.id }} className="group block">
+                    <div className="aspect-video w-full overflow-hidden rounded-2xl bg-muted">
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={p.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                          onError={(e) => {
+                            if (vid) (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+                          }}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                          Sem vídeo
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-4 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                      {new Date(p.publish_date).toLocaleDateString("pt-PT", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <h2 className="mt-2 font-display text-3xl italic text-foreground transition-colors group-hover:text-primary md:text-4xl">
+                      {p.title}
+                    </h2>
+                    {p.quote && (
+                      <p className="mt-2 text-sm italic text-muted-foreground">"{p.quote}"</p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

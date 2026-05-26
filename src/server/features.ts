@@ -49,7 +49,12 @@ export const joinWaitlist = createServerFn({ method: "POST" })
       email: data.email,
       user_id: userId,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (/waitlist limit reached/i.test(error.message)) {
+        throw new Error("Já estás inscrita 3 vezes para este produto. Aguarda a notificação.");
+      }
+      throw new Error(error.message);
+    }
     return { ok: true, alreadyOn: false };
   });
 
