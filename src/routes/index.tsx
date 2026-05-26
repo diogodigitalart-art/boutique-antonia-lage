@@ -4,7 +4,6 @@ import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
-import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { EditorialSection } from "@/components/EditorialSection";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
@@ -249,8 +248,6 @@ function HomePage() {
           </div>
         </div>
       </section>
-
-      <RecentlyViewed />
 
       <EditorialSection />
 
