@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { listPublishedEditorials, type EditorialPost } from "@/server/features";
+import { Play } from "lucide-react";
 
 export const Route = createFileRoute("/editorial")({
   head: () => ({
@@ -13,12 +14,6 @@ export const Route = createFileRoute("/editorial")({
   }),
   component: EditorialPage,
 });
-
-function extractYouTubeId(url: string): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? m[1] : null;
-}
 
 function EditorialPage() {
   const fetchPosts = useServerFn(listPublishedEditorials);
@@ -52,35 +47,25 @@ function EditorialPage() {
         ) : (
           <ul className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-10">
             {posts.map((p) => {
-              const vid = extractYouTubeId(p.video_url);
-              const isShort = /\/shorts\//.test(p.video_url);
-              // sddefault.jpg is 4:3 with no letterboxing; fallback to hqdefault (also 4:3)
-              const thumb = vid
-                ? `https://img.youtube.com/vi/${vid}/${isShort ? "hqdefault" : "sddefault"}.jpg`
-                : null;
               return (
                 <li key={p.id}>
                   <Link
                     to="/editorial/$id"
-                    params={{ id: p.id }}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    params={{ id: String(p.id) }}
+                    className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-                      {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={p.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                          onError={(e) => {
-                            if (vid) (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                          Sem vídeo
+                    <div
+                      className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden p-6 text-center"
+                      style={{ backgroundColor: "#1a2744" }}
+                    >
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/30 backdrop-blur-sm transition group-hover:scale-110 group-hover:bg-white/20">
+                          <Play size={26} className="ml-1 fill-white text-white" strokeWidth={1.5} />
                         </div>
-                      )}
+                        <h3 className="font-display text-2xl italic leading-tight text-white md:text-3xl">
+                          {p.title}
+                        </h3>
+                      </div>
                     </div>
                     <div className="flex flex-1 flex-col p-6">
                       <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
