@@ -92,6 +92,7 @@ export type EditorialPost = {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  cover_image: string | null;
 };
 
 export const listPublishedEditorials = createServerFn({ method: "GET" }).handler(async () => {
@@ -180,6 +181,10 @@ export const adminUpsertEditorial = createServerFn({ method: "POST" })
             ? p.publish_date
             : new Date().toISOString().split("T")[0],
         is_published: Boolean(p.is_published),
+        cover_image:
+          typeof p.cover_image === "string" && p.cover_image.length > 0
+            ? p.cover_image.slice(0, 1000)
+            : null,
       },
     };
   })
@@ -194,6 +199,7 @@ export const adminUpsertEditorial = createServerFn({ method: "POST" })
       teaser_text: data.post.teaser_text,
       publish_date: data.post.publish_date,
       is_published: data.post.is_published,
+      cover_image: data.post.cover_image,
     };
     if (data.post.id) {
       const { error } = await supabaseAdmin

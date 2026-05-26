@@ -166,6 +166,7 @@ export type Database = {
       }
       editorial_posts: {
         Row: {
+          cover_image: string | null
           created_at: string
           featured_product_ids: string[]
           id: string
@@ -178,6 +179,7 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          cover_image?: string | null
           created_at?: string
           featured_product_ids?: string[]
           id?: string
@@ -190,6 +192,7 @@ export type Database = {
           video_url?: string
         }
         Update: {
+          cover_image?: string | null
           created_at?: string
           featured_product_ids?: string[]
           id?: string

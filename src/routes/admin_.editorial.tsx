@@ -9,7 +9,8 @@ import {
   adminDeleteEditorial,
   type EditorialPost,
 } from "@/server/features";
-import { Loader2, Plus, Trash2, Pencil, X } from "lucide-react";
+import { adminUploadProductImage } from "@/server/products";
+import { Loader2, Plus, Trash2, Pencil, X, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts } from "@/lib/products";
 
@@ -134,6 +135,7 @@ function EditorForm({
   onSaved: () => void;
 }) {
   const upsert = useServerFn(adminUpsertEditorial);
+  const uploadFn = useServerFn(adminUploadProductImage);
   const { products } = useProducts();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [quote, setQuote] = useState(initial?.quote ?? "");
@@ -144,6 +146,9 @@ function EditorForm({
   );
   const [isPublished, setIsPublished] = useState(initial?.is_published ?? false);
   const [productIds, setProductIds] = useState<string[]>(initial?.featured_product_ids ?? []);
+  const [coverImage, setCoverImage] = useState<string | null>(initial?.cover_image ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
 
   const toggleProduct = (id: string) => {
@@ -151,6 +156,48 @@ function EditorForm({
       cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 8 ? [...cur, id] : cur,
     );
   };
+
+  const handleCoverUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const token = await getToken();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve((r.result as string).split(",")[1] || "");
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const res = await uploadFn({
+        data: {
+          token,
+          filename: file.name,
+          contentType: file.type || "image/jpeg",
+          dataBase64: base64,
+        },
+      });
+      setCoverImage((res as { url: string }).url);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a carregar imagem");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const selectedProducts = productIds
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? products.filter(
+        (p) =>
+          p.brand.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
+      )
+    : [
+        ...selectedProducts,
+        ...products.filter((p) => !productIds.includes(p.id)),
+      ];
 
   const save = async () => {
     if (!title.trim()) {
@@ -172,6 +219,7 @@ function EditorForm({
             teaser_text: teaser,
             publish_date: publishDate,
             is_published: isPublished,
+            cover_image: coverImage ?? "",
           },
         },
       });
@@ -232,6 +280,48 @@ function EditorForm({
           </div>
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Imagem de capa (opcional)
+            </label>
+            {coverImage ? (
+              <div className="relative mt-1 inline-block">
+                <img
+                  src={coverImage}
+                  alt="Capa"
+                  className="h-32 w-44 rounded-md border border-border object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCoverImage(null)}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background shadow"
+                  aria-label="Remover"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <label className="mt-1 flex h-32 w-44 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-card text-xs text-muted-foreground hover:bg-muted">
+                {uploading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    <Upload size={16} />
+                    <span>Carregar imagem</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleCoverUpload(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            )}
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Sem imagem, o cartão mostra um fundo azul com o título.
+            </p>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
               Teaser (frase final)
             </label>
             <textarea
@@ -264,25 +354,95 @@ function EditorForm({
             </label>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground">
-              Peças em destaque ({productIds.length}/8)
-            </label>
-            <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border p-2">
-              {products.slice(0, 80).map((p) => (
-                <label
-                  key={p.id}
-                  className="flex items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
-                >
-                  <input
-                    type="checkbox"
-                    checked={productIds.includes(p.id)}
-                    onChange={() => toggleProduct(p.id)}
-                    className="h-3.5 w-3.5 accent-primary"
-                  />
-                  <span className="text-muted-foreground">{p.brand}</span>
-                  <span className="text-foreground">{p.name}</span>
-                </label>
-              ))}
+            <div className="flex items-center justify-between">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Peças em destaque
+              </label>
+              <span className="text-[11px] text-muted-foreground">
+                {productIds.length}/8 peças seleccionadas
+              </span>
+            </div>
+
+            {selectedProducts.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {selectedProducts.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => toggleProduct(p.id)}
+                    className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] text-foreground hover:bg-primary/20"
+                  >
+                    <span className="text-muted-foreground">{p.brand}</span>
+                    <span>{p.name}</span>
+                    <X size={11} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="relative mt-3">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Pesquisar produto por marca ou nome…"
+                className="h-10 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm"
+              />
+            </div>
+
+            <div className="mt-2 max-h-64 overflow-y-auto rounded-md border border-border">
+              {filtered.length === 0 ? (
+                <p className="px-3 py-4 text-xs text-muted-foreground">
+                  Sem resultados.
+                </p>
+              ) : (
+                filtered.slice(0, 60).map((p) => {
+                  const selected = productIds.includes(p.id);
+                  const disabled = !selected && productIds.length >= 8;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => !disabled && toggleProduct(p.id)}
+                      disabled={disabled}
+                      className={`flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left text-xs last:border-b-0 transition ${
+                        selected
+                          ? "bg-primary/10"
+                          : disabled
+                            ? "cursor-not-allowed opacity-40"
+                            : "hover:bg-muted"
+                      }`}
+                    >
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
+                        {p.image ? (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {p.brand}
+                        </p>
+                        <p className="truncate text-foreground">{p.name}</p>
+                      </div>
+                      <span className="shrink-0 text-muted-foreground">
+                        €{Number(p.price).toFixed(2)}
+                      </span>
+                      {selected && (
+                        <span className="shrink-0 text-[10px] uppercase tracking-wider text-primary">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
