@@ -9,9 +9,11 @@ function isStr(v: unknown, max = 4096): v is string {
 
 function generateCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const buf = new Uint8Array(6);
+  crypto.getRandomValues(buf);
   let s = "";
   for (let i = 0; i < 6; i++) {
-    s += alphabet[Math.floor(Math.random() * alphabet.length)];
+    s += alphabet[buf[i] % alphabet.length];
   }
   return `BV${s}`; // 8 chars total, prefix BV (Bem-vinda)
 }
