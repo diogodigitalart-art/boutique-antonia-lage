@@ -147,8 +147,16 @@ export const createOrder = createServerFn({ method: "POST" })
           .eq("discount_code", code)
           .maybeSingle();
         if (sub) {
-          discountCode = sub.discount_code;
-          discountAmount = Math.round(subtotal * 0.1 * 100) / 100;
+          // Reject if this welcome code was already used on a previous order
+          const { data: prior } = await supabaseAdmin
+            .from("orders")
+            .select("id")
+            .eq("discount_code", sub.discount_code)
+            .limit(1);
+          if (!prior || prior.length === 0) {
+            discountCode = sub.discount_code;
+            discountAmount = Math.round(subtotal * 0.1 * 100) / 100;
+          }
         }
       }
     }
