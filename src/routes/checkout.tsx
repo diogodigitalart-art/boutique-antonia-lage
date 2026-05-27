@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Check, ChevronLeft, Lock, Pencil } from "lucide-react";
 import { createOrder } from "@/server/orders";
 import { validateDiscountCode } from "@/server/discountCodes";
+import { validateGiftCard } from "@/server/giftCards";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Boutique Antónia Lage" }] }),
@@ -95,6 +96,11 @@ function CheckoutPage() {
   } | null>(null);
   const [discountBusy, setDiscountBusy] = useState(false);
   const validateDiscount = useServerFn(validateDiscountCode);
+  const validateGift = useServerFn(validateGiftCard);
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [giftInput, setGiftInput] = useState("");
+  const [giftBusy, setGiftBusy] = useState(false);
+  const [giftCard, setGiftCard] = useState<{ code: string; amount: number } | null>(null);
   const [address, setAddress] = useState<Address>({
     full_name: "",
     email: "",
@@ -185,7 +191,9 @@ function CheckoutPage() {
     }, 0);
   }, [discount, enriched, subtotal]);
   const discountAmount = discount ? +(eligibleSubtotal * (discount.percent / 100)).toFixed(2) : 0;
-  const total = Math.max(0, subtotal - discountAmount + (shippingKnown ? shipping : 0));
+  const preGiftTotal = Math.max(0, subtotal - discountAmount + (shippingKnown ? shipping : 0));
+  const giftAmount = giftCard ? Math.min(giftCard.amount, preGiftTotal) : 0;
+  const total = Math.max(0, preGiftTotal - giftAmount);
 
   const canSubmitAddress =
     address.full_name.trim().length > 1 &&
@@ -236,6 +244,7 @@ function CheckoutPage() {
           total,
           discount_code: discount?.code ?? null,
           discount_amount: discountAmount,
+          gift_card_code: giftCard?.code ?? null,
         },
       });
       await clear();
@@ -290,6 +299,21 @@ function CheckoutPage() {
       toast.error(e instanceof Error ? e.message : "Código inválido");
     } finally {
       setDiscountBusy(false);
+    }
+  };
+
+  const applyGiftCard = async () => {
+    if (!giftInput.trim()) return;
+    setGiftBusy(true);
+    try {
+      const r = await validateGift({ data: { code: giftInput.trim() } });
+      setGiftCard({ code: r.code, amount: r.amount });
+      toast.success(`Cartão de €${r.amount.toFixed(2)} aplicado`);
+    } catch (e) {
+      setGiftCard(null);
+      toast.error(e instanceof Error ? e.message : "Cartão inválido");
+    } finally {
+      setGiftBusy(false);
     }
   };
 

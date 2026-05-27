@@ -22,6 +22,7 @@ import { Route as EditorialRouteImport } from './routes/editorial'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CartaoOfertaRouteImport } from './routes/cartao-oferta'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as ArquivoRouteImport } from './routes/arquivo'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -109,6 +110,11 @@ const ColeccaoRoute = ColeccaoRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartaoOfertaRoute = CartaoOfertaRouteImport.update({
+  id: '/cartao-oferta',
+  path: '/cartao-oferta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CarrinhoRoute = CarrinhoRouteImport.update({
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -312,6 +320,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -352,6 +361,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -466,6 +478,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ArquivoRoute: typeof ArquivoRoute
   CarrinhoRoute: typeof CarrinhoRoute
+  CartaoOfertaRoute: typeof CartaoOfertaRoute
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cartao-oferta': {
+      id: '/cartao-oferta'
+      path: '/cartao-oferta'
+      fullPath: '/cartao-oferta'
+      preLoaderRoute: typeof CartaoOfertaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/carrinho': {
@@ -775,6 +795,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ArquivoRoute: ArquivoRoute,
   CarrinhoRoute: CarrinhoRoute,
+  CartaoOfertaRoute: CartaoOfertaRoute,
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
