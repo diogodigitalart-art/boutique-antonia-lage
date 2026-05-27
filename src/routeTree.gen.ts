@@ -22,6 +22,7 @@ import { Route as EditorialRouteImport } from './routes/editorial'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CartaoOfertaRouteImport } from './routes/cartao-oferta'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as ArquivoRouteImport } from './routes/arquivo'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -40,6 +41,7 @@ import { Route as AdminEditorialRouteImport } from './routes/admin_.editorial'
 import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin_.configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
+import { Route as AdminCartoesOfertaRouteImport } from './routes/admin_.cartoes-oferta'
 import { Route as AdminEncomendasIndexRouteImport } from './routes/admin_.encomendas.index'
 import { Route as WishlistShareTokenRouteImport } from './routes/wishlist_.share.$token'
 import { Route as AdminEncomendasHistoricoRouteImport } from './routes/admin_.encomendas.historico'
@@ -109,6 +111,11 @@ const ColeccaoRoute = ColeccaoRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartaoOfertaRoute = CartaoOfertaRouteImport.update({
+  id: '/cartao-oferta',
+  path: '/cartao-oferta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CarrinhoRoute = CarrinhoRouteImport.update({
@@ -202,6 +209,11 @@ const AdminClientesRoute = AdminClientesRouteImport.update({
   path: '/admin/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCartoesOfertaRoute = AdminCartoesOfertaRouteImport.update({
+  id: '/admin_/cartoes-oferta',
+  path: '/admin/cartoes-oferta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminEncomendasIndexRoute = AdminEncomendasIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -236,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -249,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -274,6 +288,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -287,6 +302,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
@@ -312,6 +328,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/arquivo': typeof ArquivoRoute
   '/carrinho': typeof CarrinhoRoute
+  '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
@@ -325,6 +342,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
+  '/admin_/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin_/clientes': typeof AdminClientesRoute
   '/admin_/configuracoes': typeof AdminConfiguracoesRoute
   '/admin_/devolucoes': typeof AdminDevolucoesRoute
@@ -352,6 +370,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -365,6 +384,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin/cartoes-oferta'
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/devolucoes'
@@ -390,6 +410,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -403,6 +424,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin/cartoes-oferta'
     | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/devolucoes'
@@ -427,6 +449,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/arquivo'
     | '/carrinho'
+    | '/cartao-oferta'
     | '/checkout'
     | '/coleccao'
     | '/contactos'
@@ -440,6 +463,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/termos-e-condicoes'
     | '/wishlist'
+    | '/admin_/cartoes-oferta'
     | '/admin_/clientes'
     | '/admin_/configuracoes'
     | '/admin_/devolucoes'
@@ -466,6 +490,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ArquivoRoute: typeof ArquivoRoute
   CarrinhoRoute: typeof CarrinhoRoute
+  CartaoOfertaRoute: typeof CartaoOfertaRoute
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
@@ -479,6 +504,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
   WishlistRoute: typeof WishlistRoute
+  AdminCartoesOfertaRoute: typeof AdminCartoesOfertaRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDevolucoesRoute: typeof AdminDevolucoesRoute
@@ -588,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cartao-oferta': {
+      id: '/cartao-oferta'
+      path: '/cartao-oferta'
+      fullPath: '/cartao-oferta'
+      preLoaderRoute: typeof CartaoOfertaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/carrinho': {
@@ -716,6 +749,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/cartoes-oferta': {
+      id: '/admin_/cartoes-oferta'
+      path: '/admin/cartoes-oferta'
+      fullPath: '/admin/cartoes-oferta'
+      preLoaderRoute: typeof AdminCartoesOfertaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/encomendas/': {
       id: '/admin_/encomendas/'
       path: '/'
@@ -775,6 +815,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ArquivoRoute: ArquivoRoute,
   CarrinhoRoute: CarrinhoRoute,
+  CartaoOfertaRoute: CartaoOfertaRoute,
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
@@ -788,6 +829,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
   WishlistRoute: WishlistRoute,
+  AdminCartoesOfertaRoute: AdminCartoesOfertaRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDevolucoesRoute: AdminDevolucoesRoute,
