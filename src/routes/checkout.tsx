@@ -574,6 +574,12 @@ function CheckoutPage() {
                     <dd>−€{discountAmount.toFixed(2)}</dd>
                   </div>
                 )}
+                {giftCard && (
+                  <div className="flex justify-between text-emerald-700">
+                    <dt>Cartão oferta</dt>
+                    <dd>−€{giftAmount.toFixed(2)}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between text-muted-foreground">
                   <dt>Envio</dt>
                   <dd>
