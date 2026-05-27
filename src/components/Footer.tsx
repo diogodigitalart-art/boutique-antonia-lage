@@ -18,6 +18,10 @@ export function Footer() {
             Looks da Semana
           </Link>
           <span className="opacity-30">·</span>
+          <Link to="/cartao-oferta" className="hover:text-foreground">
+            Cartão Oferta
+          </Link>
+          <span className="opacity-30">·</span>
           <Link to="/politica-de-privacidade" className="hover:text-foreground">
             Política de privacidade
           </Link>
