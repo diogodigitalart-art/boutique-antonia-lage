@@ -626,6 +626,51 @@ function CheckoutPage() {
                   </div>
                 )}
               </div>
+              <div className="mt-4 border-t border-border pt-4">
+                {giftCard ? (
+                  <div className="flex items-center justify-between text-sm text-emerald-700">
+                    <span>
+                      Cartão {giftCard.code.slice(0, 9)}…
+                      <button
+                        type="button"
+                        onClick={() => { setGiftCard(null); setGiftInput(""); }}
+                        className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                      >
+                        Remover
+                      </button>
+                    </span>
+                    <span>−€{giftAmount.toFixed(2)}</span>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setGiftOpen((o) => !o)}
+                      className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                    >
+                      {giftOpen ? "− " : "+ "}Tens um cartão de oferta?
+                    </button>
+                    {giftOpen && (
+                      <div className="mt-3 flex gap-2 min-w-0">
+                        <input
+                          value={giftInput}
+                          onChange={(e) => setGiftInput(e.target.value.toUpperCase())}
+                          placeholder="GIFT-XXXX-XXXX-XXXX"
+                          className="h-10 min-w-0 flex-1 rounded-full border border-border bg-background px-3 text-xs uppercase outline-none focus:border-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void applyGiftCard()}
+                          disabled={giftBusy || !giftInput.trim()}
+                          className="h-10 shrink-0 rounded-full bg-primary px-4 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                        >
+                          {giftBusy ? "…" : "Aplicar"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </aside>
         </div>
