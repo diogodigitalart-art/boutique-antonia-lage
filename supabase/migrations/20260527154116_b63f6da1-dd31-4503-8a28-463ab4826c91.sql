@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can subscribe" ON public.newsletter_subscribers;
