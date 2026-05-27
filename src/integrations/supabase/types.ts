@@ -274,6 +274,66 @@ export type Database = {
           },
         ]
       }
+      gift_cards: {
+        Row: {
+          amount: number
+          code: string
+          created_at: string
+          id: string
+          message: string | null
+          order_id: string | null
+          recipient_email: string
+          recipient_name: string
+          redeemed_at: string | null
+          redeemed_by_user_id: string | null
+          send_date: string
+          sender_email: string
+          sender_name: string
+          sender_user_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          code: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          recipient_email: string
+          recipient_name: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          send_date?: string
+          sender_email: string
+          sender_name: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          code?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          recipient_email?: string
+          recipient_name?: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          send_date?: string
+          sender_email?: string
+          sender_name?: string
+          sender_user_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
