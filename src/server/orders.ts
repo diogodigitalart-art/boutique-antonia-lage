@@ -162,7 +162,34 @@ export const createOrder = createServerFn({ method: "POST" })
       }
     }
 
-    const total = Math.max(0, Math.round((subtotal - discountAmount + shippingCost) * 100) / 100);
+    // Validate gift card (applied AFTER discount, before shipping consideration)
+    let giftCardRowId: string | null = null;
+    let giftCardCode: string | null = null;
+    let giftCardAmount = 0;
+    if (data.gift_card_code && typeof data.gift_card_code === "string") {
+      const gcCode = data.gift_card_code.trim().toUpperCase();
+      const { data: gc } = await supabaseAdmin
+        .from("gift_cards")
+        .select("id, code, amount, status, redeemed_at")
+        .eq("code", gcCode)
+        .maybeSingle();
+      if (gc && !gc.redeemed_at && gc.status !== "redeemed" && gc.status !== "expired") {
+        giftCardRowId = gc.id as string;
+        giftCardCode = gc.code as string;
+        const preGiftTotal = Math.max(
+          0,
+          Math.round((subtotal - discountAmount + shippingCost) * 100) / 100,
+        );
+        giftCardAmount = Math.min(Number(gc.amount), preGiftTotal);
+      } else {
+        throw new Error("Cartão de oferta inválido ou já utilizado");
+      }
+    }
+
+    const total = Math.max(
+      0,
+      Math.round((subtotal - discountAmount + shippingCost - giftCardAmount) * 100) / 100,
+    );
 
     // 1) Insert order
     const { data: order, error } = await supabaseAdmin
@@ -178,7 +205,7 @@ export const createOrder = createServerFn({ method: "POST" })
         shipping_cost: shippingCost,
         total,
         discount_code: discountCode,
-        discount_amount: discountAmount,
+        discount_amount: discountAmount + giftCardAmount,
         status: "Pendente",
       })
       .select("id")
@@ -187,6 +214,19 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error(error?.message || "Failed to create order");
     }
     const orderId = order.id as string;
+
+    // Mark gift card redeemed
+    if (giftCardRowId) {
+      await supabaseAdmin
+        .from("gift_cards")
+        .update({
+          status: "redeemed",
+          redeemed_at: new Date().toISOString(),
+          redeemed_by_user_id: userId,
+          order_id: orderId,
+        })
+        .eq("id", giftCardRowId);
+    }
 
     // Increment usage on the discount code row; mark utilizado if limit reached
     if (usedDiscountRowId) {
