@@ -52,6 +52,7 @@ export const createOrder = createServerFn({ method: "POST" })
       total: number;
       discount_code?: string | null;
       discount_amount?: number;
+      gift_card_code?: string | null;
     };
   })
   .handler(async ({ data }) => {
