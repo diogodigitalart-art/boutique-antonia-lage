@@ -205,6 +205,27 @@ function ClientesContent() {
               </button>
             ))}
           </div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {([
+              ["all", "VIP: Todos"],
+              ["platinum", "Platinum"],
+              ["gold", "Gold"],
+              ["silver", "Silver"],
+              ["none", "Sem nível"],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setVipFilter(k)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                  vipFilter === k
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
             {filtered.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">Sem resultados</p>
@@ -217,7 +238,12 @@ function ClientesContent() {
                   selectedId === u.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 }`}
               >
-                <p className="truncate text-sm font-medium">{u.full_name || "Sem nome"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{u.full_name || "Sem nome"}</p>
+                  {u.vip_level !== "none" && (
+                    <span className={vipBadgeClasses(u.vip_level)}>{VIP_LABELS[u.vip_level]}</span>
+                  )}
+                </div>
                 <p
                   className={`truncate text-xs ${
                     selectedId === u.id ? "text-primary-foreground/80" : "text-muted-foreground"
@@ -230,7 +256,7 @@ function ClientesContent() {
                     selectedId === u.id ? "text-primary-foreground/70" : "text-muted-foreground"
                   }`}
                 >
-                  Reg. {new Date(u.created_at).toLocaleDateString("pt-PT")} · {u.reservations.length} res · {u.orders.length} enc
+                  Reg. {new Date(u.created_at).toLocaleDateString("pt-PT")} · {u.reservations.length} res · {u.orders.length} enc · €{u.total_spent.toFixed(0)}
                 </p>
               </button>
             ))}
