@@ -3,6 +3,14 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 
+// Allowlist of setting keys that are safe to expose to unauthenticated
+// callers. Any other key must be read via an admin-authenticated path.
+const PUBLIC_SETTING_KEYS = new Set<string>([
+  "whatsapp_number",
+  "google_review_url",
+  "experience_tailoring_price",
+]);
+
 function isStr(v: unknown, max = 4096): v is string {
   return typeof v === "string" && v.length > 0 && v.length < max;
 }
@@ -123,6 +131,9 @@ export const getSetting = createServerFn({ method: "GET" })
     return { key: i.key as string };
   })
   .handler(async ({ data }) => {
+    if (!PUBLIC_SETTING_KEYS.has(data.key)) {
+      throw new Error("Forbidden");
+    }
     const { data: row } = await supabaseAdmin
       .from("settings")
       .select("value")

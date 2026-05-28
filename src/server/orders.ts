@@ -76,15 +76,23 @@ export const createOrder = createServerFn({ method: "POST" })
     );
     const { data: dbProducts, error: prodErr } = await supabaseAdmin
       .from("products")
-      .select("id, price, discount_percent")
+      .select("id, price, discount_percent, brand, name, reference, images")
       .in("id", productUuids);
     if (prodErr) throw new Error("Failed to validate product prices");
     const priceById = new Map<string, number>();
+    const metaById = new Map<string, { brand: string; name: string; reference: string; image: string }>();
     for (const p of dbProducts ?? []) {
       const base = Number(p.price) || 0;
       const pct = p.discount_percent != null ? Number(p.discount_percent) : 0;
       const final = pct > 0 ? Math.round(base * (1 - pct / 100) * 100) / 100 : base;
       priceById.set(p.id as string, final);
+      const imgs = Array.isArray(p.images) ? (p.images as string[]) : [];
+      metaById.set(p.id as string, {
+        brand: (p.brand as string) ?? "",
+        name: (p.name as string) ?? "",
+        reference: (p.reference as string) ?? "",
+        image: imgs[0] ?? "",
+      });
     }
 
     const verifiedItems: OrderItem[] = data.items.map((it) => {
@@ -92,7 +100,20 @@ export const createOrder = createServerFn({ method: "POST" })
       if (unit == null) throw new Error("Produto inválido na encomenda");
       const qty = Math.max(1, Math.floor(Number(it.quantity) || 1));
       const line = Math.round(unit * qty * 100) / 100;
-      return { ...it, quantity: qty, unit_price: unit, line_total: line };
+      const meta = it.product_uuid ? metaById.get(it.product_uuid) : undefined;
+      // Overwrite client-supplied display metadata with trusted DB values to
+      // prevent injection of misleading brand/name or tracking-pixel images
+      // into stored orders and admin emails.
+      return {
+        ...it,
+        quantity: qty,
+        unit_price: unit,
+        line_total: line,
+        brand: meta?.brand ?? it.brand,
+        name: meta?.name ?? it.name,
+        reference: meta?.reference ?? it.reference,
+        image: meta?.image ?? "",
+      };
     });
     const subtotal = Math.round(verifiedItems.reduce((s, it) => s + it.line_total, 0) * 100) / 100;
     const zone: Zone = COUNTRY_TO_ZONE[data.address.country] ?? "PT_CONT";
