@@ -100,7 +100,9 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     const { data, error } = await supabase
       .from("products" as never)
-      .select("*")
+      .select(
+        "id, name, brand, description, price, original_price, category, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
+      )
       .order("created_at", { ascending: false });
     if (!error && data) {
       setRows(data as unknown as ProductRow[]);
