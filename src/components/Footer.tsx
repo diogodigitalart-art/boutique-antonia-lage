@@ -27,7 +27,7 @@ export function Footer() {
         </div>
 
         {/* Center — nav links */}
-        <nav className="grid grid-cols-2 gap-x-6 gap-y-2 md:flex md:flex-row md:items-center md:gap-8">
+        <nav className="grid grid-cols-2 gap-x-6 gap-y-3 md:flex md:flex-row md:items-center md:gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.to}
