@@ -11,23 +11,23 @@ export function Footer() {
         </p>
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <Link to="/contactos" className="hover:text-foreground">
-            Contactos
+            {t("footer_contacts")}
           </Link>
           <span className="opacity-30">·</span>
           <Link to="/editorial" className="hover:text-foreground">
-            Looks da Semana
+            {t("footer_looks")}
           </Link>
           <span className="opacity-30">·</span>
           <Link to="/cartao-oferta" className="hover:text-foreground">
-            Cartão Oferta
+            {t("footer_giftcard")}
           </Link>
           <span className="opacity-30">·</span>
           <Link to="/politica-de-privacidade" className="hover:text-foreground">
-            Política de privacidade
+            {t("footer_privacy")}
           </Link>
           <span className="opacity-30">·</span>
           <Link to="/termos-e-condicoes" className="hover:text-foreground">
-            Termos e condições
+            {t("footer_terms")}
           </Link>
         </nav>
       </div>

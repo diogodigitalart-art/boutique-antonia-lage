@@ -103,7 +103,7 @@ function ExperiencesPage() {
       {/* Experiences section */}
       <section className="mx-auto mt-10 max-w-7xl px-4 md:px-8">
         <p className="mb-4 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-          Experiências
+          {t("tab_experiences")}
         </p>
         <div className="space-y-6">
           {EXPERIENCES.filter((e) => e.title !== "Arranjos e Costura").map((e) => (

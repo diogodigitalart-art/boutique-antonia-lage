@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
+import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { purchaseGiftCard } from "@/server/giftCards";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/cartao-oferta")({
 const PRESET_VALUES = [50, 100, 150, 200];
 
 function GiftCardPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { session } = useAuth();
   const purchase = useServerFn(purchaseGiftCard);
@@ -84,12 +86,12 @@ function GiftCardPage() {
     <Layout>
       <div className="mx-auto max-w-4xl px-4 py-12 md:px-8 md:py-16">
         <header className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Cartão Oferta</p>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{t("footer_giftcard")}</p>
           <h1 className="mt-2 font-display text-4xl italic text-foreground md:text-5xl">
-            Oferecer a Boutique Antónia Lage
+            {t("giftcard_title")}
           </h1>
           <p className="mt-3 text-muted-foreground">
-            O presente perfeito para quem ama moda premium
+            {t("giftcard_subtitle")}
           </p>
         </header>
 

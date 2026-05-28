@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { SimplePagination } from "@/components/SimplePagination";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { useProducts } from "@/lib/products";
+import { useI18n } from "@/lib/i18n";
 import { BRANDS } from "@/lib/data";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -77,6 +78,7 @@ export const Route = createFileRoute("/coleccao")({
 });
 
 function ColeccaoPage() {
+  const { t } = useI18n();
   const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
   const [page, setPage] = useState(1);
@@ -237,12 +239,12 @@ function ColeccaoPage() {
   return (
     <Layout>
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-8 md:pt-14">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary">Colecção</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary">{t("tab_collection")}</p>
         <h1 className="mt-2 font-display text-4xl italic text-foreground md:text-6xl">
-          Toda a colecção
+          {t("collection_title")}
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Peças cuidadosamente seleccionadas das melhores marcas internacionais.
+          {t("collection_subtitle")}
         </p>
       </section>
 

@@ -7,7 +7,7 @@ export function Logo({ className = "" }: { className?: string }) {
       <img
         src={logoUrl}
         alt="Boutique Antónia Lage"
-        className="h-[38px] w-auto md:h-12"
+        className="h-[54px] w-auto md:h-[68px]"
         draggable={false}
       />
     </Link>

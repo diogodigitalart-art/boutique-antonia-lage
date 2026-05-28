@@ -8,6 +8,7 @@ import { EditorialSection } from "@/components/EditorialSection";
 import { BRANDS, EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
+import { openSearch } from "@/components/SearchOverlay";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -50,14 +51,16 @@ function HomePage() {
       <section className="px-4 pt-8 md:px-8 md:pt-16">
         <div className="mx-auto max-w-3xl">
           <h1 className="sr-only">Boutique Antónia Lage — Braga</h1>
-          <div className="flex items-center gap-4 rounded-full border border-border bg-card px-7 py-5 shadow-sm md:py-7">
+          <button
+            type="button"
+            onClick={openSearch}
+            className="flex w-full items-center gap-4 rounded-full border border-border bg-card px-7 py-5 text-left shadow-sm transition hover:border-foreground/30 md:py-7"
+          >
             <Search size={20} className="text-muted-foreground" strokeWidth={1.5} />
-            <input
-              type="search"
-              placeholder={t("search_placeholder")}
-              className="flex-1 bg-transparent text-base font-light outline-none placeholder:text-muted-foreground md:text-lg"
-            />
-          </div>
+            <span className="flex-1 bg-transparent text-base font-light text-muted-foreground md:text-lg">
+              {t("search_placeholder")}
+            </span>
+          </button>
         </div>
       </section>
 
@@ -125,7 +128,7 @@ function HomePage() {
               to="/coleccao"
               className="hidden items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground md:flex"
             >
-              Ver toda a colecção <ChevronRight size={16} />
+              {t("see_all_collection")} <ChevronRight size={16} />
             </Link>
           </div>
 
@@ -147,7 +150,7 @@ function HomePage() {
               to="/coleccao"
               className="inline-flex items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground"
             >
-              Ver toda a colecção <ChevronRight size={16} />
+              {t("see_all_collection")} <ChevronRight size={16} />
             </Link>
           </div>
         </div>
@@ -199,7 +202,7 @@ function HomePage() {
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute right-3 top-3 rounded-full bg-card/95 px-3 py-1 text-xs font-light text-foreground backdrop-blur">
-                    {e.price === 0 ? t("free") : `a partir de €${e.price}`}
+                    {e.price === 0 ? t("free") : `${t("from_price")} €${e.price}`}
                   </div>
                 </div>
                 <div className="p-6 md:p-7">
@@ -238,7 +241,7 @@ function HomePage() {
               to="/arquivo"
               className="flex items-center gap-1 text-sm font-light text-muted-foreground hover:text-foreground"
             >
-              Ver tudo <ChevronRight size={16} />
+              {t("see_all")} <ChevronRight size={16} />
             </Link>
           </div>
           <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16 lg:grid-cols-4">
