@@ -27,6 +27,8 @@ export type AdminUser = {
   created_at: string;
   phone: string | null;
   profile_details: JsonValue;
+  total_spent: number;
+  vip_level: "none" | "silver" | "gold" | "platinum";
   reservations: Array<{
     id: string;
     item_name: string;
