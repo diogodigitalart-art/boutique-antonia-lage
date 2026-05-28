@@ -295,7 +295,13 @@ function UserDetail({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-display text-2xl italic text-foreground">{user.full_name || "Sem nome"}</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-display text-2xl italic text-foreground">{user.full_name || "Sem nome"}</h2>
+          {user.vip_level !== "none" && (
+            <span className={vipBadgeClasses(user.vip_level)}>{VIP_LABELS[user.vip_level]}</span>
+          )}
+          <span className="text-xs text-muted-foreground">Total gasto: €{user.total_spent.toFixed(2)}</span>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">{user.email || "—"}</p>
         <p className="mt-1 text-xs text-muted-foreground">Registado em {fmt(user.created_at)}</p>
       </div>
