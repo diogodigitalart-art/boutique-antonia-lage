@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
+import { VIP_LABELS, vipBadgeClasses, type VipLevel } from "@/lib/vip";
 import { PRODUCTS } from "@/lib/data";
 
 const productLabel = (id: string) => {
@@ -31,6 +32,15 @@ const productLabel = (id: string) => {
 
 export const Route = createFileRoute("/admin_/clientes")({
   head: () => ({ meta: [{ title: "Clientes | Admin" }] }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const vip = s.vip;
+    const allowed: VipLevel[] = ["silver", "gold", "platinum", "none"];
+    return {
+      vip: typeof vip === "string" && (allowed as string[]).includes(vip)
+        ? (vip as VipLevel)
+        : undefined,
+    };
+  },
   component: () => (
     <AdminLayout>
       <ClientesContent />
@@ -39,6 +49,7 @@ export const Route = createFileRoute("/admin_/clientes")({
 });
 
 function ClientesContent() {
+  const search = Route.useSearch();
   const fetchData = useServerFn(getAdminData);
   const setStatus = useServerFn(updateReservationStatus);
   const [data, setData] = useState<AdminPayload | null>(null);
@@ -49,6 +60,11 @@ function ClientesContent() {
     "recent" | "oldest" | "name_asc" | "name_desc" | "orders" | "inactive"
   >("recent");
   const [filter, setFilter] = useState<"all" | "with_orders" | "only_reservations" | "inactive">("all");
+  const [vipFilter, setVipFilter] = useState<"all" | VipLevel>(search.vip ?? "all");
+
+  useEffect(() => {
+    if (search.vip) setVipFilter(search.vip);
+  }, [search.vip]);
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
@@ -89,6 +105,9 @@ function ClientesContent() {
       if (filter === "inactive") return ordersN === 0 && resN === 0;
       return true;
     });
+    if (vipFilter !== "all") {
+      arr = arr.filter((u) => u.vip_level === vipFilter);
+    }
     const lastActivity = (u: AdminUser) => {
       const dates: number[] = [];
       u.orders.forEach((o) => dates.push(new Date(o.created_at).getTime()));
@@ -107,7 +126,7 @@ function ClientesContent() {
       }
     });
     return arr;
-  }, [data, search, sortBy, filter]);
+  }, [data, search, sortBy, filter, vipFilter]);
 
   const selected = useMemo(
     () => data?.users.find((u) => u.id === selectedId) ?? null,
