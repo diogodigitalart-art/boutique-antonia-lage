@@ -35,10 +35,12 @@ export function NewsletterPopup() {
     setBusy(true);
     try {
       const r = await subscribe({ data: { email, source: "popup" } });
-      setCode(r.code);
       window.localStorage.setItem(STORAGE_KEY, "subscribed");
       if (r.alreadySubscribed) {
-        toast.success("Já estás subscrita — aqui está o teu código.");
+        toast.success("Já estás subscrita — reenviámos o código para o teu email.");
+        setOpen(false);
+      } else {
+        setCode(r.code);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao subscrever");
