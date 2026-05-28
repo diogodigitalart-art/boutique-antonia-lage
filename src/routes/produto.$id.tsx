@@ -60,6 +60,7 @@ function ProductPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+  const [copied, setCopied] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
 
