@@ -39,7 +39,7 @@ export function CookieConsent() {
         <p className="flex-1 text-sm font-light leading-relaxed text-foreground">
           Usamos cookies para melhorar a tua experiência. Ao continuar, aceitas a nossa{" "}
           <Link
-            to="/politica-de-privacidade"
+            to="/privacidade"
             className="underline underline-offset-2 hover:text-primary"
           >
             política de privacidade

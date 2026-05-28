@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Layout } from "@/components/Layout";
 
-export const Route = createFileRoute("/termos-e-condicoes")({
+export const Route = createFileRoute("/termos")({
   head: () => ({
     meta: [
       { title: "Termos e Condições | Boutique Antónia Lage" },
@@ -62,7 +62,7 @@ function TermsPage() {
           </Section>
           <Section title="10. Lei aplicável">
             Aplica-se a lei portuguesa. Litígios poderão ser submetidos ao Centro de Arbitragem
-            de Conflitos de Consumo de Braga ou aos tribunais comuns competentes.
+            de Conflitos de Consumo de Braga ou aos tribunais competentes.
           </Section>
         </div>
       </article>
