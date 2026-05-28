@@ -82,7 +82,7 @@ export function Footer() {
                 </span>
               </li>
               <li className="flex items-center gap-3 text-sm text-white/70">
-                <PhoneIcon size={16} strokeWidth={1.5} className="shrink-0 text-white/40" />
+                <Phone size={16} strokeWidth={1.5} className="shrink-0 text-white/40" />
                 <a
                   href="tel:+351932196049"
                   className="transition hover:text-white"
