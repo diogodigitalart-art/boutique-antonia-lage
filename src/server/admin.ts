@@ -284,6 +284,17 @@ export const getAdminData = createServerFn({ method: "POST" })
           status: o.status as string,
           created_at: o.created_at as string,
         }));
+      const totalSpent = userOrders
+        .filter((o) => o.status === "Entregue")
+        .reduce((s, o) => s + o.total, 0);
+      const vipLevel: AdminUser["vip_level"] =
+        totalSpent >= 3000
+          ? "platinum"
+          : totalSpent >= 1500
+            ? "gold"
+            : totalSpent >= 500
+              ? "silver"
+              : "none";
       return {
         id: p.id,
         full_name: p.full_name,
@@ -291,6 +302,8 @@ export const getAdminData = createServerFn({ method: "POST" })
         created_at: p.created_at,
         phone: (p as { phone?: string | null }).phone ?? null,
         profile_details: ((p as { profile_details?: JsonValue }).profile_details as JsonValue) ?? null,
+        total_spent: totalSpent,
+        vip_level: vipLevel,
         reservations: userReservations,
         wishlist: userWishlist,
         quiz: userQuiz
