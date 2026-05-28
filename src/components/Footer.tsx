@@ -3,14 +3,13 @@ import { Instagram, Facebook } from "lucide-react";
 
 export function Footer() {
   const navLinks = [
-    { to: "/coleccao", label: "Colecção" },
-    { to: "/arquivo", label: "Arquivo" },
-    { to: "/experiencias", label: "Experiências" },
-    { to: "/editorial", label: "Looks" },
-    { to: "/cartao-oferta", label: "Cartão Oferta" },
+    { to: "/sobre", label: "Sobre nós" },
     { to: "/contactos", label: "Contactos" },
-    { to: "/politica-de-privacidade", label: "Política de privacidade" },
-    { to: "/termos-e-condicoes", label: "Termos e condições" },
+    { to: "/privacidade", label: "Política de privacidade" },
+    { to: "/termos", label: "Termos e condições" },
+    { to: "/devolucoes-info", label: "Devoluções" },
+    { to: "/cartao-oferta", label: "Cartão Oferta" },
+    { to: "/editorial", label: "Looks da Semana" },
   ];
 
   return (
