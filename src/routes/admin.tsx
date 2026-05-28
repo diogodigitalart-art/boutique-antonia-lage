@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { statusBadgeClasses } from "@/lib/reservations";
+import { vipBadgeClasses, type VipLevel } from "@/lib/vip";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Visão Geral | Admin" }] }),
@@ -67,6 +68,17 @@ function DashboardContent() {
       .slice(0, 5);
   }, [data]);
 
+  const vipCounts = useMemo(() => {
+    const counts = { silver: 0, gold: 0, platinum: 0 };
+    if (!data) return counts;
+    for (const u of data.users) {
+      if (u.vip_level === "silver") counts.silver += 1;
+      else if (u.vip_level === "gold") counts.gold += 1;
+      else if (u.vip_level === "platinum") counts.platinum += 1;
+    }
+    return counts;
+  }, [data]);
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -95,6 +107,38 @@ function DashboardContent() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* VIP summary */}
+        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Clientes VIP
+            </h2>
+            <Link
+              to="/admin/clientes"
+              className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-foreground hover:text-primary"
+            >
+              Ver clientes <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(["platinum", "gold", "silver"] as VipLevel[]).map((lvl) => (
+              <Link
+                key={lvl}
+                to="/admin/clientes"
+                search={{ vip: lvl }}
+                className="flex items-center justify-between rounded-xl border border-border p-4 transition hover:border-primary hover:bg-muted/40"
+              >
+                <span className={vipBadgeClasses(lvl)}>
+                  {lvl === "platinum" ? "Platinum" : lvl === "gold" ? "Gold" : "Silver"}
+                </span>
+                <span className="font-display text-2xl text-foreground">
+                  {vipCounts[lvl as "silver" | "gold" | "platinum"]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* Recent reservations */}
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
