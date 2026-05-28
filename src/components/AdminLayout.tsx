@@ -15,6 +15,7 @@ import {
   Loader2,
   RotateCcw,
   Newspaper,
+  Gift,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
