@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, statusBadgeClasses } from "@/lib/reservations";
+import { VIP_LABELS, vipBadgeClasses, type VipLevel } from "@/lib/vip";
 import { PRODUCTS } from "@/lib/data";
 
 const productLabel = (id: string) => {
@@ -31,6 +32,15 @@ const productLabel = (id: string) => {
 
 export const Route = createFileRoute("/admin_/clientes")({
   head: () => ({ meta: [{ title: "Clientes | Admin" }] }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const vip = s.vip;
+    const allowed: VipLevel[] = ["silver", "gold", "platinum", "none"];
+    return {
+      vip: typeof vip === "string" && (allowed as string[]).includes(vip)
+        ? (vip as VipLevel)
+        : undefined,
+    };
+  },
   component: () => (
     <AdminLayout>
       <ClientesContent />
@@ -39,6 +49,7 @@ export const Route = createFileRoute("/admin_/clientes")({
 });
 
 function ClientesContent() {
+  const urlSearch = Route.useSearch();
   const fetchData = useServerFn(getAdminData);
   const setStatus = useServerFn(updateReservationStatus);
   const [data, setData] = useState<AdminPayload | null>(null);
@@ -49,6 +60,11 @@ function ClientesContent() {
     "recent" | "oldest" | "name_asc" | "name_desc" | "orders" | "inactive"
   >("recent");
   const [filter, setFilter] = useState<"all" | "with_orders" | "only_reservations" | "inactive">("all");
+  const [vipFilter, setVipFilter] = useState<"all" | VipLevel>(urlSearch.vip ?? "all");
+
+  useEffect(() => {
+    if (urlSearch.vip) setVipFilter(urlSearch.vip);
+  }, [urlSearch.vip]);
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
@@ -89,6 +105,9 @@ function ClientesContent() {
       if (filter === "inactive") return ordersN === 0 && resN === 0;
       return true;
     });
+    if (vipFilter !== "all") {
+      arr = arr.filter((u) => u.vip_level === vipFilter);
+    }
     const lastActivity = (u: AdminUser) => {
       const dates: number[] = [];
       u.orders.forEach((o) => dates.push(new Date(o.created_at).getTime()));
@@ -107,7 +126,7 @@ function ClientesContent() {
       }
     });
     return arr;
-  }, [data, search, sortBy, filter]);
+  }, [data, search, sortBy, filter, vipFilter]);
 
   const selected = useMemo(
     () => data?.users.find((u) => u.id === selectedId) ?? null,
@@ -186,6 +205,27 @@ function ClientesContent() {
               </button>
             ))}
           </div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {([
+              ["all", "VIP: Todos"],
+              ["platinum", "Platinum"],
+              ["gold", "Gold"],
+              ["silver", "Silver"],
+              ["none", "Sem nível"],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setVipFilter(k)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                  vipFilter === k
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
             {filtered.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">Sem resultados</p>
@@ -198,7 +238,12 @@ function ClientesContent() {
                   selectedId === u.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 }`}
               >
-                <p className="truncate text-sm font-medium">{u.full_name || "Sem nome"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{u.full_name || "Sem nome"}</p>
+                  {u.vip_level !== "none" && (
+                    <span className={vipBadgeClasses(u.vip_level)}>{VIP_LABELS[u.vip_level]}</span>
+                  )}
+                </div>
                 <p
                   className={`truncate text-xs ${
                     selectedId === u.id ? "text-primary-foreground/80" : "text-muted-foreground"
@@ -211,7 +256,7 @@ function ClientesContent() {
                     selectedId === u.id ? "text-primary-foreground/70" : "text-muted-foreground"
                   }`}
                 >
-                  Reg. {new Date(u.created_at).toLocaleDateString("pt-PT")} · {u.reservations.length} res · {u.orders.length} enc
+                  Reg. {new Date(u.created_at).toLocaleDateString("pt-PT")} · {u.reservations.length} res · {u.orders.length} enc · €{u.total_spent.toFixed(0)}
                 </p>
               </button>
             ))}
@@ -250,7 +295,13 @@ function UserDetail({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-display text-2xl italic text-foreground">{user.full_name || "Sem nome"}</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-display text-2xl italic text-foreground">{user.full_name || "Sem nome"}</h2>
+          {user.vip_level !== "none" && (
+            <span className={vipBadgeClasses(user.vip_level)}>{VIP_LABELS[user.vip_level]}</span>
+          )}
+          <span className="text-xs text-muted-foreground">Total gasto: €{user.total_spent.toFixed(2)}</span>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">{user.email || "—"}</p>
         <p className="mt-1 text-xs text-muted-foreground">Registado em {fmt(user.created_at)}</p>
       </div>
