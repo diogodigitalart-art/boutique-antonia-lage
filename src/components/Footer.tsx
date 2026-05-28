@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
-import { Instagram, Facebook, Mail, Phone, var PhoneIcon, MapPin, Clock } from "lucide-react";
+import { Instagram, Facebook, Mail, Phone, MapPin, Clock } from "lucide-react";
 import logoUrl from "@/assets/logo.svg";
 
 export function Footer() {

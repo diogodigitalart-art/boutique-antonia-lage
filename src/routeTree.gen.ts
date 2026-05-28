@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TermosECondicoesRouteImport } from './routes/termos-e-condicoes'
+import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegistoRouteImport } from './routes/registo'
 import { Route as QuizRouteImport } from './routes/quiz'
@@ -56,6 +57,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const TermosECondicoesRoute = TermosECondicoesRouteImport.update({
   id: '/termos-e-condicoes',
   path: '/termos-e-condicoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin_/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin/cartoes-oferta'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin/cartoes-oferta'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin_/cartoes-oferta'
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   QuizRoute: typeof QuizRoute
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SobreRoute: typeof SobreRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
   WishlistRoute: typeof WishlistRoute
   AdminCartoesOfertaRoute: typeof AdminCartoesOfertaRoute
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/termos-e-condicoes'
       fullPath: '/termos-e-condicoes'
       preLoaderRoute: typeof TermosECondicoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -827,6 +847,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuizRoute: QuizRoute,
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SobreRoute: SobreRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
   WishlistRoute: WishlistRoute,
   AdminCartoesOfertaRoute: AdminCartoesOfertaRoute,
