@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TermosECondicoesRouteImport } from './routes/termos-e-condicoes'
+import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegistoRouteImport } from './routes/registo'
 import { Route as QuizRouteImport } from './routes/quiz'
@@ -19,6 +20,7 @@ import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
 import { Route as EditorialRouteImport } from './routes/editorial'
+import { Route as DevolucoesInfoRouteImport } from './routes/devolucoes-info'
 import { Route as ContactosRouteImport } from './routes/contactos'
 import { Route as ColeccaoRouteImport } from './routes/coleccao'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -56,6 +58,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const TermosECondicoesRoute = TermosECondicoesRouteImport.update({
   id: '/termos-e-condicoes',
   path: '/termos-e-condicoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -96,6 +103,11 @@ const ExperienciasRoute = ExperienciasRouteImport.update({
 const EditorialRoute = EditorialRouteImport.update({
   id: '/editorial',
   path: '/editorial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevolucoesInfoRoute = DevolucoesInfoRouteImport.update({
+  id: '/devolucoes-info',
+  path: '/devolucoes-info',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactosRoute = ContactosRouteImport.update({
@@ -252,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -260,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -292,6 +306,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -300,6 +315,7 @@ export interface FileRoutesByTo {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -332,6 +348,7 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
+  '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
@@ -340,6 +357,7 @@ export interface FileRoutesById {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
   '/termos-e-condicoes': typeof TermosECondicoesRoute
   '/wishlist': typeof WishlistRoute
   '/admin_/cartoes-oferta': typeof AdminCartoesOfertaRoute
@@ -374,6 +392,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/devolucoes-info'
     | '/editorial'
     | '/experiencias'
     | '/login'
@@ -382,6 +401,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin/cartoes-oferta'
@@ -414,6 +434,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/devolucoes-info'
     | '/editorial'
     | '/experiencias'
     | '/login'
@@ -422,6 +443,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin/cartoes-oferta'
@@ -453,6 +475,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/coleccao'
     | '/contactos'
+    | '/devolucoes-info'
     | '/editorial'
     | '/experiencias'
     | '/login'
@@ -461,6 +484,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sobre'
     | '/termos-e-condicoes'
     | '/wishlist'
     | '/admin_/cartoes-oferta'
@@ -494,6 +518,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
+  DevolucoesInfoRoute: typeof DevolucoesInfoRoute
   EditorialRoute: typeof EditorialRoute
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
@@ -502,6 +527,7 @@ export interface RootRouteChildren {
   QuizRoute: typeof QuizRoute
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SobreRoute: typeof SobreRoute
   TermosECondicoesRoute: typeof TermosECondicoesRoute
   WishlistRoute: typeof WishlistRoute
   AdminCartoesOfertaRoute: typeof AdminCartoesOfertaRoute
@@ -537,6 +563,13 @@ declare module '@tanstack/react-router' {
       path: '/termos-e-condicoes'
       fullPath: '/termos-e-condicoes'
       preLoaderRoute: typeof TermosECondicoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -593,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/editorial'
       fullPath: '/editorial'
       preLoaderRoute: typeof EditorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devolucoes-info': {
+      id: '/devolucoes-info'
+      path: '/devolucoes-info'
+      fullPath: '/devolucoes-info'
+      preLoaderRoute: typeof DevolucoesInfoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contactos': {
@@ -819,6 +859,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
+  DevolucoesInfoRoute: DevolucoesInfoRoute,
   EditorialRoute: EditorialRoute,
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
@@ -827,6 +868,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuizRoute: QuizRoute,
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SobreRoute: SobreRoute,
   TermosECondicoesRoute: TermosECondicoesRoute,
   WishlistRoute: WishlistRoute,
   AdminCartoesOfertaRoute: AdminCartoesOfertaRoute,
@@ -850,3 +892,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
