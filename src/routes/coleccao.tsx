@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { SimplePagination } from "@/components/SimplePagination";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { useProducts } from "@/lib/products";
+import { useI18n } from "@/lib/i18n";
 import { BRANDS } from "@/lib/data";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
