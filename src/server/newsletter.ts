@@ -70,7 +70,11 @@ export const subscribeNewsletter = createServerFn({ method: "POST" })
       .eq("email", data.email)
       .maybeSingle();
     if (existing?.discount_code) {
-      return { code: existing.discount_code, alreadySubscribed: true };
+      // Do NOT return the existing code to unauthenticated callers — that
+      // would let anyone retrieve another user's discount code by email.
+      // Re-send it to the registered email instead.
+      void sendDiscountEmail(data.email, existing.discount_code);
+      return { code: null as string | null, alreadySubscribed: true };
     }
     const code = generateCode();
     const { error } = await supabaseAdmin.from("newsletter_subscribers").insert({
