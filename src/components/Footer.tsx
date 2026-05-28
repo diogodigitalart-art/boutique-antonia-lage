@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useI18n } from "@/lib/i18n";
 import { Instagram, Facebook, Mail, Phone, MapPin, Clock } from "lucide-react";
 import logoUrl from "@/assets/logo.svg";
 
 export function Footer() {
-  const { t } = useI18n();
   return (
     <footer className="bg-[#1a2744] text-white">
       {/* Main footer content */}
