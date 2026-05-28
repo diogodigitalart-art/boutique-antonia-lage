@@ -5,6 +5,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { useProducts } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 import { Logo } from "./Logo";
+import { openSearch } from "./SearchOverlay";
 
 export function TopNav() {
   const { lang, setLang, t } = useI18n();
@@ -74,6 +75,7 @@ export function TopNav() {
           </button>
           <button
             aria-label="Search"
+            onClick={openSearch}
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted"
           >
             <Search size={19} strokeWidth={1.5} />
