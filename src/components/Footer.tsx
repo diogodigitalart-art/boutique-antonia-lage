@@ -28,12 +28,12 @@ export function Footer() {
         </div>
 
         {/* Center — nav links */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+        <nav className="grid grid-cols-2 gap-x-6 gap-y-2 md:flex md:flex-row md:items-center md:gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="text-[11px] text-muted-foreground transition hover:text-foreground"
+              className="flex min-h-[44px] items-center justify-center text-[11px] text-muted-foreground transition hover:text-foreground md:min-h-0 md:justify-start"
             >
               {link.label}
             </Link>
