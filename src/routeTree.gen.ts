@@ -10,12 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
-import { Route as TermosECondicoesRouteImport } from './routes/termos-e-condicoes'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegistoRouteImport } from './routes/registo'
 import { Route as QuizRouteImport } from './routes/quiz'
-import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExperienciasRouteImport } from './routes/experiencias'
@@ -55,9 +55,9 @@ const WishlistRoute = WishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TermosECondicoesRoute = TermosECondicoesRouteImport.update({
-  id: '/termos-e-condicoes',
-  path: '/termos-e-condicoes',
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -80,9 +80,9 @@ const QuizRoute = QuizRouteImport.update({
   path: '/quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
-  id: '/politica-de-privacidade',
-  path: '/politica-de-privacidade',
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfilRoute = PerfilRouteImport.update({
@@ -269,12 +269,12 @@ export interface FileRoutesByFullPath {
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
-  '/termos-e-condicoes': typeof TermosECondicoesRoute
+  '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin/clientes': typeof AdminClientesRoute
@@ -311,12 +311,12 @@ export interface FileRoutesByTo {
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
-  '/termos-e-condicoes': typeof TermosECondicoesRoute
+  '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
   '/admin/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin/clientes': typeof AdminClientesRoute
@@ -353,12 +353,12 @@ export interface FileRoutesById {
   '/experiencias': typeof ExperienciasRoute
   '/login': typeof LoginRoute
   '/perfil': typeof PerfilRoute
-  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sobre': typeof SobreRoute
-  '/termos-e-condicoes': typeof TermosECondicoesRoute
+  '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
   '/admin_/cartoes-oferta': typeof AdminCartoesOfertaRoute
   '/admin_/clientes': typeof AdminClientesRoute
@@ -397,12 +397,12 @@ export interface FileRouteTypes {
     | '/experiencias'
     | '/login'
     | '/perfil'
-    | '/politica-de-privacidade'
+    | '/privacidade'
     | '/quiz'
     | '/registo'
     | '/reset-password'
     | '/sobre'
-    | '/termos-e-condicoes'
+    | '/termos'
     | '/wishlist'
     | '/admin/cartoes-oferta'
     | '/admin/clientes'
@@ -439,12 +439,12 @@ export interface FileRouteTypes {
     | '/experiencias'
     | '/login'
     | '/perfil'
-    | '/politica-de-privacidade'
+    | '/privacidade'
     | '/quiz'
     | '/registo'
     | '/reset-password'
     | '/sobre'
-    | '/termos-e-condicoes'
+    | '/termos'
     | '/wishlist'
     | '/admin/cartoes-oferta'
     | '/admin/clientes'
@@ -480,12 +480,12 @@ export interface FileRouteTypes {
     | '/experiencias'
     | '/login'
     | '/perfil'
-    | '/politica-de-privacidade'
+    | '/privacidade'
     | '/quiz'
     | '/registo'
     | '/reset-password'
     | '/sobre'
-    | '/termos-e-condicoes'
+    | '/termos'
     | '/wishlist'
     | '/admin_/cartoes-oferta'
     | '/admin_/clientes'
@@ -523,12 +523,12 @@ export interface RootRouteChildren {
   ExperienciasRoute: typeof ExperienciasRoute
   LoginRoute: typeof LoginRoute
   PerfilRoute: typeof PerfilRoute
-  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   QuizRoute: typeof QuizRoute
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SobreRoute: typeof SobreRoute
-  TermosECondicoesRoute: typeof TermosECondicoesRoute
+  TermosRoute: typeof TermosRoute
   WishlistRoute: typeof WishlistRoute
   AdminCartoesOfertaRoute: typeof AdminCartoesOfertaRoute
   AdminClientesRoute: typeof AdminClientesRoute
@@ -558,11 +558,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/termos-e-condicoes': {
-      id: '/termos-e-condicoes'
-      path: '/termos-e-condicoes'
-      fullPath: '/termos-e-condicoes'
-      preLoaderRoute: typeof TermosECondicoesRouteImport
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -593,11 +593,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuizRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/politica-de-privacidade': {
-      id: '/politica-de-privacidade'
-      path: '/politica-de-privacidade'
-      fullPath: '/politica-de-privacidade'
-      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfil': {
@@ -864,12 +864,12 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienciasRoute: ExperienciasRoute,
   LoginRoute: LoginRoute,
   PerfilRoute: PerfilRoute,
-  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   QuizRoute: QuizRoute,
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SobreRoute: SobreRoute,
-  TermosECondicoesRoute: TermosECondicoesRoute,
+  TermosRoute: TermosRoute,
   WishlistRoute: WishlistRoute,
   AdminCartoesOfertaRoute: AdminCartoesOfertaRoute,
   AdminClientesRoute: AdminClientesRoute,
