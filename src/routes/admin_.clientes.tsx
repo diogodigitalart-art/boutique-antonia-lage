@@ -49,7 +49,7 @@ export const Route = createFileRoute("/admin_/clientes")({
 });
 
 function ClientesContent() {
-  const search = Route.useSearch();
+  const urlSearch = Route.useSearch();
   const fetchData = useServerFn(getAdminData);
   const setStatus = useServerFn(updateReservationStatus);
   const [data, setData] = useState<AdminPayload | null>(null);
@@ -60,11 +60,11 @@ function ClientesContent() {
     "recent" | "oldest" | "name_asc" | "name_desc" | "orders" | "inactive"
   >("recent");
   const [filter, setFilter] = useState<"all" | "with_orders" | "only_reservations" | "inactive">("all");
-  const [vipFilter, setVipFilter] = useState<"all" | VipLevel>(search.vip ?? "all");
+  const [vipFilter, setVipFilter] = useState<"all" | VipLevel>(urlSearch.vip ?? "all");
 
   useEffect(() => {
-    if (search.vip) setVipFilter(search.vip);
-  }, [search.vip]);
+    if (urlSearch.vip) setVipFilter(urlSearch.vip);
+  }, [urlSearch.vip]);
 
   const load = async () => {
     const { data: sess } = await supabase.auth.getSession();
