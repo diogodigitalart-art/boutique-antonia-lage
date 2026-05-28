@@ -8,6 +8,7 @@ const ADMIN_EMAIL = "diogodigitalart@gmail.com";
 const PUBLIC_SETTING_KEYS = new Set<string>([
   "whatsapp_number",
   "google_review_url",
+  "experience_tailoring_price",
 ]);
 
 function isStr(v: unknown, max = 4096): v is string {
