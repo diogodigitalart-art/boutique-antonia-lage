@@ -5,6 +5,7 @@ import { Footer } from "./Footer";
 import { WhatsAppFloatingButton } from "./WhatsAppButton";
 import { NewsletterPopup } from "./NewsletterPopup";
 import { CookieConsent } from "./CookieConsent";
+import { SearchOverlay } from "./SearchOverlay";
 
 export function Layout({ children, hideFooter }: { children: ReactNode; hideFooter?: boolean }) {
   return (
@@ -16,6 +17,7 @@ export function Layout({ children, hideFooter }: { children: ReactNode; hideFoot
       <WhatsAppFloatingButton />
       <NewsletterPopup />
       <CookieConsent />
+      <SearchOverlay />
     </div>
   );
 }
