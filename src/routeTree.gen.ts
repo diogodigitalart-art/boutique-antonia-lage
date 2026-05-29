@@ -38,6 +38,7 @@ import { Route as AdminReservasRouteImport } from './routes/admin_.reservas'
 import { Route as AdminRelatoriosRouteImport } from './routes/admin_.relatorios'
 import { Route as AdminPromocoesRouteImport } from './routes/admin_.promocoes'
 import { Route as AdminProdutosRouteImport } from './routes/admin_.produtos'
+import { Route as AdminNewsletterRouteImport } from './routes/admin_.newsletter'
 import { Route as AdminEncomendasRouteImport } from './routes/admin_.encomendas'
 import { Route as AdminEditorialRouteImport } from './routes/admin_.editorial'
 import { Route as AdminDevolucoesRouteImport } from './routes/admin_.devolucoes'
@@ -196,6 +197,11 @@ const AdminProdutosRoute = AdminProdutosRouteImport.update({
   path: '/admin/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
+  id: '/admin_/newsletter',
+  path: '/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminEncomendasRoute = AdminEncomendasRouteImport.update({
   id: '/admin_/encomendas',
   path: '/admin/encomendas',
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/admin/devolucoes': typeof AdminDevolucoesRoute
   '/admin/editorial': typeof AdminEditorialRoute
   '/admin/encomendas': typeof AdminEncomendasRouteWithChildren
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/devolucoes': typeof AdminDevolucoesRoute
   '/admin/editorial': typeof AdminEditorialRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/promocoes': typeof AdminPromocoesRoute
   '/admin/relatorios': typeof AdminRelatoriosRoute
@@ -366,6 +374,7 @@ export interface FileRoutesById {
   '/admin_/devolucoes': typeof AdminDevolucoesRoute
   '/admin_/editorial': typeof AdminEditorialRoute
   '/admin_/encomendas': typeof AdminEncomendasRouteWithChildren
+  '/admin_/newsletter': typeof AdminNewsletterRoute
   '/admin_/produtos': typeof AdminProdutosRoute
   '/admin_/promocoes': typeof AdminPromocoesRoute
   '/admin_/relatorios': typeof AdminRelatoriosRoute
@@ -410,6 +419,7 @@ export interface FileRouteTypes {
     | '/admin/devolucoes'
     | '/admin/editorial'
     | '/admin/encomendas'
+    | '/admin/newsletter'
     | '/admin/produtos'
     | '/admin/promocoes'
     | '/admin/relatorios'
@@ -451,6 +461,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/devolucoes'
     | '/admin/editorial'
+    | '/admin/newsletter'
     | '/admin/produtos'
     | '/admin/promocoes'
     | '/admin/relatorios'
@@ -493,6 +504,7 @@ export interface FileRouteTypes {
     | '/admin_/devolucoes'
     | '/admin_/editorial'
     | '/admin_/encomendas'
+    | '/admin_/newsletter'
     | '/admin_/produtos'
     | '/admin_/promocoes'
     | '/admin_/relatorios'
@@ -536,6 +548,7 @@ export interface RootRouteChildren {
   AdminDevolucoesRoute: typeof AdminDevolucoesRoute
   AdminEditorialRoute: typeof AdminEditorialRoute
   AdminEncomendasRoute: typeof AdminEncomendasRouteWithChildren
+  AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminPromocoesRoute: typeof AdminPromocoesRoute
   AdminRelatoriosRoute: typeof AdminRelatoriosRoute
@@ -754,6 +767,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/newsletter': {
+      id: '/admin_/newsletter'
+      path: '/admin/newsletter'
+      fullPath: '/admin/newsletter'
+      preLoaderRoute: typeof AdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/encomendas': {
       id: '/admin_/encomendas'
       path: '/admin/encomendas'
@@ -877,6 +897,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDevolucoesRoute: AdminDevolucoesRoute,
   AdminEditorialRoute: AdminEditorialRoute,
   AdminEncomendasRoute: AdminEncomendasRouteWithChildren,
+  AdminNewsletterRoute: AdminNewsletterRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminPromocoesRoute: AdminPromocoesRoute,
   AdminRelatoriosRoute: AdminRelatoriosRoute,

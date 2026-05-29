@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Newspaper,
   Gift,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/admin/clientes", label: "Clientes", icon: Users, exact: false },
   { to: "/admin/promocoes", label: "Promoções", icon: Percent, exact: false },
   { to: "/admin/cartoes-oferta", label: "Cartões Oferta", icon: Gift, exact: false },
+  { to: "/admin/newsletter", label: "Newsletter", icon: Mail, exact: false },
   { to: "/admin/relatorios", label: "Relatórios", icon: BarChart3, exact: false },
   { to: "/admin/editorial", label: "Editorial", icon: Newspaper, exact: false },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, exact: false },
