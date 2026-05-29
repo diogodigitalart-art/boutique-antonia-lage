@@ -98,6 +98,8 @@ type ProductRow = {
   legacy_id: string | null;
   name: string;
   brand: string;
+  reference: string | null;
+  barcode: string | null;
   sizes: Array<{ size: string; stock: number; reserved: number }>;
   is_active: boolean;
 };
@@ -109,7 +111,8 @@ type FeedbackRow = { rating: number; created_at: string };
 
 const ORDER_EXCLUDE = new Set(["Cancelada"]);
 const RETURN_PENDING = new Set(["Aguarda recepção", "Em análise", "Pendente"]);
-const COMMISSION_PCT = 15;
+const DEFAULT_COMMISSION_PCT = 15;
+const COMMISSION_STORAGE_KEY = "admin.commissionPct";
 
 type RangeKey = "this_week" | "this_month" | "last_month" | "last_3" | "this_year";
 
@@ -136,7 +139,7 @@ function StatCard({
   label: string;
   value: string;
   hint?: string;
-  trend?: { pct: number; up: boolean } | null;
+  trend?: { pct: number; up: boolean } | { firstMonth: true } | null;
   accent?: boolean;
 }) {
   return (
@@ -150,7 +153,10 @@ function StatCard({
     >
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
       <p className="mt-2 font-display text-2xl text-foreground">{value}</p>
-      {trend && (
+      {trend && "firstMonth" in trend && (
+        <p className="mt-1 text-xs text-muted-foreground">Primeiro mês com dados</p>
+      )}
+      {trend && "up" in trend && (
         <p
           className={cn(
             "mt-1 flex items-center gap-1 text-xs font-medium",
@@ -181,6 +187,17 @@ export function ReportsDashboard() {
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [rangeKey, setRangeKey] = useState<RangeKey>("this_month");
+  const [commissionPct, setCommissionPct] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_COMMISSION_PCT;
+    const raw = window.localStorage.getItem(COMMISSION_STORAGE_KEY);
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) && n >= 1 && n <= 30 ? n : DEFAULT_COMMISSION_PCT;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(COMMISSION_STORAGE_KEY, String(commissionPct));
+    }
+  }, [commissionPct]);
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +208,7 @@ export function ReportsDashboard() {
         supabase.from("reservations").select("id, created_at, preferred_date, item_type, item_name, status, experience_details").limit(5000),
         supabase.from("gift_cards").select("id, created_at, amount, status").limit(5000),
         supabase.from("profiles").select("id, full_name, email, created_at").limit(5000),
-        supabase.from("products").select("id, legacy_id, name, brand, sizes, is_active").limit(5000),
+        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active").limit(5000),
         supabase.from("wishlists").select("product_id, user_id, created_at").limit(5000),
         supabase.from("waitlist").select("product_id, size, notified_at").limit(5000),
         supabase.from("returns").select("id, status, created_at").limit(5000),
@@ -273,11 +290,14 @@ export function ReportsDashboard() {
     lastMonthResv.reduce((s, r) => s + expPrice(r), 0) +
     lastMonthGift.reduce((s, g) => s + Number(g.amount || 0), 0);
 
-  const monthTrend = revLastMonth > 0
-    ? { pct: ((revThisMonth - revLastMonth) / revLastMonth) * 100, up: revThisMonth >= revLastMonth }
-    : revThisMonth > 0 ? { pct: 100, up: true } : null;
+  const monthTrend: { pct: number; up: boolean } | { firstMonth: true } | null =
+    revLastMonth > 0 && revThisMonth > 0
+      ? { pct: ((revThisMonth - revLastMonth) / revLastMonth) * 100, up: revThisMonth >= revLastMonth }
+      : revLastMonth === 0 && revThisMonth > 0
+        ? { firstMonth: true }
+        : null;
 
-  const commission = (revThisMonth * COMMISSION_PCT) / 100;
+  const commission = (revThisMonth * commissionPct) / 100;
 
   // Donut breakdown
   const donutData = [
@@ -334,6 +354,7 @@ export function ReportsDashboard() {
     const m = new Map<string, number>();
     for (const o of orders) {
       if (!o.user_id) continue;
+      if (o.status !== "Entregue") continue;
       m.set(o.user_id, (m.get(o.user_id) || 0) + Number(o.total || 0));
     }
     return m;
@@ -422,7 +443,7 @@ export function ReportsDashboard() {
         );
         return { ...p, avail };
       })
-      .filter((p) => p.avail > 0 && p.avail < 3)
+      .filter((p) => p.avail === 0 || p.avail === 1)
       .sort((a, b) => a.avail - b.avail)
       .slice(0, 8);
   }, [products]);
@@ -514,7 +535,7 @@ export function ReportsDashboard() {
     [orders, range],
   );
   const commissionTotal = completedInRange.reduce((s, o) => s + Number(o.total || 0), 0);
-  const commissionDue = (commissionTotal * COMMISSION_PCT) / 100;
+  const commissionDue = (commissionTotal * commissionPct) / 100;
 
   async function generatePDF() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -547,7 +568,7 @@ export function ReportsDashboard() {
     doc.text("Data", 40, y);
     doc.text("Cliente", 110, y);
     doc.text("Valor", pageW - 180, y, { align: "right" });
-    doc.text("Comissão (15%)", pageW - 40, y, { align: "right" });
+    doc.text(`Comissão (${commissionPct}%)`, pageW - 40, y, { align: "right" });
     y += 6;
     doc.setDrawColor(220, 220, 220);
     doc.line(40, y, pageW - 40, y);
@@ -560,7 +581,7 @@ export function ReportsDashboard() {
         doc.addPage();
         y = 60;
       }
-      const c = (Number(o.total || 0) * COMMISSION_PCT) / 100;
+      const c = (Number(o.total || 0) * commissionPct) / 100;
       doc.text(format(new Date(o.created_at), "dd/MM/yyyy"), 40, y);
       const name = (o.customer_name || o.customer_email || "—").slice(0, 30);
       doc.text(name, 110, y);
@@ -582,7 +603,7 @@ export function ReportsDashboard() {
     doc.text("Total vendas no período", 60, y + 24);
     doc.text(fmtEur(commissionTotal), pageW - 60, y + 24, { align: "right" });
     doc.text(`Percentagem de comissão`, 60, y + 44);
-    doc.text(`${COMMISSION_PCT}%`, pageW - 60, y + 44, { align: "right" });
+    doc.text(`${commissionPct}%`, pageW - 60, y + 44, { align: "right" });
     doc.setFontSize(13);
     doc.text("Comissão a receber", 60, y + 74);
     doc.text(fmtEur(commissionDue), pageW - 60, y + 74, { align: "right" });
@@ -635,7 +656,7 @@ export function ReportsDashboard() {
         <StatCard label="Receita total" value={fmtEur(totalRevenueAll)} hint="Todos os canais" />
         <StatCard label="Receita este mês" value={fmtEur(revThisMonth)} trend={monthTrend} />
         <StatCard label="Receita mês anterior" value={fmtEur(revLastMonth)} />
-        <StatCard label="A minha comissão (15%)" value={fmtEur(commission)} accent />
+        <StatCard label={`A minha comissão (${commissionPct}%)`} value={fmtEur(commission)} accent />
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -784,14 +805,21 @@ export function ReportsDashboard() {
         <section className="mt-6">
           <div className="mb-3 flex items-center gap-2">
             <Package className="h-4 w-4 text-orange-600" />
-            <h3 className="text-sm font-medium">Stock crítico (menos de 3 unidades)</h3>
+            <h3 className="text-sm font-medium">Stock crítico (esgotado ou última unidade)</h3>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {criticalStock.map((p) => (
               <div key={p.id} className="rounded-xl border-l-4 border-l-orange-500 border border-border bg-card p-3">
                 <p className="text-xs text-muted-foreground">{p.brand}</p>
                 <p className="text-sm font-medium">{p.name}</p>
-                <p className="mt-1 text-xs text-orange-700">{p.avail} unidade{p.avail !== 1 ? "s" : ""} disponíveis</p>
+                {(p.reference || p.barcode) && (
+                  <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Ref: {p.reference || p.barcode}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-orange-700">
+                  {p.avail === 0 ? "Esgotado" : "1 unidade disponível"}
+                </p>
               </div>
             ))}
           </div>
@@ -873,11 +901,28 @@ export function ReportsDashboard() {
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Comissões</p>
             <h2 className="mt-1 font-display text-2xl italic">Detalhe de comissão — {range.label}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Encomendas entregues. 15% sobre o valor da venda.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Encomendas entregues. {commissionPct}% sobre o valor da venda.</p>
           </div>
-          <Button onClick={generatePDF} className="gap-2">
-            <Download className="h-4 w-4" /> Exportar PDF
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Percentagem de comissão:
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={commissionPct}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v)) setCommissionPct(Math.max(1, Math.min(30, Math.round(v))));
+                }}
+                className="h-9 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+              />
+              <span>%</span>
+            </label>
+            <Button onClick={generatePDF} className="gap-2">
+              <Download className="h-4 w-4" /> Exportar PDF
+            </Button>
+          </div>
         </div>
         <div className="mt-6 overflow-x-auto rounded-xl bg-card">
           <table className="w-full text-sm">
@@ -886,7 +931,7 @@ export function ReportsDashboard() {
                 <th className="px-4 py-3 font-normal">Data</th>
                 <th className="px-4 py-3 font-normal">Cliente</th>
                 <th className="px-4 py-3 text-right font-normal">Valor</th>
-                <th className="px-4 py-3 text-right font-normal">Comissão (15%)</th>
+                <th className="px-4 py-3 text-right font-normal">Comissão ({commissionPct}%)</th>
               </tr>
             </thead>
             <tbody>
@@ -898,7 +943,7 @@ export function ReportsDashboard() {
                   <td className="px-4 py-2">{format(new Date(o.created_at), "dd/MM/yyyy")}</td>
                   <td className="px-4 py-2">{o.customer_name || o.customer_email || "—"}</td>
                   <td className="px-4 py-2 text-right">{fmtEur(Number(o.total || 0))}</td>
-                  <td className="px-4 py-2 text-right font-medium">{fmtEur(Number(o.total || 0) * COMMISSION_PCT / 100)}</td>
+                  <td className="px-4 py-2 text-right font-medium">{fmtEur(Number(o.total || 0) * commissionPct / 100)}</td>
                 </tr>
               ))}
             </tbody>
