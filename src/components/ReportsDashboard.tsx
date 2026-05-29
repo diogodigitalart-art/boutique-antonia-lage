@@ -7,19 +7,25 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  BarChart,
-  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 import {
   TrendingUp,
   TrendingDown,
   Download,
-  Calendar,
+  AlertTriangle,
+  ShoppingBag,
+  Heart,
+  Package,
+  Users as UsersIcon,
+  Bell,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -27,41 +33,97 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComp } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfDay, startOfDay } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  startOfYear,
+  endOfDay,
+  startOfWeek,
+  differenceInDays,
+  getDaysInMonth,
+  getDate,
+} from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { EXPERIENCES } from "@/lib/data";
+import { vipBadgeClasses, VIP_LABELS } from "@/lib/vip";
 
 type OrderItem = {
   product_id?: string;
   product_uuid?: string | null;
   brand?: string | null;
   name?: string | null;
-  reference?: string | null;
   size?: string;
   quantity: number;
   unit_price: number;
   line_total: number;
 };
-
 type OrderRow = {
   id: string;
   created_at: string;
   total: number;
   status: string;
   user_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
   items: OrderItem[];
 };
+type ReservationRow = {
+  id: string;
+  created_at: string;
+  preferred_date: string;
+  item_type: string;
+  item_name: string;
+  status: string;
+  experience_details: Record<string, unknown> | null;
+};
+type GiftCardRow = {
+  id: string;
+  created_at: string;
+  amount: number;
+  status: string;
+};
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  created_at: string;
+};
+type ProductRow = {
+  id: string;
+  legacy_id: string | null;
+  name: string;
+  brand: string;
+  sizes: Array<{ size: string; stock: number; reserved: number }>;
+  is_active: boolean;
+};
+type WishlistRow = { product_id: string; user_id: string; created_at: string };
+type WaitlistRow = { product_id: string; size: string; notified_at: string | null };
+type ReturnRow = { id: string; status: string; created_at: string };
+type CartRow = { id: string; user_id: string; added_at: string };
+type FeedbackRow = { rating: number; created_at: string };
 
-const EXCLUDE_STATUS = new Set(["Cancelada"]);
+const ORDER_EXCLUDE = new Set(["Cancelada"]);
+const RETURN_PENDING = new Set(["Aguarda recepção", "Em análise", "Pendente"]);
+const COMMISSION_PCT = 15;
 
-type RangeKey = "this_month" | "last_month" | "last_3" | "this_year" | "custom";
+type RangeKey = "this_week" | "this_month" | "last_month" | "last_3" | "this_year";
 
 function fmtEur(n: number) {
   return `€${(n || 0).toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function expPrice(r: ReservationRow): number {
+  if (r.experience_details && typeof r.experience_details === "object") {
+    const p = (r.experience_details as { price?: number }).price;
+    if (typeof p === "number" && p > 0) return p;
+  }
+  const found = EXPERIENCES.find((e) => e.title === r.item_name);
+  return found?.price ?? 0;
 }
 
 function StatCard({
@@ -69,14 +131,23 @@ function StatCard({
   value,
   hint,
   trend,
+  accent,
 }: {
   label: string;
   value: string;
   hint?: string;
   trend?: { pct: number; up: boolean } | null;
+  accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div
+      className={cn(
+        "rounded-2xl border p-5",
+        accent
+          ? "border-primary/40 bg-[oklch(0.96_0.02_268)]"
+          : "border-border bg-card",
+      )}
+    >
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
       <p className="mt-2 font-display text-2xl text-foreground">{value}</p>
       {trend && (
@@ -87,7 +158,7 @@ function StatCard({
           )}
         >
           {trend.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {trend.pct.toFixed(1)}% vs mês anterior
+          {Math.abs(trend.pct).toFixed(1)}% vs mês anterior
         </p>
       )}
       {hint && !trend && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
@@ -95,53 +166,61 @@ function StatCard({
   );
 }
 
+const PIE_COLORS = ["oklch(0.42 0.13 268)", "oklch(0.68 0.13 50)", "oklch(0.62 0.15 340)"];
+
 export function ReportsDashboard() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [customersCount, setCustomersCount] = useState(0);
+  const [reservations, setReservations] = useState<ReservationRow[]>([]);
+  const [giftCards, setGiftCards] = useState<GiftCardRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [wishlists, setWishlists] = useState<WishlistRow[]>([]);
+  const [waitlist, setWaitlist] = useState<WaitlistRow[]>([]);
+  const [returns, setReturns] = useState<ReturnRow[]>([]);
+  const [carts, setCarts] = useState<CartRow[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [rangeKey, setRangeKey] = useState<RangeKey>("this_month");
-  const [customFrom, setCustomFrom] = useState<Date | undefined>();
-  const [customTo, setCustomTo] = useState<Date | undefined>();
-
-  const [commissionPct, setCommissionPct] = useState<number>(() => {
-    if (typeof window === "undefined") return 15;
-    const v = window.localStorage.getItem("admin.commissionPct");
-    return v ? Number(v) || 15 : 15;
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("admin.commissionPct", String(commissionPct));
-    }
-  }, [commissionPct]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [{ data: ord, error }, { count }] = await Promise.all([
-        supabase
-          .from("orders")
-          .select("id, created_at, total, status, user_id, items")
-          .order("created_at", { ascending: false })
-          .limit(2000),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      const [o, r, g, p, pr, w, wl, ret, c, f] = await Promise.all([
+        supabase.from("orders").select("id, created_at, total, status, user_id, customer_name, customer_email, items").limit(5000),
+        supabase.from("reservations").select("id, created_at, preferred_date, item_type, item_name, status, experience_details").limit(5000),
+        supabase.from("gift_cards").select("id, created_at, amount, status").limit(5000),
+        supabase.from("profiles").select("id, full_name, email, created_at").limit(5000),
+        supabase.from("products").select("id, legacy_id, name, brand, sizes, is_active").limit(5000),
+        supabase.from("wishlists").select("product_id, user_id, created_at").limit(5000),
+        supabase.from("waitlist").select("product_id, size, notified_at").limit(5000),
+        supabase.from("returns").select("id, status, created_at").limit(5000),
+        supabase.from("cart_items").select("id, user_id, added_at").limit(5000),
+        supabase.from("feedback").select("rating, created_at").limit(5000),
       ]);
       if (cancelled) return;
-      if (error) toast.error("Falha a carregar relatórios");
-      setOrders(((ord ?? []) as unknown as OrderRow[]).filter((o) => !EXCLUDE_STATUS.has(o.status)));
-      setCustomersCount(count ?? 0);
+      if (o.error) toast.error("Falha ao carregar encomendas");
+      setOrders(((o.data ?? []) as unknown as OrderRow[]).filter((x) => !ORDER_EXCLUDE.has(x.status)));
+      setReservations(((r.data ?? []) as unknown as ReservationRow[]).filter((x) => x.status !== "Cancelada"));
+      setGiftCards(((g.data ?? []) as unknown as GiftCardRow[]).filter((x) => x.status !== "cancelled" && x.status !== "failed"));
+      setProfiles((p.data ?? []) as unknown as ProfileRow[]);
+      setProducts((pr.data ?? []) as unknown as ProductRow[]);
+      setWishlists((w.data ?? []) as unknown as WishlistRow[]);
+      setWaitlist(((wl.data ?? []) as unknown as WaitlistRow[]).filter((x) => !x.notified_at));
+      setReturns((ret.data ?? []) as unknown as ReturnRow[]);
+      setCarts((c.data ?? []) as unknown as CartRow[]);
+      setFeedback((f.data ?? []) as unknown as FeedbackRow[]);
       setLoading(false);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
+  const now = new Date();
+
   const range = useMemo(() => {
-    const now = new Date();
     switch (rangeKey) {
+      case "this_week":
+        return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now), label: "Esta semana" };
       case "this_month":
         return { from: startOfMonth(now), to: endOfMonth(now), label: format(now, "MMMM yyyy", { locale: pt }) };
       case "last_month": {
@@ -152,80 +231,145 @@ export function ReportsDashboard() {
         return { from: startOfMonth(subMonths(now, 2)), to: endOfMonth(now), label: "Últimos 3 meses" };
       case "this_year":
         return { from: startOfYear(now), to: endOfDay(now), label: format(now, "yyyy") };
-      case "custom":
-        return {
-          from: customFrom ? startOfDay(customFrom) : startOfMonth(now),
-          to: customTo ? endOfDay(customTo) : endOfDay(now),
-          label: `${customFrom ? format(customFrom, "dd/MM/yyyy") : "—"} → ${customTo ? format(customTo, "dd/MM/yyyy") : "—"}`,
-        };
     }
-  }, [rangeKey, customFrom, customTo]);
+  }, [rangeKey]);
 
-  const inRange = useMemo(
-    () =>
-      orders.filter((o) => {
-        const d = new Date(o.created_at).getTime();
-        return d >= range.from.getTime() && d <= range.to.getTime();
-      }),
-    [orders, range],
-  );
-
-  // Overview metrics
-  const totalRevenueAll = useMemo(() => orders.reduce((s, o) => s + Number(o.total || 0), 0), [orders]);
-
-  const now = new Date();
-  const thisMonthOrders = useMemo(
-    () =>
-      orders.filter((o) => {
-        const d = new Date(o.created_at);
-        return d >= startOfMonth(now) && d <= endOfMonth(now);
-      }),
-    [orders],
-  );
-  const lastMonthOrders = useMemo(() => {
-    const lm = subMonths(now, 1);
-    return orders.filter((o) => {
-      const d = new Date(o.created_at);
-      return d >= startOfMonth(lm) && d <= endOfMonth(lm);
+  const inRange = <T extends { created_at: string }>(arr: T[]) =>
+    arr.filter((x) => {
+      const d = new Date(x.created_at).getTime();
+      return d >= range.from.getTime() && d <= range.to.getTime();
     });
-  }, [orders]);
 
-  const revenueThisMonth = thisMonthOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-  const revenueLastMonth = lastMonthOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-  const trend = revenueLastMonth > 0
-    ? { pct: ((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100, up: revenueThisMonth >= revenueLastMonth }
-    : revenueThisMonth > 0
-      ? { pct: 100, up: true }
-      : null;
+  // ===== Financial overview =====
+  const totalOrdersAll = orders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const totalResvAll = reservations.reduce((s, r) => s + expPrice(r), 0);
+  const totalGiftAll = giftCards.reduce((s, g) => s + Number(g.amount || 0), 0);
+  const totalRevenueAll = totalOrdersAll + totalResvAll + totalGiftAll;
 
-  const ordersInRange = inRange.length;
-  const avgTicket = ordersInRange > 0 ? inRange.reduce((s, o) => s + Number(o.total || 0), 0) / ordersInRange : 0;
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+  const lastMonthStart = startOfMonth(subMonths(now, 1));
+  const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-  const uniqueBuyers = useMemo(() => new Set(orders.map((o) => o.user_id).filter(Boolean)).size, [orders]);
-  const conversion = customersCount > 0 ? (uniqueBuyers / customersCount) * 100 : 0;
+  const inMonth = <T extends { created_at: string }>(arr: T[], s: Date, e: Date) =>
+    arr.filter((x) => {
+      const d = new Date(x.created_at).getTime();
+      return d >= s.getTime() && d <= e.getTime();
+    });
 
-  // Revenue chart — last 6 months
+  const thisMonthOrders = inMonth(orders, monthStart, monthEnd);
+  const lastMonthOrders = inMonth(orders, lastMonthStart, lastMonthEnd);
+  const thisMonthResv = inMonth(reservations, monthStart, monthEnd);
+  const thisMonthGift = inMonth(giftCards, monthStart, monthEnd);
+  const lastMonthResv = inMonth(reservations, lastMonthStart, lastMonthEnd);
+  const lastMonthGift = inMonth(giftCards, lastMonthStart, lastMonthEnd);
+
+  const revOrdersM = thisMonthOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const revResvM = thisMonthResv.reduce((s, r) => s + expPrice(r), 0);
+  const revGiftM = thisMonthGift.reduce((s, g) => s + Number(g.amount || 0), 0);
+  const revThisMonth = revOrdersM + revResvM + revGiftM;
+  const revLastMonth =
+    lastMonthOrders.reduce((s, o) => s + Number(o.total || 0), 0) +
+    lastMonthResv.reduce((s, r) => s + expPrice(r), 0) +
+    lastMonthGift.reduce((s, g) => s + Number(g.amount || 0), 0);
+
+  const monthTrend = revLastMonth > 0
+    ? { pct: ((revThisMonth - revLastMonth) / revLastMonth) * 100, up: revThisMonth >= revLastMonth }
+    : revThisMonth > 0 ? { pct: 100, up: true } : null;
+
+  const commission = (revThisMonth * COMMISSION_PCT) / 100;
+
+  // Donut breakdown
+  const donutData = [
+    { name: "Encomendas online", value: Math.round(revOrdersM * 100) / 100 },
+    { name: "Experiências", value: Math.round(revResvM * 100) / 100 },
+    { name: "Cartões Oferta", value: Math.round(revGiftM * 100) / 100 },
+  ].filter((d) => d.value > 0);
+
+  // ===== Revenue trend last 6 months + projection =====
   const monthlySeries = useMemo(() => {
-    const arr: { month: string; revenue: number }[] = [];
+    const arr: { month: string; revenue: number; projected?: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const m = subMonths(now, i);
-      const from = startOfMonth(m).getTime();
-      const to = endOfMonth(m).getTime();
-      const rev = orders
-        .filter((o) => {
-          const d = new Date(o.created_at).getTime();
-          return d >= from && d <= to;
-        })
-        .reduce((s, o) => s + Number(o.total || 0), 0);
-      arr.push({ month: format(m, "MMM", { locale: pt }), revenue: Math.round(rev * 100) / 100 });
+      const s = startOfMonth(m);
+      const e = endOfMonth(m);
+      const rev =
+        inMonth(orders, s, e).reduce((a, o) => a + Number(o.total || 0), 0) +
+        inMonth(reservations, s, e).reduce((a, r) => a + expPrice(r), 0) +
+        inMonth(giftCards, s, e).reduce((a, g) => a + Number(g.amount || 0), 0);
+      const entry: { month: string; revenue: number; projected?: number } = {
+        month: format(m, "MMM", { locale: pt }),
+        revenue: Math.round(rev * 100) / 100,
+      };
+      if (i === 0) {
+        const daysIn = getDaysInMonth(now);
+        const dayOfMonth = getDate(now);
+        if (dayOfMonth > 0) {
+          entry.projected = Math.round((rev / dayOfMonth) * daysIn * 100) / 100;
+        }
+      }
+      arr.push(entry);
     }
     return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, reservations, giftCards]);
+
+  // ===== Customer behaviour =====
+  const buyerIds = new Set(orders.map((o) => o.user_id).filter(Boolean) as string[]);
+  const conversion = profiles.length > 0 ? (buyerIds.size / profiles.length) * 100 : 0;
+  const revInRangeOrders = inRange(orders);
+  const avgOrderValue = revInRangeOrders.length > 0
+    ? revInRangeOrders.reduce((s, o) => s + Number(o.total || 0), 0) / revInRangeOrders.length
+    : 0;
+
+  const newCustomersM = inMonth(profiles, monthStart, monthEnd).length;
+  const buyersThisMonth = new Set(thisMonthOrders.map((o) => o.user_id).filter(Boolean) as string[]);
+  const returningThisMonth = Array.from(buyersThisMonth).filter((uid) => {
+    const profile = profiles.find((p) => p.id === uid);
+    if (!profile) return false;
+    return new Date(profile.created_at) < monthStart;
+  }).length;
+
+  const spendByUser = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const o of orders) {
+      if (!o.user_id) continue;
+      m.set(o.user_id, (m.get(o.user_id) || 0) + Number(o.total || 0));
+    }
+    return m;
   }, [orders]);
 
-  // Top products (in range)
-  const topProducts = useMemo(() => {
+  const topCustomers = useMemo(() => {
+    return Array.from(spendByUser.entries())
+      .map(([uid, total]) => {
+        const p = profiles.find((x) => x.id === uid);
+        const vip: "none" | "silver" | "gold" | "platinum" =
+          total >= 3000 ? "platinum" : total >= 1500 ? "gold" : total >= 500 ? "silver" : "none";
+        return {
+          uid,
+          name: p?.full_name || "—",
+          email: p?.email || "—",
+          total,
+          vip,
+        };
+      })
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [spendByUser, profiles]);
+
+  // ===== Products intelligence =====
+  const productByLegacy = useMemo(() => {
+    const m = new Map<string, ProductRow>();
+    for (const p of products) {
+      if (p.legacy_id) m.set(p.legacy_id, p);
+      m.set(p.id, p);
+    }
+    return m;
+  }, [products]);
+
+  const topProductsRevenue = useMemo(() => {
     const map = new Map<string, { name: string; brand: string; units: number; revenue: number }>();
-    for (const o of inRange) {
+    for (const o of thisMonthOrders) {
       for (const it of o.items ?? []) {
         const key = `${it.brand ?? ""}|${it.name ?? "—"}`;
         const prev = map.get(key) ?? { name: it.name ?? "—", brand: it.brand ?? "—", units: 0, revenue: 0 };
@@ -235,33 +379,148 @@ export function ReportsDashboard() {
       }
     }
     return Array.from(map.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-  }, [inRange]);
-
-  // Top brands (this month, per spec)
-  const topBrands = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of thisMonthOrders) {
-      for (const it of o.items ?? []) {
-        const b = it.brand ?? "—";
-        map.set(b, (map.get(b) ?? 0) + Number(it.line_total || 0));
-      }
-    }
-    return Array.from(map.entries())
-      .map(([brand, revenue]) => ({ brand, revenue: Math.round(revenue * 100) / 100 }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8);
   }, [thisMonthOrders]);
 
-  // Commission (digital channel = all orders this month, per spec)
-  const digitalRevenueThisMonth = revenueThisMonth;
-  const commissionAmount = (digitalRevenueThisMonth * commissionPct) / 100;
+  const purchasedProductIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const o of orders) {
+      for (const it of o.items ?? []) {
+        if (it.product_id) s.add(it.product_id);
+        if (it.product_uuid) s.add(it.product_uuid);
+      }
+    }
+    return s;
+  }, [orders]);
+
+  const wishlistOnly = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const w of wishlists) {
+      if (purchasedProductIds.has(w.product_id)) continue;
+      counts.set(w.product_id, (counts.get(w.product_id) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([pid, count]) => {
+        const p = productByLegacy.get(pid);
+        return {
+          pid,
+          name: p?.name || "Produto",
+          brand: p?.brand || "—",
+          count,
+        };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [wishlists, purchasedProductIds, productByLegacy]);
+
+  const criticalStock = useMemo(() => {
+    return products
+      .filter((p) => p.is_active)
+      .map((p) => {
+        const avail = (p.sizes || []).reduce(
+          (s, sz) => s + Math.max(0, Number(sz.stock || 0) - Number(sz.reserved || 0)),
+          0,
+        );
+        return { ...p, avail };
+      })
+      .filter((p) => p.avail > 0 && p.avail < 3)
+      .sort((a, b) => a.avail - b.avail)
+      .slice(0, 8);
+  }, [products]);
+
+  // ===== Experiences =====
+  const expStats = useMemo(() => {
+    const types = ["Boutique Privada", "Personal Styling", "Arranjos e Costura"];
+    const byType = types.map((t) => ({
+      type: t,
+      count: thisMonthResv.filter((r) => r.item_name === t).length,
+    }));
+    const revenue = thisMonthResv.reduce((s, r) => s + expPrice(r), 0);
+    const monthFeedback = inMonth(feedback, monthStart, monthEnd);
+    const avgRating = monthFeedback.length > 0
+      ? monthFeedback.reduce((s, f) => s + Number(f.rating || 0), 0) / monthFeedback.length
+      : 0;
+    return { byType, revenue, avgRating, ratingCount: monthFeedback.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thisMonthResv, feedback]);
+
+  // ===== Smart alerts =====
+  const abandonedCarts = useMemo(() => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const users = new Set<string>();
+    for (const c of carts) {
+      if (new Date(c.added_at).getTime() < cutoff) users.add(c.user_id);
+    }
+    return users.size;
+  }, [carts]);
+
+  const outOfStockThisMonth = useMemo(() => {
+    return products.filter((p) => {
+      const avail = (p.sizes || []).reduce(
+        (s, sz) => s + Math.max(0, Number(sz.stock || 0) - Number(sz.reserved || 0)),
+        0,
+      );
+      return p.is_active && avail === 0;
+    }).length;
+  }, [products]);
+
+  const inactiveVips = useMemo(() => {
+    const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    const lastOrderByUser = new Map<string, number>();
+    for (const o of orders) {
+      if (!o.user_id) continue;
+      const t = new Date(o.created_at).getTime();
+      const prev = lastOrderByUser.get(o.user_id) || 0;
+      if (t > prev) lastOrderByUser.set(o.user_id, t);
+    }
+    const list: Array<{ uid: string; name: string; email: string; vip: string; lastDays: number }> = [];
+    for (const [uid, total] of spendByUser.entries()) {
+      if (total < 1500) continue; // gold+
+      const last = lastOrderByUser.get(uid) || 0;
+      if (last && last < cutoff) {
+        const p = profiles.find((x) => x.id === uid);
+        list.push({
+          uid,
+          name: p?.full_name || "—",
+          email: p?.email || "—",
+          vip: total >= 3000 ? "Platinum" : "Gold",
+          lastDays: differenceInDays(now, new Date(last)),
+        });
+      }
+    }
+    return list.sort((a, b) => b.lastDays - a.lastDays);
+  }, [orders, spendByUser, profiles, now]);
+
+  const pendingReturns = returns.filter((r) => RETURN_PENDING.has(r.status)).length;
+
+  const waitlistOos = useMemo(() => {
+    const oosIds = new Set(
+      products
+        .filter((p) => {
+          const avail = (p.sizes || []).reduce(
+            (s, sz) => s + Math.max(0, Number(sz.stock || 0) - Number(sz.reserved || 0)),
+            0,
+          );
+          return avail === 0;
+        })
+        .map((p) => p.id),
+    );
+    return waitlist.filter((w) => oosIds.has(w.product_id)).length;
+  }, [waitlist, products]);
+
+  // ===== Commission detail =====
+  const completedInRange = useMemo(
+    () => inRange(orders).filter((o) => o.status === "Entregue"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, range],
+  );
+  const commissionTotal = completedInRange.reduce((s, o) => s + Number(o.total || 0), 0);
+  const commissionDue = (commissionTotal * COMMISSION_PCT) / 100;
 
   async function generatePDF() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
-    const periodLabel = format(now, "MMMM 'de' yyyy", { locale: pt });
+    const pageH = doc.internal.pageSize.getHeight();
 
-    // Header band
     doc.setFillColor(58, 78, 154);
     doc.rect(0, 0, pageW, 90, "F");
     doc.setTextColor(255, 255, 255);
@@ -270,63 +529,83 @@ export function ReportsDashboard() {
     doc.text("Boutique Antónia Lage", 40, 45);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
-    doc.text("Relatório de comissões — canal digital", 40, 65);
+    doc.text("Relatório de comissão — canal digital", 40, 65);
 
     doc.setTextColor(40, 40, 40);
     doc.setFontSize(10);
     doc.text(`Emitido em ${format(now, "dd/MM/yyyy")}`, pageW - 40, 45, { align: "right" });
 
-    // Body
-    let y = 140;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.text("Resumo do período", 40, y);
-    y += 8;
-    doc.setDrawColor(220, 220, 220);
-    doc.line(40, y, pageW - 40, y);
-    y += 24;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-
-    const rows: [string, string][] = [
-      ["Período", periodLabel],
-      ["Vendas via webapp", fmtEur(digitalRevenueThisMonth)],
-      ["Número de encomendas", String(thisMonthOrders.length)],
-      ["Ticket médio", fmtEur(thisMonthOrders.length ? digitalRevenueThisMonth / thisMonthOrders.length : 0)],
-      ["Percentagem de comissão", `${commissionPct}%`],
-    ];
-    for (const [k, v] of rows) {
-      doc.setTextColor(110, 110, 110);
-      doc.text(k, 40, y);
-      doc.setTextColor(20, 20, 20);
-      doc.text(v, pageW - 40, y, { align: "right" });
-      y += 22;
-    }
-
-    y += 20;
-    doc.setFillColor(238, 241, 250);
-    doc.roundedRect(40, y, pageW - 80, 70, 6, 6, "F");
-    doc.setTextColor(58, 78, 154);
+    let y = 120;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("Comissão a receber", 60, y + 28);
-    doc.setFontSize(22);
-    doc.text(fmtEur(commissionAmount), pageW - 60, y + 45, { align: "right" });
+    doc.text(`Período: ${range.label}`, 40, y);
+    y += 24;
 
-    // Footer
-    doc.setTextColor(140, 140, 140);
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(9);
-    doc.text(
-      "Documento gerado automaticamente pela plataforma da Boutique Antónia Lage.",
-      pageW / 2,
-      doc.internal.pageSize.getHeight() - 40,
-      { align: "center" },
-    );
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(110, 110, 110);
+    doc.text("Data", 40, y);
+    doc.text("Cliente", 110, y);
+    doc.text("Valor", pageW - 180, y, { align: "right" });
+    doc.text("Comissão (15%)", pageW - 40, y, { align: "right" });
+    y += 6;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(40, y, pageW - 40, y);
+    y += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    for (const o of completedInRange) {
+      if (y > pageH - 120) {
+        doc.addPage();
+        y = 60;
+      }
+      const c = o.commission = (Number(o.total || 0) * COMMISSION_PCT) / 100;
+      doc.text(format(new Date(o.created_at), "dd/MM/yyyy"), 40, y);
+      const name = (o.customer_name || o.customer_email || "—").slice(0, 30);
+      doc.text(name, 110, y);
+      doc.text(fmtEur(Number(o.total || 0)), pageW - 180, y, { align: "right" });
+      doc.text(fmtEur(c), pageW - 40, y, { align: "right" });
+      y += 16;
+    }
+
+    y += 10;
+    doc.setDrawColor(180, 180, 180);
+    doc.line(40, y, pageW - 40, y);
+    y += 22;
+
+    doc.setFillColor(238, 241, 250);
+    doc.roundedRect(40, y, pageW - 80, 90, 6, 6, "F");
+    doc.setTextColor(58, 78, 154);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Total vendas no período", 60, y + 24);
+    doc.text(fmtEur(commissionTotal), pageW - 60, y + 24, { align: "right" });
+    doc.text(`Percentagem de comissão`, 60, y + 44);
+    doc.text(`${COMMISSION_PCT}%`, pageW - 60, y + 44, { align: "right" });
+    doc.setFontSize(13);
+    doc.text("Comissão a receber", 60, y + 74);
+    doc.text(fmtEur(commissionDue), pageW - 60, y + 74, { align: "right" });
+
+    y = pageH - 80;
+    doc.setTextColor(80, 80, 80);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("_______________________________", pageW - 40, y, { align: "right" });
+    doc.text("Diogo Faria — Gestor de Canal Digital", pageW - 40, y + 16, { align: "right" });
 
     doc.save(`comissao-${format(now, "yyyy-MM")}.pdf`);
     toast.success("Relatório gerado");
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 md:px-8">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+          A carregar dados…
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -337,204 +616,330 @@ export function ReportsDashboard() {
           <h1 className="mt-1 font-display text-3xl italic md:text-4xl">Relatórios</h1>
           <p className="mt-1 text-sm text-muted-foreground">Período: {range.label}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this_month">Este mês</SelectItem>
-              <SelectItem value="last_month">Último mês</SelectItem>
-              <SelectItem value="last_3">Últimos 3 meses</SelectItem>
-              <SelectItem value="this_year">Este ano</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
-            </SelectContent>
-          </Select>
-          {rangeKey === "custom" && (
-            <>
-              <DateBtn date={customFrom} onChange={setCustomFrom} placeholder="De" />
-              <DateBtn date={customTo} onChange={setCustomTo} placeholder="Até" />
-            </>
-          )}
-        </div>
+        <Select value={rangeKey} onValueChange={(v) => setRangeKey(v as RangeKey)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="this_week">Esta semana</SelectItem>
+            <SelectItem value="this_month">Este mês</SelectItem>
+            <SelectItem value="last_month">Último mês</SelectItem>
+            <SelectItem value="last_3">Últimos 3 meses</SelectItem>
+            <SelectItem value="this_year">Este ano</SelectItem>
+          </SelectContent>
+        </Select>
       </header>
 
-      {loading ? (
-        <div className="rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
-          A carregar dados…
-        </div>
-      ) : (
-        <>
-          {/* Stats */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <StatCard label="Receita total" value={fmtEur(totalRevenueAll)} hint="Desde sempre" />
-            <StatCard
-              label="Receita este mês"
-              value={fmtEur(revenueThisMonth)}
-              trend={trend}
-            />
-            <StatCard label="Encomendas este mês" value={String(thisMonthOrders.length)} />
-            <StatCard label="Ticket médio (período)" value={fmtEur(avgTicket)} />
-            <StatCard label="Clientes registados" value={String(customersCount)} />
-            <StatCard
-              label="Taxa de conversão"
-              value={`${conversion.toFixed(1)}%`}
-              hint={`${uniqueBuyers} de ${customersCount} registados compraram`}
-            />
-          </section>
+      {/* 1. Financial overview */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Receita total" value={fmtEur(totalRevenueAll)} hint="Todos os canais" />
+        <StatCard label="Receita este mês" value={fmtEur(revThisMonth)} trend={monthTrend} />
+        <StatCard label="Receita mês anterior" value={fmtEur(revLastMonth)} />
+        <StatCard label="A minha comissão (15%)" value={fmtEur(commission)} accent />
+      </section>
 
-          {/* Revenue chart */}
-          <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-            <h2 className="font-display text-xl italic">Receita mensal — últimos 6 meses</h2>
-            <div className="mt-4 h-72 w-full">
+      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-display text-xl italic">Receita por canal — este mês</h2>
+          <div className="mt-4 h-72">
+            {donutData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlySeries} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `€${v}`} />
-                  <Tooltip
-                    formatter={(v: number) => fmtEur(v)}
-                    contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-                  />
-                  <Line type="monotone" dataKey="revenue" stroke="oklch(0.42 0.13 268)" strokeWidth={2.5} dot={{ r: 4 }} />
-                </LineChart>
+                <PieChart>
+                  <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+                    {donutData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => fmtEur(v)} />
+                  <Legend />
+                </PieChart>
               </ResponsiveContainer>
-            </div>
-          </section>
+            )}
+          </div>
+        </div>
 
-          {/* Top products & top brands */}
-          <section className="mt-8 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="font-display text-xl italic">Top 5 produtos</h2>
-              <p className="text-xs text-muted-foreground">No período seleccionado</p>
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                      <th className="pb-2 font-normal">Produto</th>
-                      <th className="pb-2 font-normal">Marca</th>
-                      <th className="pb-2 text-right font-normal">Un.</th>
-                      <th className="pb-2 text-right font-normal">Receita</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProducts.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                          Sem dados
-                        </td>
-                      </tr>
-                    )}
-                    {topProducts.map((p, i) => (
-                      <tr key={i} className="border-t border-border">
-                        <td className="py-2 pr-2">{p.name}</td>
-                        <td className="py-2 pr-2 text-muted-foreground">{p.brand}</td>
-                        <td className="py-2 text-right">{p.units}</td>
-                        <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        {/* 2. Revenue trend */}
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-display text-xl italic">Receita — últimos 6 meses</h2>
+          <p className="text-xs text-muted-foreground">Linha sólida: real. Tracejada: projecção do mês actual.</p>
+          <div className="mt-4 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlySeries}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
+                <XAxis dataKey="month" fontSize={12} />
+                <YAxis fontSize={12} tickFormatter={(v) => `€${v}`} />
+                <Tooltip formatter={(v: number) => fmtEur(v)} />
+                <Line type="monotone" dataKey="revenue" stroke="oklch(0.42 0.13 268)" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="projected" stroke="oklch(0.42 0.13 268)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
 
-            <div className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="font-display text-xl italic">Receita por marca</h2>
-              <p className="text-xs text-muted-foreground">Mês actual</p>
-              <div className="mt-4 h-72 w-full">
-                {topBrands.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    Sem dados este mês
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topBrands} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.4} />
-                      <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `€${v}`} />
-                      <YAxis type="category" dataKey="brand" stroke="hsl(var(--muted-foreground))" fontSize={12} width={90} />
-                      <Tooltip
-                        formatter={(v: number) => fmtEur(v)}
-                        contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-                      />
-                      <Bar dataKey="revenue" fill="oklch(0.42 0.13 268)" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-          </section>
+      {/* 3. Customer behaviour */}
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <UsersIcon className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-xl italic">Comportamento de clientes</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Taxa de conversão" value={`${conversion.toFixed(1)}%`} hint={`${buyerIds.size}/${profiles.length} compraram`} />
+          <StatCard label="Ticket médio" value={fmtEur(avgOrderValue)} hint="Período seleccionado" />
+          <StatCard label="Novos clientes (mês)" value={String(newCustomersM)} />
+          <StatCard label="Clientes recorrentes (mês)" value={String(returningThisMonth)} />
+        </div>
 
-          {/* Commission */}
-          <section className="mt-8 rounded-2xl border border-primary/30 bg-[oklch(0.95_0.02_268)] p-6 md:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Comissões</p>
-                <h2 className="mt-1 font-display text-2xl italic text-foreground">A minha comissão</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Calculado sobre as vendas do canal digital no mês actual ({format(now, "MMMM yyyy", { locale: pt })}).
-                </p>
-              </div>
-              <Button onClick={generatePDF} className="gap-2">
-                <Download className="h-4 w-4" />
-                Gerar relatório PDF
-              </Button>
-            </div>
+        <h3 className="mt-6 mb-2 text-sm font-medium">Top 5 clientes por valor</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                <th className="pb-2 font-normal">Nome</th>
+                <th className="pb-2 font-normal">Email</th>
+                <th className="pb-2 font-normal">VIP</th>
+                <th className="pb-2 text-right font-normal">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topCustomers.length === 0 && (
+                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+              )}
+              {topCustomers.map((c) => (
+                <tr key={c.uid} className="border-t border-border">
+                  <td className="py-2">{c.name}</td>
+                  <td className="py-2 text-muted-foreground">{c.email}</td>
+                  <td className="py-2"><span className={vipBadgeClasses(c.vip)}>{VIP_LABELS[c.vip]}</span></td>
+                  <td className="py-2 text-right font-medium">{fmtEur(c.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl bg-card p-4">
-                <Label htmlFor="commission-pct" className="text-xs text-muted-foreground">
-                  Percentagem de comissão
-                </Label>
-                <div className="mt-2 flex items-center gap-2">
-                  <Input
-                    id="commission-pct"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.5}
-                    value={commissionPct}
-                    onChange={(e) => setCommissionPct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
-                    className="text-lg"
-                  />
-                  <span className="text-lg font-medium text-foreground">%</span>
-                </div>
+      {/* 4. Products intelligence */}
+      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-xl italic">Mais vendidos (mês)</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                <th className="pb-2 font-normal">Produto</th>
+                <th className="pb-2 font-normal">Marca</th>
+                <th className="pb-2 text-right font-normal">Un.</th>
+                <th className="pb-2 text-right font-normal">Receita</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topProductsRevenue.length === 0 && (
+                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+              )}
+              {topProductsRevenue.map((p, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="py-2">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{p.brand}</td>
+                  <td className="py-2 text-right">{p.units}</td>
+                  <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Heart className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-xl italic">Wishlist mas não comprados</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
+          <table className="mt-2 w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                <th className="pb-2 font-normal">Produto</th>
+                <th className="pb-2 font-normal">Marca</th>
+                <th className="pb-2 text-right font-normal">Na wishlist</th>
+              </tr>
+            </thead>
+            <tbody>
+              {wishlistOnly.length === 0 && (
+                <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+              )}
+              {wishlistOnly.map((p) => (
+                <tr key={p.pid} className="border-t border-border">
+                  <td className="py-2">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{p.brand}</td>
+                  <td className="py-2 text-right font-medium">{p.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {criticalStock.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Package className="h-4 w-4 text-orange-600" />
+            <h3 className="text-sm font-medium">Stock crítico (menos de 3 unidades)</h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {criticalStock.map((p) => (
+              <div key={p.id} className="rounded-xl border-l-4 border-l-orange-500 border border-border bg-card p-3">
+                <p className="text-xs text-muted-foreground">{p.brand}</p>
+                <p className="text-sm font-medium">{p.name}</p>
+                <p className="mt-1 text-xs text-orange-700">{p.avail} unidade{p.avail !== 1 ? "s" : ""} disponíveis</p>
               </div>
-              <div className="rounded-xl bg-card p-4">
-                <p className="text-xs text-muted-foreground">Receita canal digital este mês</p>
-                <p className="mt-2 font-display text-2xl text-foreground">{fmtEur(digitalRevenueThisMonth)}</p>
-              </div>
-              <div className="rounded-xl bg-primary p-4 text-primary-foreground">
-                <p className="text-xs uppercase tracking-wider opacity-80">Comissão a receber</p>
-                <p className="mt-2 font-display text-3xl">{fmtEur(commissionAmount)}</p>
-              </div>
-            </div>
-          </section>
-        </>
+            ))}
+          </div>
+        </section>
       )}
+
+      {/* 5. Experiences & services */}
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <h2 className="font-display text-xl italic">Experiências & serviços — este mês</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {expStats.byType.map((b) => (
+            <StatCard key={b.type} label={b.type} value={String(b.count)} hint="Reservas" />
+          ))}
+          <StatCard label="Receita experiências" value={fmtEur(expStats.revenue)} />
+          <StatCard
+            label="Rating médio"
+            value={expStats.ratingCount > 0 ? `${expStats.avgRating.toFixed(1)} ★` : "—"}
+            hint={`${expStats.ratingCount} avaliações`}
+          />
+        </div>
+      </section>
+
+      {/* 6. Smart alerts */}
+      <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Bell className="h-4 w-4 text-amber-700" />
+          <h2 className="font-display text-xl italic text-amber-900">Requer atenção</h2>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <AlertCard
+            icon={<ShoppingBag className="h-4 w-4" />}
+            label="Carrinhos abandonados (+7 dias)"
+            value={abandonedCarts}
+            href="/admin/clientes"
+          />
+          <AlertCard
+            icon={<Package className="h-4 w-4" />}
+            label="Produtos esgotados"
+            value={outOfStockThisMonth}
+            href="/admin/produtos"
+          />
+          <AlertCard
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Devoluções pendentes"
+            value={pendingReturns}
+            href="/admin/devolucoes"
+          />
+          <AlertCard
+            icon={<Bell className="h-4 w-4" />}
+            label="Lista de espera (esgotados)"
+            value={waitlistOos}
+            href="/admin/produtos"
+          />
+          <AlertCard
+            icon={<UsersIcon className="h-4 w-4" />}
+            label="VIPs inactivos (60+ dias)"
+            value={inactiveVips.length}
+            href="/admin/clientes"
+          />
+        </div>
+        {inactiveVips.length > 0 && (
+          <div className="mt-4 rounded-xl bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-amber-900">Clientes VIP a reactivar:</p>
+            <ul className="space-y-1 text-sm">
+              {inactiveVips.slice(0, 5).map((v) => (
+                <li key={v.uid} className="flex items-center justify-between">
+                  <span>{v.name} <span className="text-muted-foreground">({v.email})</span></span>
+                  <span className="text-xs text-muted-foreground">{v.vip} · há {v.lastDays}d</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* 7. Commission detail */}
+      <section className="mt-8 rounded-2xl border border-primary/30 bg-[oklch(0.96_0.02_268)] p-6 md:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Comissões</p>
+            <h2 className="mt-1 font-display text-2xl italic">Detalhe de comissão — {range.label}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Encomendas entregues. 15% sobre o valor da venda.</p>
+          </div>
+          <Button onClick={generatePDF} className="gap-2">
+            <Download className="h-4 w-4" /> Exportar PDF
+          </Button>
+        </div>
+        <div className="mt-6 overflow-x-auto rounded-xl bg-card">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                <th className="px-4 py-3 font-normal">Data</th>
+                <th className="px-4 py-3 font-normal">Cliente</th>
+                <th className="px-4 py-3 text-right font-normal">Valor</th>
+                <th className="px-4 py-3 text-right font-normal">Comissão (15%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completedInRange.length === 0 && (
+                <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Sem encomendas entregues no período</td></tr>
+              )}
+              {completedInRange.map((o) => (
+                <tr key={o.id} className="border-t border-border">
+                  <td className="px-4 py-2">{format(new Date(o.created_at), "dd/MM/yyyy")}</td>
+                  <td className="px-4 py-2">{o.customer_name || o.customer_email || "—"}</td>
+                  <td className="px-4 py-2 text-right">{fmtEur(Number(o.total || 0))}</td>
+                  <td className="px-4 py-2 text-right font-medium">{fmtEur(Number(o.total || 0) * COMMISSION_PCT / 100)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {completedInRange.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/30">
+                  <td colSpan={2} className="px-4 py-3 text-right text-sm font-medium">Totais</td>
+                  <td className="px-4 py-3 text-right font-display text-base">{fmtEur(commissionTotal)}</td>
+                  <td className="px-4 py-3 text-right font-display text-base text-primary">{fmtEur(commissionDue)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
 
-function DateBtn({
-  date,
-  onChange,
-  placeholder,
+function AlertCard({
+  icon,
+  label,
+  value,
+  href,
 }: {
-  date: Date | undefined;
-  onChange: (d: Date | undefined) => void;
-  placeholder: string;
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  href?: string;
 }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className={cn("min-w-[140px] justify-start text-left font-normal", !date && "text-muted-foreground")}>
-          <Calendar className="mr-2 h-4 w-4" />
-          {date ? format(date, "dd/MM/yyyy") : placeholder}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <CalendarComp mode="single" selected={date} onSelect={onChange} initialFocus className={cn("p-3 pointer-events-auto")} />
-      </PopoverContent>
-    </Popover>
+  const inner = (
+    <div className="flex items-center gap-3 rounded-xl bg-white p-4 transition hover:shadow-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+        {icon}
+      </div>
+      <div className="flex-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="font-display text-xl">{value}</p>
+      </div>
+    </div>
   );
+  if (href) return <Link to={href}>{inner}</Link>;
+  return inner;
 }
