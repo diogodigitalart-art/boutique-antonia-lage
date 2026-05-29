@@ -560,7 +560,7 @@ export function ReportsDashboard() {
         doc.addPage();
         y = 60;
       }
-      const c = o.commission = (Number(o.total || 0) * COMMISSION_PCT) / 100;
+      const c = (Number(o.total || 0) * COMMISSION_PCT) / 100;
       doc.text(format(new Date(o.created_at), "dd/MM/yyyy"), 40, y);
       const name = (o.customer_name || o.customer_email || "—").slice(0, 30);
       doc.text(name, 110, y);
