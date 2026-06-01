@@ -1227,6 +1227,51 @@ export function ReportsDashboard() {
           </table>
         </div>
       </section>
+
+      {/* 8. Insights & sugestões */}
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-xl italic">Insights & Sugestões</h2>
+        </div>
+        {insights.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Sem sugestões de momento. Tudo a correr bem.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {insights.map((i) => {
+              const toneClass =
+                i.tone === "success"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : i.tone === "warn"
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-border bg-muted/30";
+              const iconClass =
+                i.tone === "success"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : i.tone === "warn"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-primary/10 text-primary";
+              return (
+                <div key={i.id} className={cn("flex gap-3 rounded-xl border p-4", toneClass)}>
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", iconClass)}>
+                    {i.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground">{i.text}</p>
+                    {i.actionLabel && i.actionHref && (
+                      <Link to={i.actionHref} className="mt-2 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
+                        {i.actionLabel} →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
