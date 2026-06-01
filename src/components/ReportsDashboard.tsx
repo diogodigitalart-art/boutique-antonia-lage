@@ -1119,6 +1119,11 @@ export function ReportsDashboard() {
             </Button>
           </div>
         </div>
+        <div className="mt-4 rounded-xl border border-primary/20 bg-white/60 p-4 text-xs text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">Base de cálculo:</span> a comissão é calculada sobre o valor bruto de vendas (preço de venda final pago pelo cliente), não sobre o lucro. Isto garante transparência e simplicidade para ambas as partes.
+          </p>
+        </div>
         <div className="mt-6 overflow-x-auto rounded-xl bg-card">
           <table className="w-full text-sm">
             <thead>
