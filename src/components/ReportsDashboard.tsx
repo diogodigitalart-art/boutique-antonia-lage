@@ -836,65 +836,164 @@ export function ReportsDashboard() {
       </section>
 
       {/* 4. Products intelligence */}
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-xl italic">Mais vendidos (mês)</h2>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="pb-2 font-normal">Produto</th>
-                <th className="pb-2 font-normal">Marca</th>
-                <th className="pb-2 text-right font-normal">Un.</th>
-                <th className="pb-2 text-right font-normal">Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topProductsRevenue.length === 0 && (
-                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-              )}
-              {topProductsRevenue.map((p, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="py-2">{p.name}</td>
-                  <td className="py-2 text-muted-foreground">{p.brand}</td>
-                  <td className="py-2 text-right">{p.units}</td>
-                  <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <ShoppingBag className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-xl italic">Produtos</h2>
         </div>
+        {lossProducts.length > 0 && (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 text-rose-700" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-rose-900">
+                  Atenção: {lossProducts.length} produto{lossProducts.length === 1 ? "" : "s"} vendido{lossProducts.length === 1 ? "" : "s"} abaixo do preço de custo
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-rose-800">
+                  {lossProducts.map((p, i) => (
+                    <li key={i}>
+                      <span className="font-medium">{p.brand} — {p.name}</span>
+                      <span className="text-rose-700"> · perda de {fmtEur(p.lossPerUnit)} por unidade ({p.units} un.)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+        <Tabs defaultValue="bestsellers">
+          <TabsList>
+            <TabsTrigger value="bestsellers">Mais vendidos</TabsTrigger>
+            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
+            <TabsTrigger value="margins">Margens</TabsTrigger>
+          </TabsList>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Heart className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-xl italic">Wishlist mas não comprados</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
-          <table className="mt-2 w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="pb-2 font-normal">Produto</th>
-                <th className="pb-2 font-normal">Marca</th>
-                <th className="pb-2 text-right font-normal">Na wishlist</th>
-              </tr>
-            </thead>
-            <tbody>
-              {wishlistOnly.length === 0 && (
-                <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-              )}
-              {wishlistOnly.map((p) => (
-                <tr key={p.pid} className="border-t border-border">
-                  <td className="py-2">{p.name}</td>
-                  <td className="py-2 text-muted-foreground">{p.brand}</td>
-                  <td className="py-2 text-right font-medium">{p.count}</td>
+          <TabsContent value="bestsellers" className="mt-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  <th className="pb-2 font-normal">Produto</th>
+                  <th className="pb-2 font-normal">Marca</th>
+                  <th className="pb-2 text-right font-normal">Un.</th>
+                  <th className="pb-2 text-right font-normal">Receita</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {topProductsRevenue.length === 0 && (
+                  <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                )}
+                {topProductsRevenue.map((p, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="py-2">{p.name}</td>
+                    <td className="py-2 text-muted-foreground">{p.brand}</td>
+                    <td className="py-2 text-right">{p.units}</td>
+                    <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent>
+
+          <TabsContent value="wishlist" className="mt-4">
+            <p className="mb-2 text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  <th className="pb-2 font-normal">Produto</th>
+                  <th className="pb-2 font-normal">Marca</th>
+                  <th className="pb-2 text-right font-normal">Na wishlist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wishlistOnly.length === 0 && (
+                  <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                )}
+                {wishlistOnly.map((p) => (
+                  <tr key={p.pid} className="border-t border-border">
+                    <td className="py-2">{p.name}</td>
+                    <td className="py-2 text-muted-foreground">{p.brand}</td>
+                    <td className="py-2 text-right font-medium">{p.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent>
+
+          <TabsContent value="margins" className="mt-4">
+            {marginRows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Sem dados. Preenche o preço de custo nos produtos vendidos para ver a análise de margens.
+              </p>
+            ) : (
+              <>
+                {marginStats && (
+                  <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border bg-muted/30 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Margem média</p>
+                      <p className="mt-1 font-display text-xl">{marginStats.avg.toFixed(1)}%</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-emerald-700">Mais rentável</p>
+                      <p className="mt-1 text-sm font-medium text-emerald-900">{marginStats.best.brand} — {marginStats.best.name}</p>
+                      <p className="text-xs text-emerald-700">{marginStats.best.marginPct.toFixed(1)}% · {fmtEur(marginStats.best.profit)} lucro</p>
+                    </div>
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-rose-700">Menos rentável</p>
+                      <p className="mt-1 text-sm font-medium text-rose-900">{marginStats.worst.brand} — {marginStats.worst.name}</p>
+                      <p className="text-xs text-rose-700">{marginStats.worst.marginPct.toFixed(1)}% · {fmtEur(marginStats.worst.profit)} lucro</p>
+                    </div>
+                  </div>
+                )}
+                <p className="mb-2 text-xs text-muted-foreground">Ordenado por margem ascendente. Apenas produtos com preço de custo definido e que já foram vendidos.</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                        <th className="pb-2 font-normal">Produto</th>
+                        <th className="pb-2 font-normal">Ref.</th>
+                        <th className="pb-2 text-right font-normal">P. venda</th>
+                        <th className="pb-2 text-right font-normal">P. custo</th>
+                        <th className="pb-2 text-right font-normal">Margem €</th>
+                        <th className="pb-2 text-right font-normal">Margem %</th>
+                        <th className="pb-2 text-right font-normal">Un.</th>
+                        <th className="pb-2 text-right font-normal">Lucro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {marginRows.map((r) => {
+                        const pctClass =
+                          r.marginPct < 20
+                            ? "bg-rose-100 text-rose-800"
+                            : r.marginPct < 40
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800";
+                        return (
+                          <tr key={r.id} className="border-t border-border">
+                            <td className="py-2">
+                              <div className="text-sm">{r.name}</div>
+                              <div className="text-xs text-muted-foreground">{r.brand}</div>
+                            </td>
+                            <td className="py-2 text-xs text-muted-foreground">{r.reference}</td>
+                            <td className="py-2 text-right">{fmtEur(r.salePrice)}</td>
+                            <td className="py-2 text-right text-muted-foreground">{fmtEur(r.costPrice)}</td>
+                            <td className="py-2 text-right">{fmtEur(r.marginEur)}</td>
+                            <td className="py-2 text-right">
+                              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", pctClass)}>
+                                {r.marginPct.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="py-2 text-right">{r.units}</td>
+                            <td className="py-2 text-right font-medium">{fmtEur(r.profit)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
 
       {criticalStock.length > 0 && (
