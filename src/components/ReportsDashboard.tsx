@@ -217,7 +217,7 @@ export function ReportsDashboard() {
         supabase.from("reservations").select("id, created_at, preferred_date, item_type, item_name, status, experience_details").limit(5000),
         supabase.from("gift_cards").select("id, created_at, amount, status").limit(5000),
         supabase.from("profiles").select("id, full_name, email, created_at").limit(5000),
-        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active").limit(5000),
+        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active, price, cost_price, discount_percent").limit(5000),
         supabase.from("wishlists").select("product_id, user_id, created_at").limit(5000),
         supabase.from("waitlist").select("product_id, size, notified_at").limit(5000),
         supabase.from("returns").select("id, status, created_at").limit(5000),
