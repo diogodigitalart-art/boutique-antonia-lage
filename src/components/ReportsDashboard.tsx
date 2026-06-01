@@ -22,6 +22,11 @@ import {
   Package,
   Users as UsersIcon,
   Bell,
+  Percent,
+  Lightbulb,
+  Mail,
+  Tag,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   format,
@@ -102,6 +108,9 @@ type ProductRow = {
   barcode: string | null;
   sizes: Array<{ size: string; stock: number; reserved: number }>;
   is_active: boolean;
+  price: number;
+  cost_price: number | null;
+  discount_percent: number | null;
 };
 type WishlistRow = { product_id: string; user_id: string; created_at: string };
 type WaitlistRow = { product_id: string; size: string; notified_at: string | null };
@@ -208,7 +217,7 @@ export function ReportsDashboard() {
         supabase.from("reservations").select("id, created_at, preferred_date, item_type, item_name, status, experience_details").limit(5000),
         supabase.from("gift_cards").select("id, created_at, amount, status").limit(5000),
         supabase.from("profiles").select("id, full_name, email, created_at").limit(5000),
-        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active").limit(5000),
+        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active, price, cost_price, discount_percent").limit(5000),
         supabase.from("wishlists").select("product_id, user_id, created_at").limit(5000),
         supabase.from("waitlist").select("product_id, size, notified_at").limit(5000),
         supabase.from("returns").select("id, status, created_at").limit(5000),
@@ -448,6 +457,93 @@ export function ReportsDashboard() {
       .slice(0, 8);
   }, [products]);
 
+  // ===== Sold units per product (across all non-cancelled orders) =====
+  const soldByProduct = useMemo(() => {
+    const m = new Map<string, { units: number; revenue: number }>();
+    for (const o of orders) {
+      for (const it of o.items ?? []) {
+        const key = it.product_uuid || it.product_id;
+        if (!key) continue;
+        const prev = m.get(key) ?? { units: 0, revenue: 0 };
+        prev.units += Number(it.quantity || 0);
+        prev.revenue += Number(it.line_total || 0);
+        m.set(key, prev);
+      }
+    }
+    return m;
+  }, [orders]);
+
+  // ===== Margin analysis (only products with cost_price + actual sales) =====
+  const marginRows = useMemo(() => {
+    const rows: Array<{
+      id: string;
+      name: string;
+      brand: string;
+      reference: string;
+      salePrice: number;
+      costPrice: number;
+      marginEur: number;
+      marginPct: number;
+      units: number;
+      profit: number;
+    }> = [];
+    for (const p of products) {
+      if (p.cost_price == null || Number(p.cost_price) <= 0) continue;
+      const sold =
+        soldByProduct.get(p.id) ||
+        (p.legacy_id ? soldByProduct.get(p.legacy_id) : undefined);
+      if (!sold || sold.units <= 0) continue;
+      const avgSale = sold.revenue / sold.units;
+      const cost = Number(p.cost_price);
+      const marginEur = avgSale - cost;
+      const marginPct = avgSale > 0 ? (marginEur / avgSale) * 100 : 0;
+      rows.push({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        reference: p.reference || "—",
+        salePrice: avgSale,
+        costPrice: cost,
+        marginEur,
+        marginPct,
+        units: sold.units,
+        profit: marginEur * sold.units,
+      });
+    }
+    return rows.sort((a, b) => a.marginPct - b.marginPct);
+  }, [products, soldByProduct]);
+
+  const marginStats = useMemo(() => {
+    if (marginRows.length === 0) return null;
+    const avg = marginRows.reduce((s, r) => s + r.marginPct, 0) / marginRows.length;
+    const best = [...marginRows].sort((a, b) => b.marginPct - a.marginPct)[0];
+    const worst = marginRows[0];
+    return { avg, best, worst };
+  }, [marginRows]);
+
+  // ===== Products sold below cost =====
+  const lossProducts = useMemo(() => {
+    const map = new Map<string, { name: string; brand: string; lossPerUnit: number; units: number }>();
+    for (const o of orders) {
+      for (const it of o.items ?? []) {
+        const key = it.product_uuid || it.product_id;
+        if (!key) continue;
+        const p = productByLegacy.get(key);
+        if (!p || p.cost_price == null || Number(p.cost_price) <= 0) continue;
+        const cost = Number(p.cost_price);
+        const unit = Number(it.unit_price || 0);
+        if (unit > 0 && unit < cost) {
+          const lossPerUnit = cost - unit;
+          const prev = map.get(key) ?? { name: p.name, brand: p.brand, lossPerUnit, units: 0 };
+          prev.lossPerUnit = Math.max(prev.lossPerUnit, lossPerUnit);
+          prev.units += Number(it.quantity || 0);
+          map.set(key, prev);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [orders, productByLegacy]);
+
   // ===== Experiences =====
   const expStats = useMemo(() => {
     const types = ["Boutique Privada", "Personal Styling", "Arranjos e Costura"];
@@ -536,6 +632,74 @@ export function ReportsDashboard() {
   );
   const commissionTotal = completedInRange.reduce((s, o) => s + Number(o.total || 0), 0);
   const commissionDue = (commissionTotal * commissionPct) / 100;
+
+  // ===== Intelligent insights =====
+  type Insight = {
+    id: string;
+    icon: React.ReactNode;
+    text: string;
+    actionLabel?: string;
+    actionHref?: string;
+    tone: "info" | "success" | "warn";
+  };
+  const insights: Insight[] = useMemo(() => {
+    const out: Insight[] = [];
+    for (const w of wishlistOnly) {
+      if (w.count >= 3) {
+        out.push({
+          id: `wl-${w.pid}`,
+          icon: <Tag className="h-4 w-4" />,
+          text: `Considera aplicar um desconto de 10–15% ao ${w.brand} ${w.name} — está na wishlist de ${w.count} clientes mas nunca foi comprado.`,
+          actionLabel: "Gerir promoções",
+          actionHref: "/admin/promocoes",
+          tone: "info",
+        });
+      }
+    }
+    for (const [key, sold] of soldByProduct.entries()) {
+      if (sold.units >= 3) {
+        const p = productByLegacy.get(key);
+        if (!p) continue;
+        out.push({
+          id: `bs-${key}`,
+          icon: <Sparkles className="h-4 w-4" />,
+          text: `O ${p.brand} ${p.name} é um bestseller (${sold.units} unidades) — garante stock suficiente.`,
+          actionLabel: "Ver produto",
+          actionHref: "/admin/produtos",
+          tone: "success",
+        });
+      }
+    }
+    if (marginStats && marginStats.avg < 30) {
+      out.push({
+        id: "low-margin",
+        icon: <Percent className="h-4 w-4" />,
+        text: `A margem média da colecção está em ${marginStats.avg.toFixed(1)}% (abaixo de 30%). Considera rever os preços ou reduzir descontos.`,
+        tone: "warn",
+      });
+    }
+    if (inactiveVips.length > 0) {
+      out.push({
+        id: "vip-inactive",
+        icon: <UsersIcon className="h-4 w-4" />,
+        text: `${inactiveVips.length} cliente${inactiveVips.length === 1 ? "" : "s"} VIP não compra${inactiveVips.length === 1 ? "" : "m"} há mais de 60 dias. Considera enviar um código de desconto exclusivo.`,
+        actionLabel: "Criar código",
+        actionHref: "/admin/promocoes",
+        tone: "info",
+      });
+    }
+    if (abandonedCarts > 0) {
+      out.push({
+        id: "carts",
+        icon: <Mail className="h-4 w-4" />,
+        text: `${abandonedCarts} carrinho${abandonedCarts === 1 ? "" : "s"} abandonado${abandonedCarts === 1 ? "" : "s"} há mais de 7 dias. Um email de lembrete pode recuperar estas vendas.`,
+        actionLabel: "Ver clientes",
+        actionHref: "/admin/clientes",
+        tone: "info",
+      });
+    }
+    return out;
+  }, [wishlistOnly, soldByProduct, productByLegacy, marginStats, inactiveVips, abandonedCarts]);
 
   async function generatePDF() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -740,65 +904,164 @@ export function ReportsDashboard() {
       </section>
 
       {/* 4. Products intelligence */}
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-xl italic">Mais vendidos (mês)</h2>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="pb-2 font-normal">Produto</th>
-                <th className="pb-2 font-normal">Marca</th>
-                <th className="pb-2 text-right font-normal">Un.</th>
-                <th className="pb-2 text-right font-normal">Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topProductsRevenue.length === 0 && (
-                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-              )}
-              {topProductsRevenue.map((p, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="py-2">{p.name}</td>
-                  <td className="py-2 text-muted-foreground">{p.brand}</td>
-                  <td className="py-2 text-right">{p.units}</td>
-                  <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <ShoppingBag className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-xl italic">Produtos</h2>
         </div>
+        {lossProducts.length > 0 && (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 text-rose-700" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-rose-900">
+                  Atenção: {lossProducts.length} produto{lossProducts.length === 1 ? "" : "s"} vendido{lossProducts.length === 1 ? "" : "s"} abaixo do preço de custo
+                </p>
+                <ul className="mt-2 space-y-1 text-xs text-rose-800">
+                  {lossProducts.map((p, i) => (
+                    <li key={i}>
+                      <span className="font-medium">{p.brand} — {p.name}</span>
+                      <span className="text-rose-700"> · perda de {fmtEur(p.lossPerUnit)} por unidade ({p.units} un.)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+        <Tabs defaultValue="bestsellers">
+          <TabsList>
+            <TabsTrigger value="bestsellers">Mais vendidos</TabsTrigger>
+            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
+            <TabsTrigger value="margins">Margens</TabsTrigger>
+          </TabsList>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Heart className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-xl italic">Wishlist mas não comprados</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
-          <table className="mt-2 w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="pb-2 font-normal">Produto</th>
-                <th className="pb-2 font-normal">Marca</th>
-                <th className="pb-2 text-right font-normal">Na wishlist</th>
-              </tr>
-            </thead>
-            <tbody>
-              {wishlistOnly.length === 0 && (
-                <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-              )}
-              {wishlistOnly.map((p) => (
-                <tr key={p.pid} className="border-t border-border">
-                  <td className="py-2">{p.name}</td>
-                  <td className="py-2 text-muted-foreground">{p.brand}</td>
-                  <td className="py-2 text-right font-medium">{p.count}</td>
+          <TabsContent value="bestsellers" className="mt-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  <th className="pb-2 font-normal">Produto</th>
+                  <th className="pb-2 font-normal">Marca</th>
+                  <th className="pb-2 text-right font-normal">Un.</th>
+                  <th className="pb-2 text-right font-normal">Receita</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {topProductsRevenue.length === 0 && (
+                  <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                )}
+                {topProductsRevenue.map((p, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="py-2">{p.name}</td>
+                    <td className="py-2 text-muted-foreground">{p.brand}</td>
+                    <td className="py-2 text-right">{p.units}</td>
+                    <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent>
+
+          <TabsContent value="wishlist" className="mt-4">
+            <p className="mb-2 text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                  <th className="pb-2 font-normal">Produto</th>
+                  <th className="pb-2 font-normal">Marca</th>
+                  <th className="pb-2 text-right font-normal">Na wishlist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wishlistOnly.length === 0 && (
+                  <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                )}
+                {wishlistOnly.map((p) => (
+                  <tr key={p.pid} className="border-t border-border">
+                    <td className="py-2">{p.name}</td>
+                    <td className="py-2 text-muted-foreground">{p.brand}</td>
+                    <td className="py-2 text-right font-medium">{p.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent>
+
+          <TabsContent value="margins" className="mt-4">
+            {marginRows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Sem dados. Preenche o preço de custo nos produtos vendidos para ver a análise de margens.
+              </p>
+            ) : (
+              <>
+                {marginStats && (
+                  <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border bg-muted/30 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Margem média</p>
+                      <p className="mt-1 font-display text-xl">{marginStats.avg.toFixed(1)}%</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-emerald-700">Mais rentável</p>
+                      <p className="mt-1 text-sm font-medium text-emerald-900">{marginStats.best.brand} — {marginStats.best.name}</p>
+                      <p className="text-xs text-emerald-700">{marginStats.best.marginPct.toFixed(1)}% · {fmtEur(marginStats.best.profit)} lucro</p>
+                    </div>
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-[10px] uppercase tracking-[0.15em] text-rose-700">Menos rentável</p>
+                      <p className="mt-1 text-sm font-medium text-rose-900">{marginStats.worst.brand} — {marginStats.worst.name}</p>
+                      <p className="text-xs text-rose-700">{marginStats.worst.marginPct.toFixed(1)}% · {fmtEur(marginStats.worst.profit)} lucro</p>
+                    </div>
+                  </div>
+                )}
+                <p className="mb-2 text-xs text-muted-foreground">Ordenado por margem ascendente. Apenas produtos com preço de custo definido e que já foram vendidos.</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                        <th className="pb-2 font-normal">Produto</th>
+                        <th className="pb-2 font-normal">Ref.</th>
+                        <th className="pb-2 text-right font-normal">P. venda</th>
+                        <th className="pb-2 text-right font-normal">P. custo</th>
+                        <th className="pb-2 text-right font-normal">Margem €</th>
+                        <th className="pb-2 text-right font-normal">Margem %</th>
+                        <th className="pb-2 text-right font-normal">Un.</th>
+                        <th className="pb-2 text-right font-normal">Lucro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {marginRows.map((r) => {
+                        const pctClass =
+                          r.marginPct < 20
+                            ? "bg-rose-100 text-rose-800"
+                            : r.marginPct < 40
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800";
+                        return (
+                          <tr key={r.id} className="border-t border-border">
+                            <td className="py-2">
+                              <div className="text-sm">{r.name}</div>
+                              <div className="text-xs text-muted-foreground">{r.brand}</div>
+                            </td>
+                            <td className="py-2 text-xs text-muted-foreground">{r.reference}</td>
+                            <td className="py-2 text-right">{fmtEur(r.salePrice)}</td>
+                            <td className="py-2 text-right text-muted-foreground">{fmtEur(r.costPrice)}</td>
+                            <td className="py-2 text-right">{fmtEur(r.marginEur)}</td>
+                            <td className="py-2 text-right">
+                              <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", pctClass)}>
+                                {r.marginPct.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="py-2 text-right">{r.units}</td>
+                            <td className="py-2 text-right font-medium">{fmtEur(r.profit)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
 
       {criticalStock.length > 0 && (
@@ -924,6 +1187,11 @@ export function ReportsDashboard() {
             </Button>
           </div>
         </div>
+        <div className="mt-4 rounded-xl border border-primary/20 bg-white/60 p-4 text-xs text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">Base de cálculo:</span> a comissão é calculada sobre o valor bruto de vendas (preço de venda final pago pelo cliente), não sobre o lucro. Isto garante transparência e simplicidade para ambas as partes.
+          </p>
+        </div>
         <div className="mt-6 overflow-x-auto rounded-xl bg-card">
           <table className="w-full text-sm">
             <thead>
@@ -958,6 +1226,51 @@ export function ReportsDashboard() {
             )}
           </table>
         </div>
+      </section>
+
+      {/* 8. Insights & sugestões */}
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-xl italic">Insights & Sugestões</h2>
+        </div>
+        {insights.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Sem sugestões de momento. Tudo a correr bem.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {insights.map((i) => {
+              const toneClass =
+                i.tone === "success"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : i.tone === "warn"
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-border bg-muted/30";
+              const iconClass =
+                i.tone === "success"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : i.tone === "warn"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-primary/10 text-primary";
+              return (
+                <div key={i.id} className={cn("flex gap-3 rounded-xl border p-4", toneClass)}>
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", iconClass)}>
+                    {i.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground">{i.text}</p>
+                    {i.actionLabel && i.actionHref && (
+                      <Link to={i.actionHref} className="mt-2 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
+                        {i.actionLabel} →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
