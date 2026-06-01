@@ -457,6 +457,93 @@ export function ReportsDashboard() {
       .slice(0, 8);
   }, [products]);
 
+  // ===== Sold units per product (across all non-cancelled orders) =====
+  const soldByProduct = useMemo(() => {
+    const m = new Map<string, { units: number; revenue: number }>();
+    for (const o of orders) {
+      for (const it of o.items ?? []) {
+        const key = it.product_uuid || it.product_id;
+        if (!key) continue;
+        const prev = m.get(key) ?? { units: 0, revenue: 0 };
+        prev.units += Number(it.quantity || 0);
+        prev.revenue += Number(it.line_total || 0);
+        m.set(key, prev);
+      }
+    }
+    return m;
+  }, [orders]);
+
+  // ===== Margin analysis (only products with cost_price + actual sales) =====
+  const marginRows = useMemo(() => {
+    const rows: Array<{
+      id: string;
+      name: string;
+      brand: string;
+      reference: string;
+      salePrice: number;
+      costPrice: number;
+      marginEur: number;
+      marginPct: number;
+      units: number;
+      profit: number;
+    }> = [];
+    for (const p of products) {
+      if (p.cost_price == null || Number(p.cost_price) <= 0) continue;
+      const sold =
+        soldByProduct.get(p.id) ||
+        (p.legacy_id ? soldByProduct.get(p.legacy_id) : undefined);
+      if (!sold || sold.units <= 0) continue;
+      const avgSale = sold.revenue / sold.units;
+      const cost = Number(p.cost_price);
+      const marginEur = avgSale - cost;
+      const marginPct = avgSale > 0 ? (marginEur / avgSale) * 100 : 0;
+      rows.push({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        reference: p.reference || "—",
+        salePrice: avgSale,
+        costPrice: cost,
+        marginEur,
+        marginPct,
+        units: sold.units,
+        profit: marginEur * sold.units,
+      });
+    }
+    return rows.sort((a, b) => a.marginPct - b.marginPct);
+  }, [products, soldByProduct]);
+
+  const marginStats = useMemo(() => {
+    if (marginRows.length === 0) return null;
+    const avg = marginRows.reduce((s, r) => s + r.marginPct, 0) / marginRows.length;
+    const best = [...marginRows].sort((a, b) => b.marginPct - a.marginPct)[0];
+    const worst = marginRows[0];
+    return { avg, best, worst };
+  }, [marginRows]);
+
+  // ===== Products sold below cost =====
+  const lossProducts = useMemo(() => {
+    const map = new Map<string, { name: string; brand: string; lossPerUnit: number; units: number }>();
+    for (const o of orders) {
+      for (const it of o.items ?? []) {
+        const key = it.product_uuid || it.product_id;
+        if (!key) continue;
+        const p = productByLegacy.get(key);
+        if (!p || p.cost_price == null || Number(p.cost_price) <= 0) continue;
+        const cost = Number(p.cost_price);
+        const unit = Number(it.unit_price || 0);
+        if (unit > 0 && unit < cost) {
+          const lossPerUnit = cost - unit;
+          const prev = map.get(key) ?? { name: p.name, brand: p.brand, lossPerUnit, units: 0 };
+          prev.lossPerUnit = Math.max(prev.lossPerUnit, lossPerUnit);
+          prev.units += Number(it.quantity || 0);
+          map.set(key, prev);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [orders, productByLegacy]);
+
   // ===== Experiences =====
   const expStats = useMemo(() => {
     const types = ["Boutique Privada", "Personal Styling", "Arranjos e Costura"];
