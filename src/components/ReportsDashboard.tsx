@@ -108,6 +108,9 @@ type ProductRow = {
   barcode: string | null;
   sizes: Array<{ size: string; stock: number; reserved: number }>;
   is_active: boolean;
+  price: number;
+  cost_price: number | null;
+  discount_percent: number | null;
 };
 type WishlistRow = { product_id: string; user_id: string; created_at: string };
 type WaitlistRow = { product_id: string; size: string; notified_at: string | null };
