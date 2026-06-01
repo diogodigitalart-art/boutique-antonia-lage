@@ -633,6 +633,74 @@ export function ReportsDashboard() {
   const commissionTotal = completedInRange.reduce((s, o) => s + Number(o.total || 0), 0);
   const commissionDue = (commissionTotal * commissionPct) / 100;
 
+  // ===== Intelligent insights =====
+  type Insight = {
+    id: string;
+    icon: React.ReactNode;
+    text: string;
+    actionLabel?: string;
+    actionHref?: string;
+    tone: "info" | "success" | "warn";
+  };
+  const insights: Insight[] = useMemo(() => {
+    const out: Insight[] = [];
+    for (const w of wishlistOnly) {
+      if (w.count >= 3) {
+        out.push({
+          id: `wl-${w.pid}`,
+          icon: <Tag className="h-4 w-4" />,
+          text: `Considera aplicar um desconto de 10–15% ao ${w.brand} ${w.name} — está na wishlist de ${w.count} clientes mas nunca foi comprado.`,
+          actionLabel: "Gerir promoções",
+          actionHref: "/admin/promocoes",
+          tone: "info",
+        });
+      }
+    }
+    for (const [key, sold] of soldByProduct.entries()) {
+      if (sold.units >= 3) {
+        const p = productByLegacy.get(key);
+        if (!p) continue;
+        out.push({
+          id: `bs-${key}`,
+          icon: <Sparkles className="h-4 w-4" />,
+          text: `O ${p.brand} ${p.name} é um bestseller (${sold.units} unidades) — garante stock suficiente.`,
+          actionLabel: "Ver produto",
+          actionHref: "/admin/produtos",
+          tone: "success",
+        });
+      }
+    }
+    if (marginStats && marginStats.avg < 30) {
+      out.push({
+        id: "low-margin",
+        icon: <Percent className="h-4 w-4" />,
+        text: `A margem média da colecção está em ${marginStats.avg.toFixed(1)}% (abaixo de 30%). Considera rever os preços ou reduzir descontos.`,
+        tone: "warn",
+      });
+    }
+    if (inactiveVips.length > 0) {
+      out.push({
+        id: "vip-inactive",
+        icon: <UsersIcon className="h-4 w-4" />,
+        text: `${inactiveVips.length} cliente${inactiveVips.length === 1 ? "" : "s"} VIP não compra${inactiveVips.length === 1 ? "" : "m"} há mais de 60 dias. Considera enviar um código de desconto exclusivo.`,
+        actionLabel: "Criar código",
+        actionHref: "/admin/promocoes",
+        tone: "info",
+      });
+    }
+    if (abandonedCarts > 0) {
+      out.push({
+        id: "carts",
+        icon: <Mail className="h-4 w-4" />,
+        text: `${abandonedCarts} carrinho${abandonedCarts === 1 ? "" : "s"} abandonado${abandonedCarts === 1 ? "" : "s"} há mais de 7 dias. Um email de lembrete pode recuperar estas vendas.`,
+        actionLabel: "Ver clientes",
+        actionHref: "/admin/clientes",
+        tone: "info",
+      });
+    }
+    return out;
+  }, [wishlistOnly, soldByProduct, productByLegacy, marginStats, inactiveVips, abandonedCarts]);
+
   async function generatePDF() {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
