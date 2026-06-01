@@ -838,154 +838,335 @@ export function ReportsDashboard() {
         </Select>
       </header>
 
-      {/* 1. Financial overview */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Receita total" value={fmtEur(totalRevenueAll)} hint="Todos os canais" />
-        <StatCard label="Receita este mês" value={fmtEur(revThisMonth)} trend={monthTrend} />
-        <StatCard label="Receita mês anterior" value={fmtEur(revLastMonth)} />
-        <StatCard label={`A minha comissão (${commissionPct}%)`} value={fmtEur(commission)} accent />
-      </section>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="mb-6 h-auto flex-wrap justify-start gap-1 bg-muted p-1">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="sales">Vendas</TabsTrigger>
+          <TabsTrigger value="customers">Clientes</TabsTrigger>
+          <TabsTrigger value="margins">Margens</TabsTrigger>
+        </TabsList>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-display text-xl italic">Receita por canal — este mês</h2>
-          <div className="mt-4 h-72">
-            {donutData.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
-                    {donutData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => fmtEur(v)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
+        {/* ============ VISÃO GERAL ============ */}
+        <TabsContent value="overview" className="space-y-8">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Receita total" value={fmtEur(totalRevenueAll)} hint="Todos os canais" />
+            <StatCard label="Receita este mês" value={fmtEur(revThisMonth)} trend={monthTrend} />
+            <StatCard label="Receita mês anterior" value={fmtEur(revLastMonth)} />
+            <StatCard label={`A minha comissão (${commissionPct}%)`} value={fmtEur(commission)} accent />
+          </section>
 
-        {/* 2. Revenue trend */}
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-display text-xl italic">Receita — últimos 6 meses</h2>
-          <p className="text-xs text-muted-foreground">Linha sólida: real. Tracejada: projecção do mês actual.</p>
-          <div className="mt-4 h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlySeries}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                <XAxis dataKey="month" fontSize={12} />
-                <YAxis fontSize={12} tickFormatter={(v) => `€${v}`} />
-                <Tooltip formatter={(v: number) => fmtEur(v)} />
-                <Line type="monotone" dataKey="revenue" stroke="oklch(0.42 0.13 268)" strokeWidth={2.5} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="projected" stroke="oklch(0.42 0.13 268)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </section>
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="font-display text-xl italic">Receita por canal — este mês</h2>
+              <div className="mt-4 h-72">
+                {donutData.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+                        {donutData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => fmtEur(v)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
 
-      {/* 3. Customer behaviour */}
-      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <UsersIcon className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-xl italic">Comportamento de clientes</h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Taxa de conversão" value={`${conversion.toFixed(1)}%`} hint={`${buyerIds.size}/${profiles.length} compraram`} />
-          <StatCard label="Ticket médio" value={fmtEur(avgOrderValue)} hint="Período seleccionado" />
-          <StatCard label="Novos clientes (mês)" value={String(newCustomersM)} />
-          <StatCard label="Clientes recorrentes (mês)" value={String(returningThisMonth)} />
-        </div>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="font-display text-xl italic">Receita — últimos 6 meses</h2>
+              <p className="text-xs text-muted-foreground">Linha sólida: real. Tracejada: projecção do mês actual.</p>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlySeries}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis fontSize={12} tickFormatter={(v) => `€${v}`} />
+                    <Tooltip formatter={(v: number) => fmtEur(v)} />
+                    <Line type="monotone" dataKey="revenue" stroke="oklch(0.42 0.13 268)" strokeWidth={2.5} dot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="projected" stroke="oklch(0.42 0.13 268)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
 
-        <h3 className="mt-6 mb-2 text-sm font-medium">Top 5 clientes por valor</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="pb-2 font-normal">Nome</th>
-                <th className="pb-2 font-normal">Email</th>
-                <th className="pb-2 font-normal">VIP</th>
-                <th className="pb-2 text-right font-normal">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topCustomers.length === 0 && (
-                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-              )}
-              {topCustomers.map((c) => (
-                <tr key={c.uid} className="border-t border-border">
-                  <td className="py-2">{c.name}</td>
-                  <td className="py-2 text-muted-foreground">{c.email}</td>
-                  <td className="py-2"><span className={vipBadgeClasses(c.vip)}>{VIP_LABELS[c.vip]}</span></td>
-                  <td className="py-2 text-right font-medium">{fmtEur(c.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* 4. Products intelligence */}
-      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <ShoppingBag className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-xl italic">Produtos</h2>
-        </div>
-        {lossProducts.length > 0 && (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 text-rose-700" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-rose-900">
-                  Atenção: {lossProducts.length} produto{lossProducts.length === 1 ? "" : "s"} vendido{lossProducts.length === 1 ? "" : "s"} abaixo do preço de custo
-                </p>
-                <ul className="mt-2 space-y-1 text-xs text-rose-800">
-                  {lossProducts.map((p, i) => (
-                    <li key={i}>
-                      <span className="font-medium">{p.brand} — {p.name}</span>
-                      <span className="text-rose-700"> · perda de {fmtEur(p.lossPerUnit)} por unidade ({p.units} un.)</span>
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-amber-700" />
+              <h2 className="font-display text-xl italic text-amber-900">Requer atenção</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <AlertCard icon={<ShoppingBag className="h-4 w-4" />} label="Carrinhos abandonados (+7 dias)" value={abandonedCarts} href="/admin/clientes" />
+              <AlertCard icon={<Package className="h-4 w-4" />} label="Produtos esgotados" value={outOfStockThisMonth} href="/admin/produtos" />
+              <AlertCard icon={<AlertTriangle className="h-4 w-4" />} label="Devoluções pendentes" value={pendingReturns} href="/admin/devolucoes" />
+              <AlertCard icon={<Bell className="h-4 w-4" />} label="Lista de espera (esgotados)" value={waitlistOos} href="/admin/produtos" />
+              <AlertCard icon={<UsersIcon className="h-4 w-4" />} label="VIPs inactivos (60+ dias)" value={inactiveVips.length} href="/admin/clientes" />
+            </div>
+            {inactiveVips.length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4">
+                <p className="mb-2 text-xs font-medium text-amber-900">Clientes VIP a reactivar:</p>
+                <ul className="space-y-1 text-sm">
+                  {inactiveVips.slice(0, 5).map((v) => (
+                    <li key={v.uid} className="flex items-center justify-between">
+                      <span>{v.name} <span className="text-muted-foreground">({v.email})</span></span>
+                      <span className="text-xs text-muted-foreground">{v.vip} · há {v.lastDays}d</span>
                     </li>
                   ))}
                 </ul>
               </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-xl italic">Insights & Sugestões</h2>
             </div>
-          </div>
-        )}
-        <Tabs defaultValue="bestsellers">
-          <TabsList>
-            <TabsTrigger value="bestsellers">Mais vendidos</TabsTrigger>
-            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
-            <TabsTrigger value="margins">Margens</TabsTrigger>
-          </TabsList>
+            {insights.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Sem sugestões de momento. Tudo a correr bem.</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {insights.map((i) => {
+                  const toneClass =
+                    i.tone === "success" ? "border-emerald-200 bg-emerald-50"
+                    : i.tone === "warn" ? "border-amber-200 bg-amber-50"
+                    : "border-border bg-muted/30";
+                  const iconClass =
+                    i.tone === "success" ? "bg-emerald-100 text-emerald-700"
+                    : i.tone === "warn" ? "bg-amber-100 text-amber-700"
+                    : "bg-primary/10 text-primary";
+                  return (
+                    <div key={i.id} className={cn("flex gap-3 rounded-xl border p-4", toneClass)}>
+                      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", iconClass)}>
+                        {i.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-foreground">{i.text}</p>
+                        {i.actionLabel && i.actionHref && (
+                          <Link to={i.actionHref} className="mt-2 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
+                            {i.actionLabel} →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </TabsContent>
 
-          <TabsContent value="bestsellers" className="mt-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                  <th className="pb-2 font-normal">Produto</th>
-                  <th className="pb-2 font-normal">Marca</th>
-                  <th className="pb-2 text-right font-normal">Un.</th>
-                  <th className="pb-2 text-right font-normal">Receita</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topProductsRevenue.length === 0 && (
-                  <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
-                )}
-                {topProductsRevenue.map((p, i) => (
-                  <tr key={i} className="border-t border-border">
-                    <td className="py-2">{p.name}</td>
-                    <td className="py-2 text-muted-foreground">{p.brand}</td>
-                    <td className="py-2 text-right">{p.units}</td>
-                    <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
+        {/* ============ VENDAS ============ */}
+        <TabsContent value="sales" className="space-y-8">
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-xl italic">Encomendas — {range.label}</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    <th className="pb-2 font-normal">Data</th>
+                    <th className="pb-2 font-normal">Cliente</th>
+                    <th className="pb-2 font-normal">Estado</th>
+                    <th className="pb-2 text-right font-normal">Valor</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TabsContent>
+                </thead>
+                <tbody>
+                  {ordersInRange.length === 0 && (
+                    <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Sem encomendas no período</td></tr>
+                  )}
+                  {ordersInRange.slice(0, 50).map((o) => (
+                    <tr key={o.id} className="border-t border-border">
+                      <td className="py-2">{format(new Date(o.created_at), "dd/MM/yyyy")}</td>
+                      <td className="py-2">{o.customer_name || o.customer_email || "—"}</td>
+                      <td className="py-2 text-xs text-muted-foreground">{o.status}</td>
+                      <td className="py-2 text-right font-medium">{fmtEur(Number(o.total || 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {ordersInRange.length > 50 && (
+                <p className="mt-2 text-xs text-muted-foreground">A mostrar 50 de {ordersInRange.length} encomendas.</p>
+              )}
+            </div>
+          </section>
 
-          <TabsContent value="wishlist" className="mt-4">
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-3 font-display text-lg italic">Top produtos — este mês</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    <th className="pb-2 font-normal">Produto</th>
+                    <th className="pb-2 font-normal">Marca</th>
+                    <th className="pb-2 text-right font-normal">Un.</th>
+                    <th className="pb-2 text-right font-normal">Receita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProductsRevenue.length === 0 && (
+                    <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                  )}
+                  {topProductsRevenue.map((p, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="py-2">{p.name}</td>
+                      <td className="py-2 text-muted-foreground">{p.brand}</td>
+                      <td className="py-2 text-right">{p.units}</td>
+                      <td className="py-2 text-right font-medium">{fmtEur(p.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="mb-3 font-display text-lg italic">Top marcas — {range.label}</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    <th className="pb-2 font-normal">Marca</th>
+                    <th className="pb-2 text-right font-normal">Un.</th>
+                    <th className="pb-2 text-right font-normal">Receita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topBrands.length === 0 && (
+                    <tr><td colSpan={3} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                  )}
+                  {topBrands.map((b) => (
+                    <tr key={b.brand} className="border-t border-border">
+                      <td className="py-2">{b.brand}</td>
+                      <td className="py-2 text-right">{b.units}</td>
+                      <td className="py-2 text-right font-medium">{fmtEur(b.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-primary/30 bg-[oklch(0.96_0.02_268)] p-6 md:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Comissões</p>
+                <h2 className="mt-1 font-display text-2xl italic">Detalhe de comissão — {range.label}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Encomendas entregues. {commissionPct}% sobre o valor da venda.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  Percentagem de comissão:
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={commissionPct}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v)) setCommissionPct(Math.max(1, Math.min(30, Math.round(v))));
+                    }}
+                    className="h-9 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  />
+                  <span>%</span>
+                </label>
+                <Button onClick={generatePDF} className="gap-2">
+                  <Download className="h-4 w-4" /> Exportar PDF
+                </Button>
+              </div>
+            </div>
+            <div className="mt-4 rounded-xl border border-primary/20 bg-white/60 p-4 text-xs text-muted-foreground">
+              <p>
+                <span className="font-medium text-foreground">Base de cálculo:</span> a comissão é calculada sobre o valor bruto de vendas (preço de venda final pago pelo cliente), não sobre o lucro. Isto garante transparência e simplicidade para ambas as partes.
+              </p>
+            </div>
+            <div className="mt-6 overflow-x-auto rounded-xl bg-card">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    <th className="px-4 py-3 font-normal">Data</th>
+                    <th className="px-4 py-3 font-normal">Cliente</th>
+                    <th className="px-4 py-3 text-right font-normal">Valor</th>
+                    <th className="px-4 py-3 text-right font-normal">Comissão ({commissionPct}%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedInRange.length === 0 && (
+                    <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Sem encomendas entregues no período</td></tr>
+                  )}
+                  {completedInRange.map((o) => (
+                    <tr key={o.id} className="border-t border-border">
+                      <td className="px-4 py-2">{format(new Date(o.created_at), "dd/MM/yyyy")}</td>
+                      <td className="px-4 py-2">{o.customer_name || o.customer_email || "—"}</td>
+                      <td className="px-4 py-2 text-right">{fmtEur(Number(o.total || 0))}</td>
+                      <td className="px-4 py-2 text-right font-medium">{fmtEur(Number(o.total || 0) * commissionPct / 100)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {completedInRange.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t-2 border-border bg-muted/30">
+                      <td colSpan={2} className="px-4 py-3 text-right text-sm font-medium">Totais</td>
+                      <td className="px-4 py-3 text-right font-display text-base">{fmtEur(commissionTotal)}</td>
+                      <td className="px-4 py-3 text-right font-display text-base text-primary">{fmtEur(commissionDue)}</td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </section>
+        </TabsContent>
+
+        {/* ============ CLIENTES ============ */}
+        <TabsContent value="customers" className="space-y-8">
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <UsersIcon className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-xl italic">Comportamento de clientes</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard label="Taxa de conversão" value={`${conversion.toFixed(1)}%`} hint={`${buyerIds.size}/${profiles.length} compraram`} />
+              <StatCard label="Ticket médio" value={fmtEur(avgOrderValue)} hint="Período seleccionado" />
+              <StatCard label="Novos clientes (mês)" value={String(newCustomersM)} />
+              <StatCard label="Clientes recorrentes (mês)" value={String(returningThisMonth)} />
+            </div>
+
+            <h3 className="mt-6 mb-2 text-sm font-medium">Top 5 clientes por valor</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                    <th className="pb-2 font-normal">Nome</th>
+                    <th className="pb-2 font-normal">Email</th>
+                    <th className="pb-2 font-normal">VIP</th>
+                    <th className="pb-2 text-right font-normal">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topCustomers.length === 0 && (
+                    <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">Sem dados</td></tr>
+                  )}
+                  {topCustomers.map((c) => (
+                    <tr key={c.uid} className="border-t border-border">
+                      <td className="py-2">{c.name}</td>
+                      <td className="py-2 text-muted-foreground">{c.email}</td>
+                      <td className="py-2"><span className={vipBadgeClasses(c.vip)}>{VIP_LABELS[c.vip]}</span></td>
+                      <td className="py-2 text-right font-medium">{fmtEur(c.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-xl italic">Wishlist — produtos não comprados</h2>
+            </div>
             <p className="mb-2 text-xs text-muted-foreground">Oportunidade para promoção dirigida.</p>
             <table className="w-full text-sm">
               <thead>
@@ -1008,9 +1189,37 @@ export function ReportsDashboard() {
                 ))}
               </tbody>
             </table>
-          </TabsContent>
+          </section>
+        </TabsContent>
 
-          <TabsContent value="margins" className="mt-4">
+        {/* ============ MARGENS ============ */}
+        <TabsContent value="margins" className="space-y-8">
+          {lossProducts.length > 0 && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 text-rose-700" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-rose-900">
+                    Atenção: {lossProducts.length} produto{lossProducts.length === 1 ? "" : "s"} vendido{lossProducts.length === 1 ? "" : "s"} abaixo do preço de custo
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-rose-800">
+                    {lossProducts.map((p, i) => (
+                      <li key={i}>
+                        <span className="font-medium">{p.brand} — {p.name}</span>
+                        <span className="text-rose-700"> · perda de {fmtEur(p.lossPerUnit)} por unidade ({p.units} un.)</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Percent className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-xl italic">Análise de margens</h2>
+            </div>
             {marginRows.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 Sem dados. Preenche o preço de custo nos produtos vendidos para ver a análise de margens.
@@ -1053,11 +1262,9 @@ export function ReportsDashboard() {
                     <tbody>
                       {marginRows.map((r) => {
                         const pctClass =
-                          r.marginPct < 20
-                            ? "bg-rose-100 text-rose-800"
-                            : r.marginPct < 40
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-emerald-100 text-emerald-800";
+                          r.marginPct < 20 ? "bg-rose-100 text-rose-800"
+                          : r.marginPct < 40 ? "bg-amber-100 text-amber-800"
+                          : "bg-emerald-100 text-emerald-800";
                         return (
                           <tr key={r.id} className="border-t border-border">
                             <td className="py-2">
@@ -1083,218 +1290,49 @@ export function ReportsDashboard() {
                 </div>
               </>
             )}
-          </TabsContent>
-        </Tabs>
-      </section>
+          </section>
 
-      {criticalStock.length > 0 && (
-        <section className="mt-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Package className="h-4 w-4 text-orange-600" />
-            <h3 className="text-sm font-medium">Stock crítico (esgotado ou última unidade)</h3>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {criticalStock.map((p) => (
-              <div key={p.id} className="rounded-xl border-l-4 border-l-orange-500 border border-border bg-card p-3">
-                <p className="text-xs text-muted-foreground">{p.brand}</p>
-                <p className="text-sm font-medium">{p.name}</p>
-                {(p.reference || p.barcode) && (
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Ref: {p.reference || p.barcode}
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-orange-700">
-                  {p.avail === 0 ? "Esgotado" : "1 unidade disponível"}
-                </p>
+          {criticalStock.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4 text-orange-600" />
+                <h3 className="text-sm font-medium">Stock crítico (esgotado ou última unidade)</h3>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 5. Experiences & services */}
-      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display text-xl italic">Experiências & serviços — este mês</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {expStats.byType.map((b) => (
-            <StatCard key={b.type} label={b.type} value={String(b.count)} hint="Reservas" />
-          ))}
-          <StatCard label="Receita experiências" value={fmtEur(expStats.revenue)} />
-          <StatCard
-            label="Rating médio"
-            value={expStats.ratingCount > 0 ? `${expStats.avgRating.toFixed(1)} ★` : "—"}
-            hint={`${expStats.ratingCount} avaliações`}
-          />
-        </div>
-      </section>
-
-      {/* 6. Smart alerts */}
-      <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <Bell className="h-4 w-4 text-amber-700" />
-          <h2 className="font-display text-xl italic text-amber-900">Requer atenção</h2>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <AlertCard
-            icon={<ShoppingBag className="h-4 w-4" />}
-            label="Carrinhos abandonados (+7 dias)"
-            value={abandonedCarts}
-            href="/admin/clientes"
-          />
-          <AlertCard
-            icon={<Package className="h-4 w-4" />}
-            label="Produtos esgotados"
-            value={outOfStockThisMonth}
-            href="/admin/produtos"
-          />
-          <AlertCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Devoluções pendentes"
-            value={pendingReturns}
-            href="/admin/devolucoes"
-          />
-          <AlertCard
-            icon={<Bell className="h-4 w-4" />}
-            label="Lista de espera (esgotados)"
-            value={waitlistOos}
-            href="/admin/produtos"
-          />
-          <AlertCard
-            icon={<UsersIcon className="h-4 w-4" />}
-            label="VIPs inactivos (60+ dias)"
-            value={inactiveVips.length}
-            href="/admin/clientes"
-          />
-        </div>
-        {inactiveVips.length > 0 && (
-          <div className="mt-4 rounded-xl bg-white p-4">
-            <p className="mb-2 text-xs font-medium text-amber-900">Clientes VIP a reactivar:</p>
-            <ul className="space-y-1 text-sm">
-              {inactiveVips.slice(0, 5).map((v) => (
-                <li key={v.uid} className="flex items-center justify-between">
-                  <span>{v.name} <span className="text-muted-foreground">({v.email})</span></span>
-                  <span className="text-xs text-muted-foreground">{v.vip} · há {v.lastDays}d</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      {/* 7. Commission detail */}
-      <section className="mt-8 rounded-2xl border border-primary/30 bg-[oklch(0.96_0.02_268)] p-6 md:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Comissões</p>
-            <h2 className="mt-1 font-display text-2xl italic">Detalhe de comissão — {range.label}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Encomendas entregues. {commissionPct}% sobre o valor da venda.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              Percentagem de comissão:
-              <input
-                type="number"
-                min={1}
-                max={30}
-                value={commissionPct}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (Number.isFinite(v)) setCommissionPct(Math.max(1, Math.min(30, Math.round(v))));
-                }}
-                className="h-9 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-              />
-              <span>%</span>
-            </label>
-            <Button onClick={generatePDF} className="gap-2">
-              <Download className="h-4 w-4" /> Exportar PDF
-            </Button>
-          </div>
-        </div>
-        <div className="mt-4 rounded-xl border border-primary/20 bg-white/60 p-4 text-xs text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">Base de cálculo:</span> a comissão é calculada sobre o valor bruto de vendas (preço de venda final pago pelo cliente), não sobre o lucro. Isto garante transparência e simplicidade para ambas as partes.
-          </p>
-        </div>
-        <div className="mt-6 overflow-x-auto rounded-xl bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
-                <th className="px-4 py-3 font-normal">Data</th>
-                <th className="px-4 py-3 font-normal">Cliente</th>
-                <th className="px-4 py-3 text-right font-normal">Valor</th>
-                <th className="px-4 py-3 text-right font-normal">Comissão ({commissionPct}%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {completedInRange.length === 0 && (
-                <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">Sem encomendas entregues no período</td></tr>
-              )}
-              {completedInRange.map((o) => (
-                <tr key={o.id} className="border-t border-border">
-                  <td className="px-4 py-2">{format(new Date(o.created_at), "dd/MM/yyyy")}</td>
-                  <td className="px-4 py-2">{o.customer_name || o.customer_email || "—"}</td>
-                  <td className="px-4 py-2 text-right">{fmtEur(Number(o.total || 0))}</td>
-                  <td className="px-4 py-2 text-right font-medium">{fmtEur(Number(o.total || 0) * commissionPct / 100)}</td>
-                </tr>
-              ))}
-            </tbody>
-            {completedInRange.length > 0 && (
-              <tfoot>
-                <tr className="border-t-2 border-border bg-muted/30">
-                  <td colSpan={2} className="px-4 py-3 text-right text-sm font-medium">Totais</td>
-                  <td className="px-4 py-3 text-right font-display text-base">{fmtEur(commissionTotal)}</td>
-                  <td className="px-4 py-3 text-right font-display text-base text-primary">{fmtEur(commissionDue)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
-      </section>
-
-      {/* 8. Insights & sugestões */}
-      <section className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-xl italic">Insights & Sugestões</h2>
-        </div>
-        {insights.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Sem sugestões de momento. Tudo a correr bem.
-          </p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {insights.map((i) => {
-              const toneClass =
-                i.tone === "success"
-                  ? "border-emerald-200 bg-emerald-50"
-                  : i.tone === "warn"
-                    ? "border-amber-200 bg-amber-50"
-                    : "border-border bg-muted/30";
-              const iconClass =
-                i.tone === "success"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : i.tone === "warn"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-primary/10 text-primary";
-              return (
-                <div key={i.id} className={cn("flex gap-3 rounded-xl border p-4", toneClass)}>
-                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", iconClass)}>
-                    {i.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground">{i.text}</p>
-                    {i.actionLabel && i.actionHref && (
-                      <Link to={i.actionHref} className="mt-2 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
-                        {i.actionLabel} →
-                      </Link>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {criticalStock.map((p) => (
+                  <div key={p.id} className="rounded-xl border-l-4 border-l-orange-500 border border-border bg-card p-3">
+                    <p className="text-xs text-muted-foreground">{p.brand}</p>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    {(p.reference || p.barcode) && (
+                      <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Ref: {p.reference || p.barcode}
+                      </p>
                     )}
+                    <p className="mt-1 text-xs text-orange-700">
+                      {p.avail === 0 ? "Esgotado" : "1 unidade disponível"}
+                    </p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="font-display text-xl italic">Experiências & serviços — este mês</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {expStats.byType.map((b) => (
+                <StatCard key={b.type} label={b.type} value={String(b.count)} hint="Reservas" />
+              ))}
+              <StatCard label="Receita experiências" value={fmtEur(expStats.revenue)} />
+              <StatCard
+                label="Rating médio"
+                value={expStats.ratingCount > 0 ? `${expStats.avgRating.toFixed(1)} ★` : "—"}
+                hint={`${expStats.ratingCount} avaliações`}
+              />
+            </div>
+          </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
