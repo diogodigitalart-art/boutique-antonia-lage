@@ -633,6 +633,29 @@ export function ReportsDashboard() {
   const commissionTotal = completedInRange.reduce((s, o) => s + Number(o.total || 0), 0);
   const commissionDue = (commissionTotal * commissionPct) / 100;
 
+  // ===== Orders in range (all non-cancelled) + top brands =====
+  const ordersInRange = useMemo(
+    () => inRange(orders).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, range],
+  );
+  const topBrands = useMemo(() => {
+    const map = new Map<string, { units: number; revenue: number }>();
+    for (const o of ordersInRange) {
+      for (const it of o.items ?? []) {
+        const b = it.brand ?? "—";
+        const prev = map.get(b) ?? { units: 0, revenue: 0 };
+        prev.units += Number(it.quantity || 0);
+        prev.revenue += Number(it.line_total || 0);
+        map.set(b, prev);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([brand, v]) => ({ brand, ...v }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [ordersInRange]);
+
   // ===== Intelligent insights =====
   type Insight = {
     id: string;
