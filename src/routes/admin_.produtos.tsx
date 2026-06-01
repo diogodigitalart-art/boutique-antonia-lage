@@ -1041,16 +1041,6 @@ function ProductForm({
                   );
                 })()}
               </Field>
-              <Field label="Preço original (opcional)">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.original_price}
-                  onChange={(e) => setForm({ ...form, original_price: e.target.value })}
-                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
-                />
-              </Field>
               <Field label="Desconto (%)">
                 <input
                   type="number"
