@@ -571,7 +571,7 @@ function OrderCard({
                       {it.name ?? "Peça"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
+                      Tamanho {displaySize(it.size) ?? "—"} · Qtd {it.quantity ?? 1}
                     </p>
                   </div>
                   <p className="text-sm font-medium">
