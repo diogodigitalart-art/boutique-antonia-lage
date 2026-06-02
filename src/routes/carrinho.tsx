@@ -4,6 +4,7 @@ import { useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/products";
 import { Trash2, Minus, Plus, ShoppingBag, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { displaySize } from "@/lib/utils";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({ meta: [{ title: "Carrinho | Boutique Antónia Lage" }] }),
