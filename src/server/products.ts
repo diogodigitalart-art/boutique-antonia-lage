@@ -204,7 +204,22 @@ export const adminListProducts = createServerFn({ method: "POST" })
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [] };
+    const normalized = (rows ?? []).map((r) => {
+      const raw = r as Record<string, unknown>;
+      const rawSizes = Array.isArray(raw.sizes) ? raw.sizes : [];
+      return {
+        ...raw,
+        sizes: rawSizes.map((s: unknown) => {
+          const o = s as Record<string, unknown>;
+          return {
+            size: normalizeSize(String(o.size || "")) || String(o.size || ""),
+            stock: Math.max(0, Number(o.stock) || 0),
+            reserved: Math.max(0, Number(o.reserved) || 0),
+          };
+        }),
+      };
+    });
+    return { rows: normalized };
   });
 
 export const adminUpsertProduct = createServerFn({ method: "POST" })
