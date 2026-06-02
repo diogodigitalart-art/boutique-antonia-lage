@@ -311,7 +311,7 @@ function ProductPage() {
                             : "border-dashed border-border bg-muted text-muted-foreground/70 line-through hover:text-foreground"
                       }`}
                     >
-                      {s}
+                      {displaySize(s)}
                     </button>
                   );
                 })}
