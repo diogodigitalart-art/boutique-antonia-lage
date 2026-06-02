@@ -1375,7 +1375,7 @@ function FlexibleSizes({
   const [draft, setDraft] = useState("");
 
   const addSize = (label: string) => {
-    const v = label.trim();
+    const v = normalizeSize(label.trim()) || label.trim();
     if (!v) return;
     if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
     onChange([...sizes, { size: v, stock: 0 }]);
