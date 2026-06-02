@@ -506,7 +506,7 @@ export function AdminOrders({ mode }: { mode: Mode }) {
                                         </span>
                                       )}
                                       <span className="text-xs text-muted-foreground">
-                                        Tamanho {it.size} · ×{it.quantity}
+                                        Tamanho {displaySize(it.size)} · ×{it.quantity}
                                       </span>
                                       <span className="mt-auto text-xs text-muted-foreground">
                                         €{Number(it.line_total).toFixed(2)}
