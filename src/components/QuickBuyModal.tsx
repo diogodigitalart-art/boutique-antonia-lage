@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { useProducts } from "@/lib/products";
+import { displaySize } from "@/lib/utils";
 
 export type QuickBuyProduct = {
   id: string;
