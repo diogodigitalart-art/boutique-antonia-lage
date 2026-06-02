@@ -145,6 +145,7 @@ function Content() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [deleteConfirmRow, setDeleteConfirmRow] = useState<ProductRow | null>(null);
 
   const refresh = useCallback(async () => {
     try {
