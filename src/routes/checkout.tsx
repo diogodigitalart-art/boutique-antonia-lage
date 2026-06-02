@@ -11,6 +11,7 @@ import { Check, ChevronLeft, Lock, Pencil } from "lucide-react";
 import { createOrder } from "@/server/orders";
 import { validateDiscountCode } from "@/server/discountCodes";
 import { validateGiftCard } from "@/server/giftCards";
+import { displaySize } from "@/lib/utils";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Boutique Antónia Lage" }] }),
@@ -429,7 +430,7 @@ function CheckoutPage() {
                         </p>
                         <p className="font-display text-base italic">{it.product?.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Tamanho {it.size} · Qtd {it.quantity}
+                          Tamanho {displaySize(it.size)} · Qtd {it.quantity}
                         </p>
                       </div>
                       <p className="text-sm font-medium">€{it.lineTotal.toFixed(2)}</p>

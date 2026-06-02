@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useProducts } from "@/lib/products";
 import { useServerFn } from "@tanstack/react-start";
 import { adminScheduleOrderReview } from "@/server/features";
+import { displaySize } from "@/lib/utils";
 
 const STATUSES = [
   "Pendente",
@@ -505,7 +506,7 @@ export function AdminOrders({ mode }: { mode: Mode }) {
                                         </span>
                                       )}
                                       <span className="text-xs text-muted-foreground">
-                                        Tamanho {it.size} · ×{it.quantity}
+                                        Tamanho {displaySize(it.size)} · ×{it.quantity}
                                       </span>
                                       <span className="mt-auto text-xs text-muted-foreground">
                                         €{Number(it.line_total).toFixed(2)}

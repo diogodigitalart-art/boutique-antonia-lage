@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { BRANDS } from "@/lib/data";
+import { displaySize, normalizeSize } from "@/lib/utils";
 import {
   Loader2,
   Plus,
@@ -22,6 +23,16 @@ import {
   ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   adminListProducts,
   adminUpsertProduct,
@@ -134,6 +145,7 @@ function Content() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [deleteConfirmRow, setDeleteConfirmRow] = useState<ProductRow | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -187,11 +199,16 @@ function Content() {
   };
 
   const remove = async (r: ProductRow) => {
-    if (!confirm(`Remover "${r.name}"?`)) return;
+    setDeleteConfirmRow(r);
+  };
+  const confirmDelete = async () => {
+    if (!deleteConfirmRow) return;
     try {
       const token = await getToken();
-      await deleteFn({ data: { token, id: r.id } });
+      await deleteFn({ data: { token, id: deleteConfirmRow.id } });
       toast.success("Removido");
+      setDeleteConfirmRow(null);
+      setEditing(null);
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
@@ -381,7 +398,7 @@ function Content() {
                       ? sizes
                           .map(
                             (s) =>
-                              `${s.size}:${Math.max(0, s.stock - s.reserved)}`,
+                              `${displaySize(s.size)}:${Math.max(0, s.stock - s.reserved)}`,
                           )
                           .join(" ")
                       : "—";
@@ -511,10 +528,9 @@ function Content() {
               setCreating(false);
             }
           }}
-          onDelete={async () => {
+          onDelete={() => {
             if (!editing) return;
-            await remove(editing);
-            setEditing(null);
+            remove(editing);
           }}
         />
       )}
@@ -538,6 +554,24 @@ function Content() {
           }}
         />
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteConfirmRow} onOpenChange={(o) => { if (!o) setDeleteConfirmRow(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres eliminar este produto? Esta acção não pode ser revertida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmRow(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -1341,7 +1375,7 @@ function FlexibleSizes({
   const [draft, setDraft] = useState("");
 
   const addSize = (label: string) => {
-    const v = label.trim();
+    const v = normalizeSize(label.trim()) || label.trim();
     if (!v) return;
     if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
     onChange([...sizes, { size: v, stock: 0 }]);
@@ -1393,7 +1427,7 @@ function FlexibleSizes({
               setDraft("");
             }
           }}
-          placeholder="ex: 36, M, OS…"
+          placeholder="ex: 36, M, U…"
           className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-[13px]"
         />
         <button
@@ -1420,7 +1454,7 @@ function FlexibleSizes({
               className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
             >
               <span className="min-w-[40px] text-center font-medium text-[13px]">
-                {s.size}
+                {displaySize(s.size)}
               </span>
               <input
                 type="number"
@@ -1860,7 +1894,7 @@ function ImportProductsModal({
                           <td className="px-3 py-1.5">{r.season || "—"}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">€{r.price}</td>
                           <td className="px-3 py-1.5 text-muted-foreground">
-                            {r.sizes.map((s) => `${s.size}:${s.stock}`).join(" ") || "—"}
+                            {r.sizes.map((s) => `${displaySize(s.size)}:${s.stock}`).join(" ") || "—"}
                           </td>
                           <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
@@ -1943,7 +1977,7 @@ function InventoryAdjustments({
                   className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 font-medium">{s.size}</span>
+                    <span className="w-6 font-medium">{displaySize(s.size)}</span>
                     <span className="text-[11px] text-muted-foreground">
                       stock {s.stock} · reservado {s.reserved} · livre {available}
                     </span>
@@ -2037,7 +2071,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
         };
         setLogs((prev) => [log, ...prev].slice(0, 10));
         toast.success(
-          `${modeRef.current === "IN" ? "Entrada" : "Saída"} · ${res.brand} ${res.productName} (${res.size}) · stock ${res.totalAvailable}`,
+          `${modeRef.current === "IN" ? "Entrada" : "Saída"} · ${res.brand} ${res.productName} (${displaySize(res.size)}) · stock ${res.totalAvailable}`,
         );
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro");

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/data";
+import { normalizeSize } from "@/lib/utils";
 
 export type ProductSize = { size: string; stock: number; reserved: number };
 
@@ -27,7 +28,8 @@ export type ProductRow = {
 };
 
 export function rowToProduct(row: ProductRow): Product {
-  const sizesArr = Array.isArray(row.sizes) ? row.sizes : [];
+  const rawSizes = Array.isArray(row.sizes) ? row.sizes : [];
+  const sizesArr = rawSizes.map((s) => ({ ...s, size: normalizeSize(s.size) || s.size }));
   const availableSizes = sizesArr
     .filter((s) => Number(s.stock) - Number(s.reserved) > 0)
     .map((s) => s.size);

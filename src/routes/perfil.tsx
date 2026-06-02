@@ -9,6 +9,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth, type SavedAddress } from "@/lib/auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { displaySize } from "@/lib/utils";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { statusBadgeClasses } from "@/lib/reservations";
@@ -570,7 +571,7 @@ function OrderCard({
                       {it.name ?? "Peça"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
+                      Tamanho {displaySize(it.size) ?? "—"} · Qtd {it.quantity ?? 1}
                     </p>
                   </div>
                   <p className="text-sm font-medium">

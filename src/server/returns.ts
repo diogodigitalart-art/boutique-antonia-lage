@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { displaySize } from "@/lib/utils";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const FROM_ADDRESS = "Antónia Lage <onboarding@resend.dev>";
@@ -63,7 +64,7 @@ export const notifyReturnStatus = createServerFn({ method: "POST" })
       .map(
         (it) => `<li style="margin:0 0 6px">
           <strong>${escapeHtml(String(it.brand ?? ""))}</strong> ${escapeHtml(String(it.name ?? ""))}
-          ${it.size ? ` · Tamanho ${escapeHtml(String(it.size))}` : ""}
+          ${it.size ? ` · Tamanho ${escapeHtml(displaySize(String(it.size)))}` : ""}
           ${it.quantity ? ` · Qtd ${String(it.quantity)}` : ""}
         </li>`,
       )

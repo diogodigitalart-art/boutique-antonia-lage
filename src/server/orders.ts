@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { displaySize } from "@/lib/utils";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const NOTIFY_TO = "diogodigitalart@gmail.com";
@@ -303,7 +304,7 @@ export const createOrder = createServerFn({ method: "POST" })
               <td style="padding:8px 0;vertical-align:top;font-size:13px;line-height:1.5">
                 <div><strong>${escapeHtml(it.brand ?? "")}</strong> — ${escapeHtml(it.name ?? "")}</div>
                 ${it.reference ? `<div style="color:#999;font-family:monospace;font-size:11px;margin-top:2px">Ref: ${escapeHtml(it.reference)}</div>` : ""}
-                <div style="color:#666;font-size:12px;margin-top:4px">Tamanho ${escapeHtml(it.size)} · Qtd ${it.quantity} · €${it.line_total.toFixed(2)}</div>
+                <div style="color:#666;font-size:12px;margin-top:4px">Tamanho ${escapeHtml(displaySize(it.size))} · Qtd ${it.quantity} · €${it.line_total.toFixed(2)}</div>
               </td>
             </tr>`,
           )

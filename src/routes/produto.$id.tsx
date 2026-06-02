@@ -6,6 +6,7 @@ import { useProducts } from "@/lib/products";
 import type { Product } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
+import { displaySize } from "@/lib/utils";
 import { ProductCard } from "@/components/ProductCard";
 import { ReservationModal } from "@/components/ReservationModal";
 import { WaitlistModal } from "@/components/WaitlistModal";
@@ -310,7 +311,7 @@ function ProductPage() {
                             : "border-dashed border-border bg-muted text-muted-foreground/70 line-through hover:text-foreground"
                       }`}
                     >
-                      {s}
+                      {displaySize(s)}
                     </button>
                   );
                 })}

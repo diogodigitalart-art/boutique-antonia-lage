@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { displaySize } from "@/lib/utils";
 import {
   getAdminData,
   updateReservationStatus,
@@ -478,7 +479,7 @@ function UserDetail({
                     {c.product_label}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    Tamanho {c.size} · Qtd {c.quantity} · €{c.product_price.toFixed(2)} cada
+                    Tamanho {displaySize(c.size)} · Qtd {c.quantity} · €{c.product_price.toFixed(2)} cada
                   </p>
                 </div>
                 <p className="shrink-0 text-sm font-medium text-foreground">

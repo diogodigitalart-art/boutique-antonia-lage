@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useProducts } from "@/lib/products";
 import { Check, Loader2 } from "lucide-react";
+import { displaySize } from "@/lib/utils";
 
 export const Route = createFileRoute("/encomenda-confirmada/$orderId")({
   head: () => ({ meta: [{ title: "Encomenda confirmada | Boutique Antónia Lage" }] }),
@@ -120,7 +121,7 @@ function ConfirmedPage() {
                         </p>
                         <p className="font-display text-base italic">{it.name ?? "Peça"}</p>
                         <p className="text-xs text-muted-foreground">
-                          Tamanho {it.size ?? "—"} · Qtd {it.quantity ?? 1}
+                          Tamanho {displaySize(it.size) ?? "—"} · Qtd {it.quantity ?? 1}
                         </p>
                       </div>
                       <p className="text-sm font-medium">€{Number(it.line_total ?? 0).toFixed(2)}</p>
