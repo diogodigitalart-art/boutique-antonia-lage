@@ -1427,7 +1427,7 @@ function FlexibleSizes({
               setDraft("");
             }
           }}
-          placeholder="ex: 36, M, OS…"
+          placeholder="ex: 36, M, U…"
           className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-[13px]"
         />
         <button
