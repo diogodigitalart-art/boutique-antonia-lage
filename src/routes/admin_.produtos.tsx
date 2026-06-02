@@ -1894,7 +1894,7 @@ function ImportProductsModal({
                           <td className="px-3 py-1.5">{r.season || "—"}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">€{r.price}</td>
                           <td className="px-3 py-1.5 text-muted-foreground">
-                            {r.sizes.map((s) => `${s.size}:${s.stock}`).join(" ") || "—"}
+                            {r.sizes.map((s) => `${displaySize(s.size)}:${s.stock}`).join(" ") || "—"}
                           </td>
                           <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
