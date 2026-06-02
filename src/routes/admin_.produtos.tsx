@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { BRANDS } from "@/lib/data";
+import { displaySize, normalizeSize } from "@/lib/utils";
 import {
   Loader2,
   Plus,
@@ -22,6 +23,16 @@ import {
   ArrowUpFromLine,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   adminListProducts,
   adminUpsertProduct,
