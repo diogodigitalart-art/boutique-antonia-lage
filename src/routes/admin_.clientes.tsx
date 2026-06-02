@@ -479,7 +479,7 @@ function UserDetail({
                     {c.product_label}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    Tamanho {c.size} · Qtd {c.quantity} · €{c.product_price.toFixed(2)} cada
+                    Tamanho {displaySize(c.size)} · Qtd {c.quantity} · €{c.product_price.toFixed(2)} cada
                   </p>
                 </div>
                 <p className="shrink-0 text-sm font-medium text-foreground">

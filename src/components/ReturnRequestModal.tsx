@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { displaySize } from "@/lib/utils";
 
 type OrderItem = {
   product_id?: string;
@@ -113,7 +114,7 @@ export function ReturnRequestModal({
                     </p>
                     <p className="truncate font-display italic">{it.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      Tamanho {it.size} · Qtd {it.quantity ?? 1} · €
+                      Tamanho {displaySize(it.size)} · Qtd {it.quantity ?? 1} · €
                       {Number(it.line_total ?? 0).toFixed(2)}
                     </p>
                   </div>

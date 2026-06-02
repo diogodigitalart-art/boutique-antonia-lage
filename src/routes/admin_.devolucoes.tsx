@@ -3,6 +3,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts } from "@/lib/products";
+import { displaySize } from "@/lib/utils";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyReturnStatus } from "@/server/returns";
@@ -350,7 +351,7 @@ function AdminReturns() {
                                           {it.name}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                          Tamanho {it.size} · Qtd {it.quantity ?? 1}
+                                          Tamanho {displaySize(it.size)} · Qtd {it.quantity ?? 1}
                                         </p>
                                       </div>
                                     </li>
