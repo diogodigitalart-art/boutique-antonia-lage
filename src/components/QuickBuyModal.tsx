@@ -109,7 +109,7 @@ export function QuickBuyModal({
                               : "border-border bg-background text-foreground hover:border-primary"
                           } ${!enabled ? "opacity-40 line-through cursor-not-allowed" : ""}`}
                         >
-                          {s}
+                          {displaySize(s)}
                         </button>
                       );
                     })}
