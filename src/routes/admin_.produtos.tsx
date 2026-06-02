@@ -199,11 +199,16 @@ function Content() {
   };
 
   const remove = async (r: ProductRow) => {
-    if (!confirm(`Remover "${r.name}"?`)) return;
+    setDeleteConfirmRow(r);
+  };
+  const confirmDelete = async () => {
+    if (!deleteConfirmRow) return;
     try {
       const token = await getToken();
-      await deleteFn({ data: { token, id: r.id } });
+      await deleteFn({ data: { token, id: deleteConfirmRow.id } });
       toast.success("Removido");
+      setDeleteConfirmRow(null);
+      setEditing(null);
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
