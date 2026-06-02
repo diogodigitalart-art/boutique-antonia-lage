@@ -528,10 +528,9 @@ function Content() {
               setCreating(false);
             }
           }}
-          onDelete={async () => {
+          onDelete={() => {
             if (!editing) return;
-            await remove(editing);
-            setEditing(null);
+            remove(editing);
           }}
         />
       )}
@@ -555,6 +554,24 @@ function Content() {
           }}
         />
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteConfirmRow} onOpenChange={(o) => { if (!o) setDeleteConfirmRow(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres eliminar este produto? Esta acção não pode ser revertida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmRow(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
