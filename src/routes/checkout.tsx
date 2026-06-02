@@ -430,7 +430,7 @@ function CheckoutPage() {
                         </p>
                         <p className="font-display text-base italic">{it.product?.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Tamanho {it.size} · Qtd {it.quantity}
+                          Tamanho {displaySize(it.size)} · Qtd {it.quantity}
                         </p>
                       </div>
                       <p className="text-sm font-medium">€{it.lineTotal.toFixed(2)}</p>
