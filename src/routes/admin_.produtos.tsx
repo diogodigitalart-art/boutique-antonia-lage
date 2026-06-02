@@ -1977,7 +1977,7 @@ function InventoryAdjustments({
                   className="flex items-center justify-between rounded border border-border bg-background px-3 py-2 text-[13px]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 font-medium">{s.size}</span>
+                    <span className="w-6 font-medium">{displaySize(s.size)}</span>
                     <span className="text-[11px] text-muted-foreground">
                       stock {s.stock} · reservado {s.reserved} · livre {available}
                     </span>
@@ -2071,7 +2071,7 @@ function ScanModal({ onClose }: { onClose: () => void }) {
         };
         setLogs((prev) => [log, ...prev].slice(0, 10));
         toast.success(
-          `${modeRef.current === "IN" ? "Entrada" : "Saída"} · ${res.brand} ${res.productName} (${res.size}) · stock ${res.totalAvailable}`,
+          `${modeRef.current === "IN" ? "Entrada" : "Saída"} · ${res.brand} ${res.productName} (${displaySize(res.size)}) · stock ${res.totalAvailable}`,
         );
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro");
