@@ -333,7 +333,7 @@ export const getAdminData = createServerFn({ method: "POST" })
     };
   });
 
-import { scheduleReviewRequest } from "@/server/features-internals.server";
+import { scheduleReviewRequest } from "@/server-fns/features-internals.server";
 
 export const updateReservationStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {

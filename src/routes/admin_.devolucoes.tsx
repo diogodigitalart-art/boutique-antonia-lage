@@ -6,7 +6,7 @@ import { useProducts } from "@/lib/products";
 import { displaySize } from "@/lib/utils";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { notifyReturnStatus } from "@/server/returns";
+import { notifyReturnStatus } from "@/server-fns/returns";
 import { RotateCcw, Search, Archive, ArchiveRestore } from "lucide-react";
 
 export const Route = createFileRoute("/admin_/devolucoes")({

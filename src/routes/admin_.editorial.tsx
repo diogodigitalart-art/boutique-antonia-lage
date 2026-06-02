@@ -8,8 +8,8 @@ import {
   adminUpsertEditorial,
   adminDeleteEditorial,
   type EditorialPost,
-} from "@/server/features";
-import { adminUploadProductImage } from "@/server/products";
+} from "@/server-fns/features";
+import { adminUploadProductImage } from "@/server-fns/products";
 import { Loader2, Plus, Trash2, Pencil, X, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts } from "@/lib/products";

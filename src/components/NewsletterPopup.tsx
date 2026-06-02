@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
-import { subscribeNewsletter } from "@/server/newsletter";
+import { subscribeNewsletter } from "@/server-fns/newsletter";
 import { toast } from "sonner";
 
 const STORAGE_KEY = "newsletter-popup-state";

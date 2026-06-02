@@ -8,9 +8,9 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Lock, Pencil } from "lucide-react";
-import { createOrder } from "@/server/orders";
-import { validateDiscountCode } from "@/server/discountCodes";
-import { validateGiftCard } from "@/server/giftCards";
+import { createOrder } from "@/server-fns/orders";
+import { validateDiscountCode } from "@/server-fns/discountCodes";
+import { validateGiftCard } from "@/server-fns/giftCards";
 import { displaySize } from "@/lib/utils";
 
 export const Route = createFileRoute("/checkout")({

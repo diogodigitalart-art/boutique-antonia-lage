@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
-import { getEditorialById, type EditorialPost } from "@/server/features";
+import { getEditorialById, type EditorialPost } from "@/server-fns/features";
 import { Button } from "@/components/ui/button";
 import { QuickBuyModal } from "@/components/QuickBuyModal";
 import { useProducts } from "@/lib/products";

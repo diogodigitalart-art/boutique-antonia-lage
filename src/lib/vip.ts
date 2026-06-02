@@ -1,4 +1,4 @@
-import type { AdminUser } from "@/server/admin";
+import type { AdminUser } from "@/server-fns/admin";
 
 export type VipLevel = AdminUser["vip_level"];
 

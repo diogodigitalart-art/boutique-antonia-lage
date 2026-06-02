@@ -12,13 +12,13 @@ import {
   adminListSeasons,
   adminAddSeason,
   adminDeleteSeason,
-} from "@/server/products";
+} from "@/server-fns/products";
 import {
   listExperienceCapacity,
   adminSetExperienceCapacity,
   type ExperienceCapacityRow,
-} from "@/server/slots";
-import { getSetting, adminSetSetting } from "@/server/newsletter";
+} from "@/server-fns/slots";
+import { getSetting, adminSetSetting } from "@/server-fns/newsletter";
 
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),

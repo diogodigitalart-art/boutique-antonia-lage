@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { adminListSubscribers, type NewsletterSubscriberRow } from "@/server/newsletter";
+import { adminListSubscribers, type NewsletterSubscriberRow } from "@/server-fns/newsletter";
 import {
   Mail,
   Search,

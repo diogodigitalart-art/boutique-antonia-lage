@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { getLatestEditorial, type EditorialPost } from "@/server/features";
+import { getLatestEditorial, type EditorialPost } from "@/server-fns/features";
 import { useProducts } from "@/lib/products";
 import { ChevronRight } from "lucide-react";
 

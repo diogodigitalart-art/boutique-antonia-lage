@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
-import { getSharedWishlist } from "@/server/wishlistShare";
+import { getSharedWishlist } from "@/server-fns/wishlistShare";
 import { Heart, Loader2, ShoppingBag } from "lucide-react";
 
 export const Route = createFileRoute("/wishlist_/share/$token")({
