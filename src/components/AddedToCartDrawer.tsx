@@ -46,7 +46,7 @@ export function AddedToCartDrawer({ open, onClose, productId, size }: Props) {
                   {product.brand}
                 </p>
                 <p className="font-display text-lg italic text-foreground">{product.name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Tamanho: {size}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Tamanho: {displaySize(size)}</p>
                 <p className="mt-2 text-base font-medium">€{lineTotal.toFixed(2)}</p>
 
                 <div className="mt-4 inline-flex items-center self-start rounded-full border border-border">
