@@ -398,7 +398,7 @@ function Content() {
                       ? sizes
                           .map(
                             (s) =>
-                              `${s.size}:${Math.max(0, s.stock - s.reserved)}`,
+                              `${displaySize(s.size)}:${Math.max(0, s.stock - s.reserved)}`,
                           )
                           .join(" ")
                       : "—";
