@@ -11,6 +11,7 @@ import { Check, ChevronLeft, Lock, Pencil } from "lucide-react";
 import { createOrder } from "@/server/orders";
 import { validateDiscountCode } from "@/server/discountCodes";
 import { validateGiftCard } from "@/server/giftCards";
+import { displaySize } from "@/lib/utils";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout | Boutique Antónia Lage" }] }),
