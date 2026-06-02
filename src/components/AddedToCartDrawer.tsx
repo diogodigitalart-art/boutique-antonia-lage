@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Minus, Plus, Check } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/products";
+import { displaySize } from "@/lib/utils";
 
 type Props = {
   open: boolean;
