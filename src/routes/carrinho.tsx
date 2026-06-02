@@ -94,7 +94,7 @@ function CartPage() {
                         <p className="font-display text-lg italic text-foreground">
                           {it.product?.name ?? "Peça"}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">{t("size")}: {it.size}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t("size")}: {displaySize(it.size)}</p>
                         {it.outOfStock && (
                           <p className="mt-1 text-xs font-medium text-rose-700">
                             {it.available > 0
