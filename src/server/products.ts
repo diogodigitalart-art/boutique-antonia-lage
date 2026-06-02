@@ -150,7 +150,7 @@ function parsePayload(input: unknown): AdminProductPayload {
     ? (i.sizes as unknown[]).map((x) => {
         const o = x as Record<string, unknown>;
         return {
-          size: String(o.size || ""),
+          size: normalizeSize(String(o.size || "")) || String(o.size || ""),
           stock: Math.max(0, Number(o.stock) || 0),
           reserved: Math.max(0, Number(o.reserved) || 0),
         };
