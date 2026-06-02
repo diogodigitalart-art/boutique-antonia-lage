@@ -9,7 +9,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureMyWishlistShare } from "@/server/wishlistShare";
+import { ensureMyWishlistShare } from "@/server-fns/wishlistShare";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/wishlist")({

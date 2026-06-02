@@ -9,7 +9,7 @@ import {
   updateReservationStatus,
   type AdminPayload,
   type AdminUser,
-} from "@/server/admin";
+} from "@/server-fns/admin";
 import {
   Search,
   Users,

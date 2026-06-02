@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminData, type AdminPayload } from "@/server/admin";
-import { processReviewRequestQueue } from "@/server/features";
+import { getAdminData, type AdminPayload } from "@/server-fns/admin";
+import { processReviewRequestQueue } from "@/server-fns/features";
 import {
   Users,
   Calendar,

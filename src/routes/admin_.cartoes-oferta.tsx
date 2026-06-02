@@ -9,7 +9,7 @@ import {
   adminExpireGiftCard,
   adminResendGiftCard,
   type AdminGiftCardRow,
-} from "@/server/giftCards";
+} from "@/server-fns/giftCards";
 
 export const Route = createFileRoute("/admin_/cartoes-oferta")({
   head: () => ({ meta: [{ title: "Cartões Oferta | Admin" }] }),

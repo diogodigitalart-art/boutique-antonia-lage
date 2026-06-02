@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { purchaseGiftCard } from "@/server/giftCards";
+import { purchaseGiftCard } from "@/server-fns/giftCards";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cartao-oferta")({

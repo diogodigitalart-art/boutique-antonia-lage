@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getSetting } from "@/server/newsletter";
+import { getSetting } from "@/server-fns/newsletter";
 
 const DEFAULT_NUMBER = "+351932196049";
 

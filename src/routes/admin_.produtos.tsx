@@ -45,8 +45,8 @@ import {
   adminListSeasons,
   adminAdjustStockByBarcode,
   adminBulkDeactivateByRefs,
-} from "@/server/products";
-import { adminGetWaitlistCounts } from "@/server/features";
+} from "@/server-fns/products";
+import { adminGetWaitlistCounts } from "@/server-fns/features";
 
 const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "colecção", label: "Colecção" },

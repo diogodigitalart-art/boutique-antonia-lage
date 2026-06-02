@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { submitFeedback } from "@/server/feedback";
+import { submitFeedback } from "@/server-fns/feedback";
 import { Star, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 

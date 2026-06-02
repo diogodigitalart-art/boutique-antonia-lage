@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Layout } from "@/components/Layout";
-import { listPublishedEditorials, type EditorialPost } from "@/server/features";
+import { listPublishedEditorials, type EditorialPost } from "@/server-fns/features";
 import { Play } from "lucide-react";
 
 export const Route = createFileRoute("/editorial")({

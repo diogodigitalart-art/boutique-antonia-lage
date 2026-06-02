@@ -7,7 +7,7 @@ import {
   getAdminData,
   updateReservationStatus,
   type AdminPayload,
-} from "@/server/admin";
+} from "@/server-fns/admin";
 import { Loader2, Search, ChevronLeft, ChevronRight, Calendar, List } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_OPTIONS, statusBadgeClasses, TIME_SLOTS } from "@/lib/reservations";

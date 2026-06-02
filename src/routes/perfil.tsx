@@ -19,7 +19,7 @@ import {
   getMyWishlistShare,
   ensureMyWishlistShare,
   setMyWishlistShareActive,
-} from "@/server/wishlistShare";
+} from "@/server-fns/wishlistShare";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({

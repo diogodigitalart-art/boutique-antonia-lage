@@ -2,7 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { joinWaitlist } from "@/server/features";
+import { joinWaitlist } from "@/server-fns/features";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 

@@ -4,7 +4,7 @@ import { Search, ShoppingBag, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts } from "@/lib/products";
 import { useServerFn } from "@tanstack/react-start";
-import { adminScheduleOrderReview } from "@/server/features";
+import { adminScheduleOrderReview } from "@/server-fns/features";
 import { displaySize } from "@/lib/utils";
 
 const STATUSES = [
