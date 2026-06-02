@@ -1454,7 +1454,7 @@ function FlexibleSizes({
               className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
             >
               <span className="min-w-[40px] text-center font-medium text-[13px]">
-                {s.size}
+                {displaySize(s.size)}
               </span>
               <input
                 type="number"
