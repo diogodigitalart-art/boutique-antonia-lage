@@ -1395,8 +1395,8 @@ function FlexibleSizes({
   sizes,
   onChange,
 }: {
-  sizes: Array<{ size: string; stock: number }>;
-  onChange: (sizes: Array<{ size: string; stock: number }>) => void;
+  sizes: Array<{ size: string; stock: number; barcode: string }>;
+  onChange: (sizes: Array<{ size: string; stock: number; barcode: string }>) => void;
 }) {
   const [draft, setDraft] = useState("");
 
@@ -1404,16 +1404,22 @@ function FlexibleSizes({
     const v = normalizeSize(label.trim()) || label.trim();
     if (!v) return;
     if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
-    onChange([...sizes, { size: v, stock: 0 }]);
+    onChange([...sizes, { size: v, stock: 0, barcode: "" }]);
   };
 
   const applyPreset = (preset: string[]) => {
-    onChange(preset.map((s) => ({ size: s, stock: 0 })));
+    onChange(preset.map((s) => ({ size: s, stock: 0, barcode: "" })));
   };
 
   const updateStock = (i: number, value: number) => {
     const next = sizes.slice();
     next[i] = { ...next[i], stock: Math.max(0, Number(value) || 0) };
+    onChange(next);
+  };
+
+  const updateBarcode = (i: number, value: string) => {
+    const next = sizes.slice();
+    next[i] = { ...next[i], barcode: value };
     onChange(next);
   };
 
@@ -1477,7 +1483,7 @@ function FlexibleSizes({
           {sizes.map((s, i) => (
             <div
               key={`${s.size}-${i}`}
-              className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
             >
               <span className="min-w-[40px] text-center font-medium text-[13px]">
                 {displaySize(s.size)}
@@ -1490,6 +1496,13 @@ function FlexibleSizes({
                 className="h-8 w-20 rounded border border-border bg-background px-2 text-center text-[13px]"
               />
               <span className="text-[11px] text-muted-foreground">unidades</span>
+              <input
+                type="text"
+                value={s.barcode}
+                onChange={(e) => updateBarcode(i, e.target.value)}
+                placeholder="Código de barras"
+                className="h-8 flex-1 min-w-[140px] rounded border border-border bg-background px-2 font-mono text-[12px]"
+              />
               <button
                 type="button"
                 onClick={() => remove(i)}
