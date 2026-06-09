@@ -119,7 +119,7 @@ function normalizeBarcodeServer(raw: unknown): string | null {
   return v;
 }
 
-export type AdminProductSize = { size: string; stock: number; reserved: number };
+export type AdminProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 
 export type AdminProductPayload = {
   id?: string;
@@ -141,6 +141,7 @@ export type AdminProductPayload = {
   composition?: string | null;
   care_instructions?: string | null;
   external_id?: string | null;
+  subcategory?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -153,6 +154,7 @@ function parsePayload(input: unknown): AdminProductPayload {
           size: normalizeSize(String(o.size || "")) || String(o.size || ""),
           stock: Math.max(0, Number(o.stock) || 0),
           reserved: Math.max(0, Number(o.reserved) || 0),
+          barcode: normalizeBarcodeServer(o.barcode),
         };
       })
     : [];
@@ -188,6 +190,10 @@ function parsePayload(input: unknown): AdminProductPayload {
       s(i.external_id) && (i.external_id as string).trim()
         ? (i.external_id as string).trim()
         : null,
+    subcategory:
+      s(i.subcategory) && (i.subcategory as string).trim()
+        ? (i.subcategory as string).trim()
+        : null,
   };
 }
 
@@ -215,6 +221,7 @@ export const adminListProducts = createServerFn({ method: "POST" })
             size: normalizeSize(String(o.size || "")) || String(o.size || ""),
             stock: Math.max(0, Number(o.stock) || 0),
             reserved: Math.max(0, Number(o.reserved) || 0),
+            barcode: normalizeBarcodeServer(o.barcode),
           };
         }),
       };
@@ -241,6 +248,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       price: p.price,
       original_price: p.original_price,
       category: p.category,
+      subcategory: p.subcategory ?? null,
       reference: p.reference,
       season: p.season,
       discount_percent: p.discount_percent,
