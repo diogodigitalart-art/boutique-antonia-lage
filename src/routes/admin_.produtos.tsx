@@ -103,7 +103,7 @@ export const Route = createFileRoute("/admin_/produtos")({
   ),
 });
 
-type ProductSize = { size: string; stock: number; reserved: number };
+type ProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 type ProductRow = {
   id: string;
   name: string;
