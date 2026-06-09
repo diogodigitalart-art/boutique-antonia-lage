@@ -722,11 +722,13 @@ type FormState = {
   original_price: string;
   discount_percent: string;
   category: string;
+  subcategory: string;
   season: string;
   is_active: boolean;
   oneSize: boolean;
-  sizes: Array<{ size: string; stock: number }>;
+  sizes: Array<{ size: string; stock: number; barcode: string }>;
   oneSizeStock: number;
+  oneSizeBarcode: string;
   images: string[];
   color: string;
   composition: string;
@@ -746,11 +748,13 @@ function emptyForm(brandOptions: string[]): FormState {
     original_price: "",
     discount_percent: "",
     category: "colecção",
+    subcategory: "",
     season: "",
     is_active: true,
     oneSize: false,
     sizes: [],
     oneSizeStock: 0,
+    oneSizeBarcode: "",
     images: [],
     color: "",
     composition: "",
