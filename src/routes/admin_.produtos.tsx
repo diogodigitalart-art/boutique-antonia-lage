@@ -1009,7 +1009,7 @@ function ProductForm({
                   )}
                 </select>
               </Field>
-              <Field label="Categoria">
+              <Field label="Secção">
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -1018,6 +1018,20 @@ function ProductForm({
                   {CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
                       {c.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Categoria">
+                <select
+                  value={form.subcategory}
+                  onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                >
+                  <option value="">— Sem categoria —</option>
+                  {SUBCATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
                     </option>
                   ))}
                 </select>
