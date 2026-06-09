@@ -20,6 +20,19 @@ import {
 } from "@/components/ui/drawer";
 const PAGE_SIZE = 20;
 
+const SUBCATEGORIES = [
+  "Vestidos",
+  "Tops e Blusas",
+  "Casacos e Blazers",
+  "Calças e Saias",
+  "Malhas",
+  "Acessórios",
+  "Malas",
+  "Sapatos",
+  "Bijuteria",
+  "Outros",
+];
+
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
 const sortSizes = (a: string, b: string) => {
   const ai = SIZE_ORDER.indexOf(a.toUpperCase());
@@ -81,6 +94,7 @@ function ColeccaoPage() {
   const { t } = useI18n();
   const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
+  const [activeCat, setActiveCat] = useState<string>("Todas");
   const [page, setPage] = useState(1);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -88,8 +102,9 @@ function ColeccaoPage() {
     () =>
       products
         .filter((p) => p.category === "new")
-        .filter((p) => activeBrand === "Todas" || p.brand === activeBrand),
-    [products, activeBrand],
+        .filter((p) => activeBrand === "Todas" || p.brand === activeBrand)
+        .filter((p) => activeCat === "Todas" || p.subcategory === activeCat),
+    [products, activeBrand, activeCat],
   );
 
   const allSizes = useMemo(() => {
@@ -266,6 +281,25 @@ function ColeccaoPage() {
                 }`}
               >
                 {b}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="no-scrollbar -mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+          {["Todas", ...SUBCATEGORIES].map((c) => {
+            const active = activeCat === c;
+            return (
+              <button
+                key={c}
+                onClick={() => { setActiveCat(c); setPage(1); }}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-light uppercase tracking-[0.15em] transition ${
+                  active
+                    ? "border-primary/40 bg-primary-soft text-primary"
+                    : "border-border/60 bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                }`}
+              >
+                {c}
               </button>
             );
           })}
