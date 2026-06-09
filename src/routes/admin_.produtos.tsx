@@ -783,10 +783,15 @@ function ProductForm({
 
   const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
-  const initialSizesList: Array<{ size: string; stock: number }> = isOneSize
+  const initialSizesList: Array<{ size: string; stock: number; barcode: string }> = isOneSize
     ? []
-    : existingSizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 }));
+    : existingSizes.map((s) => ({
+        size: s.size,
+        stock: Number(s.stock) || 0,
+        barcode: normalizeBarcode(s.barcode ?? ""),
+      }));
   const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
+  const oneSizeBarcode = isOneSize ? normalizeBarcode(existingSizes[0].barcode ?? "") : "";
 
   const knownBrand = !row || brandOptions.includes(row.brand);
   const [form, setForm] = useState<FormState>(
@@ -803,11 +808,13 @@ function ProductForm({
           original_price: row.original_price != null ? String(row.original_price) : "",
           discount_percent: row.discount_percent != null ? String(row.discount_percent) : "",
           category: row.category,
+          subcategory: row.subcategory ?? "",
           season: row.season ?? "",
           is_active: row.is_active,
           oneSize: isOneSize,
           sizes: initialSizesList,
           oneSizeStock,
+          oneSizeBarcode,
           images: row.images ?? [],
           color: row.color ?? "",
           composition: row.composition ?? "",
