@@ -12,12 +12,12 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 const PAGE_SIZE = 20;
 
 const SUBCATEGORIES = [
@@ -33,42 +33,24 @@ const SUBCATEGORIES = [
   "Outros",
 ];
 
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
-const sortSizes = (a: string, b: string) => {
-  const ai = SIZE_ORDER.indexOf(a.toUpperCase());
-  const bi = SIZE_ORDER.indexOf(b.toUpperCase());
-  if (ai !== -1 && bi !== -1) return ai - bi;
-  if (ai !== -1) return -1;
-  if (bi !== -1) return 1;
-  const an = parseFloat(a);
-  const bn = parseFloat(b);
-  if (!isNaN(an) && !isNaN(bn)) return an - bn;
-  return a.localeCompare(b);
+// Only standard colors map to a swatch. Anything else renders as a text tag.
+const STANDARD_COLOR_MAP: Record<string, string> = {
+  preto: "#000",
+  branco: "#fff",
+  azul: "#3b5998",
+  verde: "#4a7c59",
+  vermelho: "#b91c1c",
+  amarelo: "#facc15",
+  castanho: "#7b4b2a",
+  cinza: "#9ca3af",
+  rosa: "#f9a8d4",
+  laranja: "#f97316",
+  bege: "#d6c7a8",
+  roxo: "#7c3aed",
 };
-
-const COLOR_MAP: Record<string, string> = {
-  preto: "#000", black: "#000",
-  branco: "#fff", white: "#fff",
-  cinza: "#9ca3af", cinzento: "#9ca3af", gray: "#9ca3af", grey: "#9ca3af",
-  bege: "#d6c7a8", beige: "#d6c7a8",
-  camel: "#c19a6b",
-  castanho: "#7b4b2a", brown: "#7b4b2a",
-  azul: "#3b5998", blue: "#3b5998",
-  cobalto: "#0047ab",
-  marinho: "#1e3a5f", navy: "#1e3a5f",
-  verde: "#4a7c59", green: "#4a7c59",
-  vermelho: "#b91c1c", red: "#b91c1c",
-  rosa: "#f9a8d4", pink: "#f9a8d4",
-  amarelo: "#facc15", yellow: "#facc15",
-  laranja: "#f97316", orange: "#f97316",
-  roxo: "#7c3aed", lilás: "#a78bfa", lilas: "#a78bfa", purple: "#7c3aed",
-  dourado: "#d4af37", gold: "#d4af37",
-  prateado: "#c0c0c0", silver: "#c0c0c0",
-  marfim: "#f5ebd6", ivory: "#f5ebd6",
-};
-const colorSwatch = (name: string) => {
+const colorSwatch = (name: string): string | null => {
   const k = name.trim().toLowerCase();
-  return COLOR_MAP[k] || "#d1d5db";
+  return STANDARD_COLOR_MAP[k] ?? null;
 };
 
 export const Route = createFileRoute("/coleccao")({
@@ -93,29 +75,13 @@ export const Route = createFileRoute("/coleccao")({
 function ColeccaoPage() {
   const { t } = useI18n();
   const { products, loading } = useProducts();
-  const [activeBrand, setActiveBrand] = useState("Todas");
-  const [activeCat, setActiveCat] = useState<string>("Todas");
   const [page, setPage] = useState(1);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const baseItems = useMemo(
-    () =>
-      products
-        .filter((p) => p.category === "new")
-        .filter((p) => activeBrand === "Todas" || p.brand === activeBrand)
-        .filter((p) => activeCat === "Todas" || p.subcategory === activeCat),
-    [products, activeBrand, activeCat],
+    () => products.filter((p) => p.category === "new"),
+    [products],
   );
-
-  const allSizes = useMemo(() => {
-    const s = new Set<string>();
-    baseItems.forEach((p) =>
-      (p.sizeAvailability || []).forEach((sz) => {
-        if (sz.available > 0) s.add(sz.size);
-      }),
-    );
-    return Array.from(s).sort(sortSizes);
-  }, [baseItems]);
 
   const allColors = useMemo(() => {
     const s = new Set<string>();
@@ -131,8 +97,9 @@ function ColeccaoPage() {
     return [Math.min(...ps), Math.max(...ps)] as [number, number];
   }, [baseItems]);
 
-  const [sizeSel, setSizeSel] = useState<string[]>([]);
   const [colorSel, setColorSel] = useState<string[]>([]);
+  const [brandSel, setBrandSel] = useState<string[]>([]);
+  const [catSel, setCatSel] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [onlyNew, setOnlyNew] = useState(false);
   const [onlySale, setOnlySale] = useState(false);
@@ -143,12 +110,8 @@ function ColeccaoPage() {
     const now = Date.now();
     const THIRTY = 30 * 24 * 60 * 60 * 1000;
     return baseItems.filter((p) => {
-      if (sizeSel.length) {
-        const has = (p.sizeAvailability || []).some(
-          (s) => sizeSel.includes(s.size) && s.available > 0,
-        );
-        if (!has) return false;
-      }
+      if (brandSel.length && !brandSel.includes(p.brand)) return false;
+      if (catSel.length && (!p.subcategory || !catSel.includes(p.subcategory))) return false;
       if (colorSel.length) {
         if (!p.color || !colorSel.includes(p.color.trim())) return false;
       }
@@ -159,7 +122,7 @@ function ColeccaoPage() {
       if (onlySale && !(p.discountPercent && p.discountPercent > 0)) return false;
       return true;
     });
-  }, [baseItems, sizeSel, colorSel, effectivePrice, onlyNew, onlySale]);
+  }, [baseItems, brandSel, catSel, colorSel, effectivePrice, onlyNew, onlySale]);
 
   const items = filtered;
 
@@ -168,12 +131,12 @@ function ColeccaoPage() {
   const pageItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const hasActiveFilters =
-    sizeSel.length > 0 ||
+    brandSel.length > 0 ||
+    catSel.length > 0 ||
     colorSel.length > 0 ||
     priceRange !== null ||
     onlyNew ||
-    onlySale ||
-    activeBrand !== "Todas";
+    onlySale;
 
   const suggestions = useMemo(() => {
     return products.filter((p) => p.category === "new").slice(0, 4);
@@ -183,7 +146,8 @@ function ColeccaoPage() {
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
   const clearAll = () => {
-    setSizeSel([]);
+    setBrandSel([]);
+    setCatSel([]);
     setColorSel([]);
     setPriceRange(null);
     setOnlyNew(false);
@@ -192,11 +156,18 @@ function ColeccaoPage() {
   };
 
   const activePills: { key: string; label: string; remove: () => void }[] = [];
-  sizeSel.forEach((s) =>
+  brandSel.forEach((b) =>
     activePills.push({
-      key: `size-${s}`,
-      label: `Tamanho ${s}`,
-      remove: () => setSizeSel((prev) => prev.filter((x) => x !== s)),
+      key: `brand-${b}`,
+      label: b,
+      remove: () => setBrandSel((prev) => prev.filter((x) => x !== b)),
+    }),
+  );
+  catSel.forEach((c) =>
+    activePills.push({
+      key: `cat-${c}`,
+      label: c,
+      remove: () => setCatSel((prev) => prev.filter((x) => x !== c)),
     }),
   );
   colorSel.forEach((c) =>
@@ -220,16 +191,22 @@ function ColeccaoPage() {
 
   const filterPanel = (
     <FiltersPanel
-      allSizes={allSizes}
+      brands={BRANDS.filter((b) => b !== "Todas")}
+      categories={SUBCATEGORIES}
       allColors={allColors}
       priceBounds={priceBounds}
-      sizeSel={sizeSel}
+      brandSel={brandSel}
+      catSel={catSel}
       colorSel={colorSel}
       priceRange={effectivePrice}
       onlyNew={onlyNew}
       onlySale={onlySale}
-      onSize={(s) => {
-        setSizeSel((prev) => toggleArr(prev, s));
+      onBrand={(b) => {
+        setBrandSel((prev) => toggleArr(prev, b));
+        setPage(1);
+      }}
+      onCategory={(c) => {
+        setCatSel((prev) => toggleArr(prev, c));
         setPage(1);
       }}
       onColor={(c) => {
@@ -248,6 +225,7 @@ function ColeccaoPage() {
         setOnlySale(v);
         setPage(1);
       }}
+      onClear={clearAll}
     />
   );
 
@@ -264,52 +242,11 @@ function ColeccaoPage() {
       </section>
 
       <section className="mx-auto mt-8 max-w-7xl px-4 md:px-8">
-        <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-          {BRANDS.map((b) => {
-            const active = activeBrand === b;
-            return (
-              <button
-                key={b}
-                onClick={() => {
-                  setActiveBrand(b);
-                  setPage(1);
-                }}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-light uppercase tracking-[0.15em] transition ${
-                  active
-                    ? "border-primary/40 bg-primary-soft text-primary"
-                    : "border-border/60 bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                }`}
-              >
-                {b}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="no-scrollbar -mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-          {["Todas", ...SUBCATEGORIES].map((c) => {
-            const active = activeCat === c;
-            return (
-              <button
-                key={c}
-                onClick={() => { setActiveCat(c); setPage(1); }}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-light uppercase tracking-[0.15em] transition ${
-                  active
-                    ? "border-primary/40 bg-primary-soft text-primary"
-                    : "border-border/60 bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                }`}
-              >
-                {c}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active filter pills + mobile filter button */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
-            <DrawerTrigger asChild>
-              <button className="inline-flex items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-foreground hover:border-foreground/30 md:hidden">
+        {/* Filter button + active pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <button className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-[11px] uppercase tracking-[0.15em] text-foreground hover:border-foreground/30">
                 <SlidersHorizontal size={14} strokeWidth={1.5} />
                 Filtrar
                 {activePills.length > 0 && (
@@ -318,14 +255,14 @@ function ColeccaoPage() {
                   </span>
                 )}
               </button>
-            </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh]">
-              <DrawerHeader>
-                <DrawerTitle className="font-display text-xl italic">Filtros</DrawerTitle>
-              </DrawerHeader>
-              <div className="overflow-y-auto px-4 pb-8">{filterPanel}</div>
-            </DrawerContent>
-          </Drawer>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full overflow-y-auto sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle className="font-display text-xl italic">Filtros</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">{filterPanel}</div>
+            </SheetContent>
+          </Sheet>
 
           {activePills.map((p) => (
             <button
@@ -353,11 +290,7 @@ function ColeccaoPage() {
       </section>
 
       <section className="mx-auto mt-8 max-w-7xl px-4 pb-16 md:px-8">
-        <div className="flex gap-8">
-          <aside className="hidden w-60 shrink-0 md:block">
-            <div className="sticky top-24">{filterPanel}</div>
-          </aside>
-          <div className="min-w-0 flex-1">
+        <div className="min-w-0">
             {loading && products.length === 0 ? (
               <ProductCardSkeletonGrid count={9} />
             ) : pageItems.length === 0 ? (
@@ -371,10 +304,7 @@ function ColeccaoPage() {
                   </p>
                   {hasActiveFilters && (
                     <button
-                      onClick={() => {
-                        clearAll();
-                        setActiveBrand("Todas");
-                      }}
+                      onClick={clearAll}
                       className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-primary-foreground transition hover:bg-primary/90"
                     >
                       Limpar filtros
@@ -395,14 +325,13 @@ function ColeccaoPage() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-2 md:gap-x-6 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
                 {pageItems.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </div>
             )}
             <SimplePagination page={currentPage} totalPages={totalPages} onChange={setPage} />
-          </div>
         </div>
       </section>
     </Layout>
@@ -421,62 +350,71 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function FiltersPanel({
-  allSizes,
+  brands,
+  categories,
   allColors,
   priceBounds,
-  sizeSel,
+  brandSel,
+  catSel,
   colorSel,
   priceRange,
   onlyNew,
   onlySale,
-  onSize,
+  onBrand,
+  onCategory,
   onColor,
   onPrice,
   onNew,
   onSale,
+  onClear,
 }: {
-  allSizes: string[];
+  brands: string[];
+  categories: string[];
   allColors: string[];
   priceBounds: [number, number];
-  sizeSel: string[];
+  brandSel: string[];
+  catSel: string[];
   colorSel: string[];
   priceRange: [number, number];
   onlyNew: boolean;
   onlySale: boolean;
-  onSize: (s: string) => void;
+  onBrand: (b: string) => void;
+  onCategory: (c: string) => void;
   onColor: (c: string) => void;
   onPrice: (r: [number, number] | null) => void;
   onNew: (v: boolean) => void;
   onSale: (v: boolean) => void;
+  onClear: () => void;
 }) {
   return (
     <div>
-      {allSizes.length > 0 && (
-        <Section title="Tamanho">
-          <div className="flex flex-wrap gap-2">
-            {allSizes.map((s) => {
-              const active = sizeSel.includes(s);
-              return (
-                <label
-                  key={s}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-[11px] transition ${
-                    active
-                      ? "border-primary/40 bg-primary-soft text-primary"
-                      : "border-border/60 text-muted-foreground hover:border-foreground/30"
-                  }`}
-                >
-                  <Checkbox
-                    checked={active}
-                    onCheckedChange={() => onSize(s)}
-                    className="h-3 w-3"
-                  />
-                  {s}
-                </label>
-              );
-            })}
-          </div>
-        </Section>
-      )}
+      <Section title="Marca">
+        <div className="flex flex-col gap-2">
+          {brands.map((b) => {
+            const active = brandSel.includes(b);
+            return (
+              <label key={b} className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
+                <Checkbox checked={active} onCheckedChange={() => onBrand(b)} />
+                <span>{b}</span>
+              </label>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Categoria">
+        <div className="flex flex-col gap-2">
+          {categories.map((c) => {
+            const active = catSel.includes(c);
+            return (
+              <label key={c} className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
+                <Checkbox checked={active} onCheckedChange={() => onCategory(c)} />
+                <span>{c}</span>
+              </label>
+            );
+          })}
+        </div>
+      </Section>
 
       <Section title="Preço">
         <Slider
@@ -497,6 +435,7 @@ function FiltersPanel({
           <div className="flex flex-wrap gap-2">
             {allColors.map((c) => {
               const active = colorSel.includes(c);
+              const swatch = colorSwatch(c);
               return (
                 <button
                   key={c}
@@ -507,10 +446,12 @@ function FiltersPanel({
                       : "border-border/60 text-muted-foreground hover:border-foreground/30"
                   }`}
                 >
-                  <span
-                    className="h-3 w-3 rounded-full ring-1 ring-border"
-                    style={{ backgroundColor: colorSwatch(c) }}
-                  />
+                  {swatch && (
+                    <span
+                      className="h-3 w-3 rounded-full ring-1 ring-border"
+                      style={{ backgroundColor: swatch }}
+                    />
+                  )}
                   {c}
                 </button>
               );
@@ -532,6 +473,14 @@ function FiltersPanel({
           <Switch checked={onlySale} onCheckedChange={onSale} />
         </label>
       </Section>
+
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-6 w-full rounded-full border border-border/60 px-4 py-2 text-[11px] uppercase tracking-[0.15em] text-foreground transition hover:border-foreground/30"
+      >
+        Limpar filtros
+      </button>
     </div>
   );
 }
