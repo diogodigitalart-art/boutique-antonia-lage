@@ -874,6 +874,7 @@ function ProductForm({
           size: "U",
           stock: Math.max(0, form.oneSizeStock || 0),
           reserved: liveU?.reserved ?? 0,
+          barcode: form.oneSizeBarcode.trim() || null,
         },
       ];
     } else {
@@ -885,6 +886,7 @@ function ProductForm({
             size: s.size.trim(),
             stock: Math.max(0, Number(s.stock) || 0),
             reserved: live?.reserved ?? 0,
+            barcode: s.barcode.trim() || null,
           };
         });
     }
@@ -908,6 +910,7 @@ function ProductForm({
             original_price: form.original_price ? Number(form.original_price) : null,
             discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
+            subcategory: form.subcategory.trim() || null,
             season: form.season.trim() || null,
             images: form.images,
             sizes: sizesPayload,
