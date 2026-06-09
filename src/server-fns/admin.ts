@@ -462,7 +462,7 @@ export type AdminReportProduct = {
   brand: string | null;
   reference: string | null;
   barcode: string | null;
-  sizes: unknown;
+  sizes: Array<{ size?: string; stock?: number; reserved?: number; barcode?: string | null }>;
   is_active: boolean;
   price: number | null;
   cost_price: number | null;
