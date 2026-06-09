@@ -1058,12 +1058,16 @@ function ProductForm({
                   className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
                 />
               </Field>
-              <Field label="Código de barras">
+              <Field label="Desconto (%)">
                 <input
-                  value={form.barcode}
-                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-                  placeholder="ex: 1234567890123"
-                  className="h-10 w-full rounded-md border border-border bg-card px-3 font-mono text-[13px]"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={form.discount_percent}
+                  onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+                  placeholder="ex: 20"
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
                 />
               </Field>
               <Field label="Season">
@@ -1117,18 +1121,6 @@ function ProductForm({
                     </p>
                   );
                 })()}
-              </Field>
-              <Field label="Desconto (%)">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={form.discount_percent}
-                  onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
-                  placeholder="ex: 20"
-                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
-                />
               </Field>
               <Field label="Descrição" className="sm:col-span-2">
                 <textarea
