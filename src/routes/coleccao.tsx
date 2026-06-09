@@ -75,8 +75,6 @@ export const Route = createFileRoute("/coleccao")({
 function ColeccaoPage() {
   const { t } = useI18n();
   const { products, loading } = useProducts();
-  const [activeBrand, setActiveBrand] = useState("Todas");
-  const [activeCat, setActiveCat] = useState<string>("Todas");
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
