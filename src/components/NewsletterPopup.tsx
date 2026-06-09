@@ -89,7 +89,7 @@ export function NewsletterPopup() {
               Novidades da Boutique
             </h2>
             <p className="mt-3 text-center text-sm text-muted-foreground">
-              Subscreve e recebe 10% de desconto na tua primeira compra.
+              Subscreva e receba 10% de desconto na sua primeira compra.
             </p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-3">
               <input

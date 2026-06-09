@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/data";
 import { normalizeSize } from "@/lib/utils";
 
-export type ProductSize = { size: string; stock: number; reserved: number };
+export type ProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 
 export type ProductRow = {
   id: string;
@@ -25,11 +25,16 @@ export type ProductRow = {
   color: string | null;
   composition: string | null;
   care_instructions: string | null;
+  subcategory?: string | null;
 };
 
 export function rowToProduct(row: ProductRow): Product {
   const rawSizes = Array.isArray(row.sizes) ? row.sizes : [];
-  const sizesArr = rawSizes.map((s) => ({ ...s, size: normalizeSize(s.size) || s.size }));
+  const sizesArr = rawSizes.map((s) => ({
+    ...s,
+    size: normalizeSize(s.size) || s.size,
+    barcode: s.barcode ?? null,
+  }));
   const availableSizes = sizesArr
     .filter((s) => Number(s.stock) - Number(s.reserved) > 0)
     .map((s) => s.size);
@@ -76,6 +81,7 @@ export function rowToProduct(row: ProductRow): Product {
     careInstructions: row.care_instructions || undefined,
     createdAt: row.created_at,
     sizeAvailability,
+    subcategory: row.subcategory || undefined,
   };
 }
 
@@ -103,7 +109,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from("products" as never)
       .select(
-        "id, name, brand, description, price, original_price, category, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
+        "id, name, brand, description, price, original_price, category, subcategory, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
       )
       .order("created_at", { ascending: false });
     if (!error && data) {

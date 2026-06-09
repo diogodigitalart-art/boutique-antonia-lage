@@ -441,6 +441,7 @@ export type Database = {
           reference: string
           season: string | null
           sizes: Json
+          subcategory: string | null
           updated_at: string
         }
         Insert: {
@@ -465,6 +466,7 @@ export type Database = {
           reference: string
           season?: string | null
           sizes?: Json
+          subcategory?: string | null
           updated_at?: string
         }
         Update: {
@@ -489,6 +491,7 @@ export type Database = {
           reference?: string
           season?: string | null
           sizes?: Json
+          subcategory?: string | null
           updated_at?: string
         }
         Relationships: []

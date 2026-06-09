@@ -45,7 +45,7 @@ async function sendDiscountEmail(email: string, code: string) {
         html: `
           <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; padding: 32px; background: #fdfbf7; color: #1a1a1a;">
             <h1 style="font-style: italic; font-size: 28px; color: #1d3557; margin: 0 0 16px;">Bem-vinda à boutique</h1>
-            <p style="font-size: 15px; line-height: 1.6;">Obrigada por subscreveres as nossas novidades.</p>
+            <p style="font-size: 15px; line-height: 1.6;">Obrigada por subscrever as nossas novidades.</p>
             <p style="font-size: 15px; line-height: 1.6;">Aqui está o teu código de <strong>10% de desconto</strong> na primeira compra:</p>
             <div style="margin: 24px 0; padding: 20px; text-align: center; background: #fff; border: 1px solid #e5e0d5; border-radius: 12px;">
               <span style="font-size: 22px; letter-spacing: 4px; font-weight: bold; color: #1d3557;">${code}</span>

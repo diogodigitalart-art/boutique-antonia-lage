@@ -291,7 +291,7 @@ function ProductPage() {
             {isOneSize ? (
               <p className="text-sm text-foreground">Tamanho único</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {product.sizes.map((s) => {
                   const available = availableSet.has(s);
                   const selected = size === s;
@@ -303,12 +303,12 @@ function ProductPage() {
                         else setWaitlistSize(s);
                       }}
                       title={!available ? "Esgotado — avisar-me" : undefined}
-                      className={`flex h-11 min-w-11 items-center justify-center rounded-md border px-3 text-sm transition ${
+                      className={`inline-flex h-10 min-w-12 items-center justify-center rounded-full border px-4 text-[13px] tracking-wide transition ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground"
                           : available
-                            ? "border-border bg-card text-foreground hover:border-primary"
-                            : "border-dashed border-border bg-muted text-muted-foreground/70 line-through hover:text-foreground"
+                            ? "border-border bg-transparent text-foreground hover:border-primary"
+                            : "cursor-not-allowed border-border/60 bg-muted/40 text-muted-foreground/50 line-through"
                       }`}
                     >
                       {displaySize(s)}

@@ -119,7 +119,7 @@ function normalizeBarcodeServer(raw: unknown): string | null {
   return v;
 }
 
-export type AdminProductSize = { size: string; stock: number; reserved: number };
+export type AdminProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 
 export type AdminProductPayload = {
   id?: string;
@@ -141,6 +141,7 @@ export type AdminProductPayload = {
   composition?: string | null;
   care_instructions?: string | null;
   external_id?: string | null;
+  subcategory?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -153,6 +154,7 @@ function parsePayload(input: unknown): AdminProductPayload {
           size: normalizeSize(String(o.size || "")) || String(o.size || ""),
           stock: Math.max(0, Number(o.stock) || 0),
           reserved: Math.max(0, Number(o.reserved) || 0),
+          barcode: normalizeBarcodeServer(o.barcode),
         };
       })
     : [];
@@ -188,6 +190,10 @@ function parsePayload(input: unknown): AdminProductPayload {
       s(i.external_id) && (i.external_id as string).trim()
         ? (i.external_id as string).trim()
         : null,
+    subcategory:
+      s(i.subcategory) && (i.subcategory as string).trim()
+        ? (i.subcategory as string).trim()
+        : null,
   };
 }
 
@@ -215,6 +221,7 @@ export const adminListProducts = createServerFn({ method: "POST" })
             size: normalizeSize(String(o.size || "")) || String(o.size || ""),
             stock: Math.max(0, Number(o.stock) || 0),
             reserved: Math.max(0, Number(o.reserved) || 0),
+            barcode: normalizeBarcodeServer(o.barcode),
           };
         }),
       };
@@ -241,6 +248,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       price: p.price,
       original_price: p.original_price,
       category: p.category,
+      subcategory: p.subcategory ?? null,
       reference: p.reference,
       season: p.season,
       discount_percent: p.discount_percent,
@@ -515,13 +523,22 @@ export const adminFindProductByBarcode = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
-    const { data: rows, error } = await supabaseAdmin
+    // 1) Try product-level barcode
+    const { data: byProd, error: e1 } = await supabaseAdmin
       .from("products")
       .select("*")
       .eq("barcode", data.barcode)
       .limit(1);
-    if (error) throw new Error(error.message);
-    return { product: rows && rows.length > 0 ? rows[0] : null };
+    if (e1) throw new Error(e1.message);
+    if (byProd && byProd.length > 0) return { product: byProd[0] };
+    // 2) Try size-level barcode using jsonb containment
+    const { data: bySize, error: e2 } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .contains("sizes", [{ barcode: data.barcode }])
+      .limit(1);
+    if (e2) throw new Error(e2.message);
+    return { product: bySize && bySize.length > 0 ? bySize[0] : null };
   });
 
 export const adminAdjustStockByBarcode = createServerFn({ method: "POST" })
@@ -535,19 +552,44 @@ export const adminAdjustStockByBarcode = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
-    const { data: rows, error: e1 } = await supabaseAdmin
+    // Look up by product-level barcode first, then size-level barcode.
+    const { data: byProd, error: e1 } = await supabaseAdmin
       .from("products")
       .select("id, name, brand, sizes")
       .eq("barcode", data.barcode)
       .limit(1);
     if (e1) throw new Error(e1.message);
-    const product = rows && rows.length > 0 ? rows[0] : null;
+    let product = byProd && byProd.length > 0 ? byProd[0] : null;
+    let targetSize: string | null = null;
+    if (!product) {
+      const { data: bySize, error: e1b } = await supabaseAdmin
+        .from("products")
+        .select("id, name, brand, sizes")
+        .contains("sizes", [{ barcode: data.barcode }])
+        .limit(1);
+      if (e1b) throw new Error(e1b.message);
+      product = bySize && bySize.length > 0 ? bySize[0] : null;
+      if (product) {
+        const arr = Array.isArray(product.sizes) ? (product.sizes as AdminProductSize[]) : [];
+        const m = arr.find((s) => (s.barcode ?? "") === data.barcode);
+        targetSize = m ? m.size : null;
+      }
+    }
     if (!product) throw new Error("Produto não encontrado");
     const sizes = Array.isArray(product.sizes) ? (product.sizes as AdminProductSize[]) : [];
     if (sizes.length === 0) throw new Error("Produto sem tamanhos");
-    // Pick the size to adjust: for IN, the first one; for OUT, first one with available stock.
+    // Pick the size to adjust: size-level barcode wins; otherwise IN→first, OUT→first with stock.
     let idx = 0;
-    if (data.delta < 0) {
+    if (targetSize) {
+      idx = sizes.findIndex((s) => s.size === targetSize);
+      if (idx < 0) idx = 0;
+      if (data.delta < 0) {
+        const s = sizes[idx];
+        if (Math.max(0, Number(s.stock) - Number(s.reserved)) <= 0) {
+          throw new Error("Sem stock disponível");
+        }
+      }
+    } else if (data.delta < 0) {
       const found = sizes.findIndex(
         (s) => Math.max(0, Number(s.stock) - Number(s.reserved)) > 0,
       );
@@ -558,7 +600,7 @@ export const adminAdjustStockByBarcode = createServerFn({ method: "POST" })
       if (i !== idx) return s;
       const newStock = Math.max(0, Number(s.stock) + data.delta);
       const newReserved = Math.min(Number(s.reserved), newStock);
-      return { size: s.size, stock: newStock, reserved: newReserved };
+      return { size: s.size, stock: newStock, reserved: newReserved, barcode: s.barcode ?? null };
     });
     const totalAvailable = newSizes.reduce(
       (a, s) => a + Math.max(0, Number(s.stock) - Number(s.reserved)),

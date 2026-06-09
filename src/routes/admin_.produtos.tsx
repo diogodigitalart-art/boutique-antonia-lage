@@ -53,6 +53,20 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "arquivo", label: "Arquivo" },
 ];
 
+// Categoria (subcategory) — distinct from Secção. Stored in `subcategory` column.
+export const SUBCATEGORIES: string[] = [
+  "Vestidos",
+  "Tops e Blusas",
+  "Casacos e Blazers",
+  "Calças e Saias",
+  "Malhas",
+  "Acessórios",
+  "Malas",
+  "Sapatos",
+  "Bijuteria",
+  "Outros",
+];
+
 const SIZE_PRESETS: Array<{ label: string; sizes: string[] }> = [
   { label: "XS S M L XL", sizes: ["XS", "S", "M", "L", "XL"] },
   { label: "XXS XS S M L XL XXL", sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL"] },
@@ -89,7 +103,7 @@ export const Route = createFileRoute("/admin_/produtos")({
   ),
 });
 
-type ProductSize = { size: string; stock: number; reserved: number };
+type ProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 type ProductRow = {
   id: string;
   name: string;
@@ -111,6 +125,7 @@ type ProductRow = {
   color?: string | null;
   composition?: string | null;
   care_instructions?: string | null;
+  subcategory?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
@@ -707,11 +722,13 @@ type FormState = {
   original_price: string;
   discount_percent: string;
   category: string;
+  subcategory: string;
   season: string;
   is_active: boolean;
   oneSize: boolean;
-  sizes: Array<{ size: string; stock: number }>;
+  sizes: Array<{ size: string; stock: number; barcode: string }>;
   oneSizeStock: number;
+  oneSizeBarcode: string;
   images: string[];
   color: string;
   composition: string;
@@ -731,11 +748,13 @@ function emptyForm(brandOptions: string[]): FormState {
     original_price: "",
     discount_percent: "",
     category: "colecção",
+    subcategory: "",
     season: "",
     is_active: true,
     oneSize: false,
     sizes: [],
     oneSizeStock: 0,
+    oneSizeBarcode: "",
     images: [],
     color: "",
     composition: "",
@@ -764,10 +783,15 @@ function ProductForm({
 
   const existingSizes = Array.isArray(row?.sizes) ? row!.sizes : [];
   const isOneSize = existingSizes.length === 1 && existingSizes[0]?.size === "U";
-  const initialSizesList: Array<{ size: string; stock: number }> = isOneSize
+  const initialSizesList: Array<{ size: string; stock: number; barcode: string }> = isOneSize
     ? []
-    : existingSizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 }));
+    : existingSizes.map((s) => ({
+        size: s.size,
+        stock: Number(s.stock) || 0,
+        barcode: normalizeBarcode(s.barcode ?? ""),
+      }));
   const oneSizeStock = isOneSize ? existingSizes[0].stock : 0;
+  const oneSizeBarcode = isOneSize ? normalizeBarcode(existingSizes[0].barcode ?? "") : "";
 
   const knownBrand = !row || brandOptions.includes(row.brand);
   const [form, setForm] = useState<FormState>(
@@ -784,11 +808,13 @@ function ProductForm({
           original_price: row.original_price != null ? String(row.original_price) : "",
           discount_percent: row.discount_percent != null ? String(row.discount_percent) : "",
           category: row.category,
+          subcategory: row.subcategory ?? "",
           season: row.season ?? "",
           is_active: row.is_active,
           oneSize: isOneSize,
           sizes: initialSizesList,
           oneSizeStock,
+          oneSizeBarcode,
           images: row.images ?? [],
           color: row.color ?? "",
           composition: row.composition ?? "",
@@ -848,6 +874,7 @@ function ProductForm({
           size: "U",
           stock: Math.max(0, form.oneSizeStock || 0),
           reserved: liveU?.reserved ?? 0,
+          barcode: form.oneSizeBarcode.trim() || null,
         },
       ];
     } else {
@@ -859,6 +886,7 @@ function ProductForm({
             size: s.size.trim(),
             stock: Math.max(0, Number(s.stock) || 0),
             reserved: live?.reserved ?? 0,
+            barcode: s.barcode.trim() || null,
           };
         });
     }
@@ -882,6 +910,7 @@ function ProductForm({
             original_price: form.original_price ? Number(form.original_price) : null,
             discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
             category: form.category,
+            subcategory: form.subcategory.trim() || null,
             season: form.season.trim() || null,
             images: form.images,
             sizes: sizesPayload,
@@ -980,7 +1009,7 @@ function ProductForm({
                   )}
                 </select>
               </Field>
-              <Field label="Categoria">
+              <Field label="Secção">
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -989,6 +1018,20 @@ function ProductForm({
                   {CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
                       {c.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Categoria">
+                <select
+                  value={form.subcategory}
+                  onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                  className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+                >
+                  <option value="">— Sem categoria —</option>
+                  {SUBCATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
                     </option>
                   ))}
                 </select>
@@ -1188,6 +1231,16 @@ function ProductForm({
                     }
                     className="mt-1 h-10 w-32 rounded-md border border-border bg-background px-3 text-[13px]"
                   />
+                  <label className="mt-3 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Código de barras (U)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.oneSizeBarcode}
+                    onChange={(e) => setForm({ ...form, oneSizeBarcode: e.target.value })}
+                    placeholder="Código de barras"
+                    className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 font-mono text-[13px]"
+                  />
                 </div>
               ) : (
                 <FlexibleSizes
@@ -1369,8 +1422,8 @@ function FlexibleSizes({
   sizes,
   onChange,
 }: {
-  sizes: Array<{ size: string; stock: number }>;
-  onChange: (sizes: Array<{ size: string; stock: number }>) => void;
+  sizes: Array<{ size: string; stock: number; barcode: string }>;
+  onChange: (sizes: Array<{ size: string; stock: number; barcode: string }>) => void;
 }) {
   const [draft, setDraft] = useState("");
 
@@ -1378,16 +1431,22 @@ function FlexibleSizes({
     const v = normalizeSize(label.trim()) || label.trim();
     if (!v) return;
     if (sizes.some((s) => s.size.toLowerCase() === v.toLowerCase())) return;
-    onChange([...sizes, { size: v, stock: 0 }]);
+    onChange([...sizes, { size: v, stock: 0, barcode: "" }]);
   };
 
   const applyPreset = (preset: string[]) => {
-    onChange(preset.map((s) => ({ size: s, stock: 0 })));
+    onChange(preset.map((s) => ({ size: s, stock: 0, barcode: "" })));
   };
 
   const updateStock = (i: number, value: number) => {
     const next = sizes.slice();
     next[i] = { ...next[i], stock: Math.max(0, Number(value) || 0) };
+    onChange(next);
+  };
+
+  const updateBarcode = (i: number, value: string) => {
+    const next = sizes.slice();
+    next[i] = { ...next[i], barcode: value };
     onChange(next);
   };
 
@@ -1451,7 +1510,7 @@ function FlexibleSizes({
           {sizes.map((s, i) => (
             <div
               key={`${s.size}-${i}`}
-              className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
             >
               <span className="min-w-[40px] text-center font-medium text-[13px]">
                 {displaySize(s.size)}
@@ -1464,6 +1523,13 @@ function FlexibleSizes({
                 className="h-8 w-20 rounded border border-border bg-background px-2 text-center text-[13px]"
               />
               <span className="text-[11px] text-muted-foreground">unidades</span>
+              <input
+                type="text"
+                value={s.barcode}
+                onChange={(e) => updateBarcode(i, e.target.value)}
+                placeholder="Código de barras"
+                className="h-8 flex-1 min-w-[140px] rounded border border-border bg-background px-2 font-mono text-[12px]"
+              />
               <button
                 type="button"
                 onClick={() => remove(i)}
@@ -1645,7 +1711,15 @@ function ImportProductsModal({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
   const [existingByRef, setExistingByRef] = useState<
-    Map<string, { id: string; name: string | null; images: string[] | null }>
+    Map<string, {
+      id: string;
+      name: string | null;
+      images: string[] | null;
+      description: string | null;
+      color: string | null;
+      composition: string | null;
+      care_instructions: string | null;
+    }>
   >(new Map());
   const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
@@ -1665,12 +1739,37 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, name, images")
+        .select("id, reference, name, images, description, color, composition, care_instructions")
         .in("reference", refs);
       if (!error && data) {
-        const map = new Map<string, { id: string; name: string | null; images: string[] | null }>();
-        for (const row of data as Array<{ id: string; reference: string; name: string | null; images: string[] | null }>) {
-          map.set(row.reference, { id: row.id, name: row.name, images: row.images });
+        const map = new Map<string, {
+          id: string;
+          name: string | null;
+          images: string[] | null;
+          description: string | null;
+          color: string | null;
+          composition: string | null;
+          care_instructions: string | null;
+        }>();
+        for (const row of data as Array<{
+          id: string;
+          reference: string;
+          name: string | null;
+          images: string[] | null;
+          description: string | null;
+          color: string | null;
+          composition: string | null;
+          care_instructions: string | null;
+        }>) {
+          map.set(row.reference, {
+            id: row.id,
+            name: row.name,
+            images: row.images,
+            description: row.description,
+            color: row.color,
+            composition: row.composition,
+            care_instructions: row.care_instructions,
+          });
         }
         setExistingByRef(map);
       } else {
@@ -1714,15 +1813,23 @@ function ImportProductsModal({
         const r = valid[i];
         try {
           const existing = existingByRef.get(r.reference);
-          // In sync mode, preserve existing name and images if already set.
+          // Always preserve existing content fields when the product already
+          // exists — CSV import only updates stock, price, season and active state.
           const preservedName =
-            syncMode && existing && existing.name && existing.name.trim().length > 0
+            existing && existing.name && existing.name.trim().length > 0
               ? existing.name
               : r.name;
           const preservedImages =
-            syncMode && existing && existing.images && existing.images.length > 0
+            existing && existing.images && existing.images.length > 0
               ? existing.images
               : [];
+          const preservedDescription =
+            existing && existing.description && existing.description.trim().length > 0
+              ? existing.description
+              : r.description;
+          const preservedColor = existing?.color ?? null;
+          const preservedComposition = existing?.composition ?? null;
+          const preservedCare = existing?.care_instructions ?? null;
           await upsertFn({
             data: {
               token,
@@ -1732,7 +1839,7 @@ function ImportProductsModal({
                 name: preservedName,
                 reference: r.reference,
                 external_id: r.external_id || null,
-                description: r.description,
+                description: preservedDescription,
                 price: r.price,
                 original_price: r.original_price,
                 discount_percent: null,
@@ -1742,6 +1849,9 @@ function ImportProductsModal({
                 sizes: r.sizes,
                 is_active: true,
                 barcode: r.barcodes[0] || null,
+                color: preservedColor,
+                composition: preservedComposition,
+                care_instructions: preservedCare,
               },
             },
           });
@@ -1822,6 +1932,9 @@ function ImportProductsModal({
             {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
           </div>
 
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
+            Esta importação apenas actualiza stock, preço e estado. Descrições, cores, composições e fotos existentes são preservadas.
+          </div>
           <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
             <input
               type="checkbox"
@@ -1832,7 +1945,7 @@ function ImportProductsModal({
             <span>
               <span className="font-medium text-foreground">Sincronização completa</span>
               <span className="block text-muted-foreground">
-                Produtos existentes são actualizados (nome e imagens preservados). Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
+                Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
               </span>
             </span>
           </label>
