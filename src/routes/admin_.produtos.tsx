@@ -1932,6 +1932,9 @@ function ImportProductsModal({
             {fileName && <span className="text-[12px] text-muted-foreground">{fileName}</span>}
           </div>
 
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
+            Esta importação apenas actualiza stock, preço e estado. Descrições, cores, composições e fotos existentes são preservadas.
+          </div>
           <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
             <input
               type="checkbox"
@@ -1942,7 +1945,7 @@ function ImportProductsModal({
             <span>
               <span className="font-medium text-foreground">Sincronização completa</span>
               <span className="block text-muted-foreground">
-                Produtos existentes são actualizados (nome e imagens preservados). Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
+                Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
               </span>
             </span>
           </label>
