@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getAdminReportProducts } from "@/server-fns/admin";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -184,6 +186,7 @@ function StatCard({
 const PIE_COLORS = ["oklch(0.42 0.13 268)", "oklch(0.68 0.13 50)", "oklch(0.62 0.15 340)"];
 
 export function ReportsDashboard() {
+  const fetchAdminProducts = useServerFn(getAdminReportProducts);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [giftCards, setGiftCards] = useState<GiftCardRow[]>([]);
@@ -212,12 +215,16 @@ export function ReportsDashboard() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [o, r, g, p, pr, w, wl, ret, c, f] = await Promise.all([
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token ?? "";
+      const [o, r, g, p, prPromise, w, wl, ret, c, f] = await Promise.all([
         supabase.from("orders").select("id, created_at, total, status, user_id, customer_name, customer_email, items").limit(5000),
         supabase.from("reservations").select("id, created_at, preferred_date, item_type, item_name, status, experience_details").limit(5000),
         supabase.from("gift_cards").select("id, created_at, amount, status").limit(5000),
         supabase.from("profiles").select("id, full_name, email, created_at").limit(5000),
-        supabase.from("products").select("id, legacy_id, name, brand, reference, barcode, sizes, is_active, price, cost_price, discount_percent").limit(5000),
+        token
+          ? fetchAdminProducts({ data: { token } }).catch(() => [])
+          : Promise.resolve([]),
         supabase.from("wishlists").select("product_id, user_id, created_at").limit(5000),
         supabase.from("waitlist").select("product_id, size, notified_at").limit(5000),
         supabase.from("returns").select("id, status, created_at").limit(5000),
@@ -230,7 +237,7 @@ export function ReportsDashboard() {
       setReservations(((r.data ?? []) as unknown as ReservationRow[]).filter((x) => x.status !== "Cancelada"));
       setGiftCards(((g.data ?? []) as unknown as GiftCardRow[]).filter((x) => x.status !== "cancelled" && x.status !== "failed"));
       setProfiles((p.data ?? []) as unknown as ProfileRow[]);
-      setProducts((pr.data ?? []) as unknown as ProductRow[]);
+      setProducts((prPromise ?? []) as unknown as ProductRow[]);
       setWishlists((w.data ?? []) as unknown as WishlistRow[]);
       setWaitlist(((wl.data ?? []) as unknown as WaitlistRow[]).filter((x) => !x.notified_at));
       setReturns((ret.data ?? []) as unknown as ReturnRow[]);
