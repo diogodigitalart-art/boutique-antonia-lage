@@ -1231,6 +1231,16 @@ function ProductForm({
                     }
                     className="mt-1 h-10 w-32 rounded-md border border-border bg-background px-3 text-[13px]"
                   />
+                  <label className="mt-3 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Código de barras (U)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.oneSizeBarcode}
+                    onChange={(e) => setForm({ ...form, oneSizeBarcode: e.target.value })}
+                    placeholder="Código de barras"
+                    className="mt-1 h-10 w-full rounded-md border border-border bg-background px-3 font-mono text-[13px]"
+                  />
                 </div>
               ) : (
                 <FlexibleSizes
