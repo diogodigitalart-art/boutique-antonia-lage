@@ -125,6 +125,7 @@ type ProductRow = {
   color?: string | null;
   composition?: string | null;
   care_instructions?: string | null;
+  subcategory?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
