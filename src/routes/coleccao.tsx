@@ -352,62 +352,71 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function FiltersPanel({
-  allSizes,
+  brands,
+  categories,
   allColors,
   priceBounds,
-  sizeSel,
+  brandSel,
+  catSel,
   colorSel,
   priceRange,
   onlyNew,
   onlySale,
-  onSize,
+  onBrand,
+  onCategory,
   onColor,
   onPrice,
   onNew,
   onSale,
+  onClear,
 }: {
-  allSizes: string[];
+  brands: string[];
+  categories: string[];
   allColors: string[];
   priceBounds: [number, number];
-  sizeSel: string[];
+  brandSel: string[];
+  catSel: string[];
   colorSel: string[];
   priceRange: [number, number];
   onlyNew: boolean;
   onlySale: boolean;
-  onSize: (s: string) => void;
+  onBrand: (b: string) => void;
+  onCategory: (c: string) => void;
   onColor: (c: string) => void;
   onPrice: (r: [number, number] | null) => void;
   onNew: (v: boolean) => void;
   onSale: (v: boolean) => void;
+  onClear: () => void;
 }) {
   return (
     <div>
-      {allSizes.length > 0 && (
-        <Section title="Tamanho">
-          <div className="flex flex-wrap gap-2">
-            {allSizes.map((s) => {
-              const active = sizeSel.includes(s);
-              return (
-                <label
-                  key={s}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-[11px] transition ${
-                    active
-                      ? "border-primary/40 bg-primary-soft text-primary"
-                      : "border-border/60 text-muted-foreground hover:border-foreground/30"
-                  }`}
-                >
-                  <Checkbox
-                    checked={active}
-                    onCheckedChange={() => onSize(s)}
-                    className="h-3 w-3"
-                  />
-                  {s}
-                </label>
-              );
-            })}
-          </div>
-        </Section>
-      )}
+      <Section title="Marca">
+        <div className="flex flex-col gap-2">
+          {brands.map((b) => {
+            const active = brandSel.includes(b);
+            return (
+              <label key={b} className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
+                <Checkbox checked={active} onCheckedChange={() => onBrand(b)} />
+                <span>{b}</span>
+              </label>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Categoria">
+        <div className="flex flex-col gap-2">
+          {categories.map((c) => {
+            const active = catSel.includes(c);
+            return (
+              <label key={c} className="flex cursor-pointer items-center gap-2 text-[12px] text-foreground">
+                <Checkbox checked={active} onCheckedChange={() => onCategory(c)} />
+                <span>{c}</span>
+              </label>
+            );
+          })}
+        </div>
+      </Section>
 
       <Section title="Preço">
         <Slider
@@ -428,6 +437,7 @@ function FiltersPanel({
           <div className="flex flex-wrap gap-2">
             {allColors.map((c) => {
               const active = colorSel.includes(c);
+              const swatch = colorSwatch(c);
               return (
                 <button
                   key={c}
@@ -438,10 +448,12 @@ function FiltersPanel({
                       : "border-border/60 text-muted-foreground hover:border-foreground/30"
                   }`}
                 >
-                  <span
-                    className="h-3 w-3 rounded-full ring-1 ring-border"
-                    style={{ backgroundColor: colorSwatch(c) }}
-                  />
+                  {swatch && (
+                    <span
+                      className="h-3 w-3 rounded-full ring-1 ring-border"
+                      style={{ backgroundColor: swatch }}
+                    />
+                  )}
                   {c}
                 </button>
               );
@@ -463,6 +475,14 @@ function FiltersPanel({
           <Switch checked={onlySale} onCheckedChange={onSale} />
         </label>
       </Section>
+
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-6 w-full rounded-full border border-border/60 px-4 py-2 text-[11px] uppercase tracking-[0.15em] text-foreground transition hover:border-foreground/30"
+      >
+        Limpar filtros
+      </button>
     </div>
   );
 }
