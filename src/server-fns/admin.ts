@@ -455,6 +455,39 @@ export const addBlockedSlot = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export type AdminReportProduct = {
+  id: string;
+  legacy_id: string | null;
+  name: string | null;
+  brand: string | null;
+  reference: string | null;
+  barcode: string | null;
+  sizes: unknown;
+  is_active: boolean;
+  price: number | null;
+  cost_price: number | null;
+  discount_percent: number | null;
+};
+
+export const getAdminReportProducts = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    if (!input || typeof input !== "object") throw new Error("Invalid payload");
+    const i = input as Record<string, unknown>;
+    if (!isStr(i.token)) throw new Error("Missing token");
+    return { token: i.token };
+  })
+  .handler(async ({ data }): Promise<AdminReportProduct[]> => {
+    await assertAdmin(data.token);
+    const { data: rows, error } = await supabaseAdmin
+      .from("products")
+      .select(
+        "id, legacy_id, name, brand, reference, barcode, sizes, is_active, price, cost_price, discount_percent",
+      )
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as unknown as AdminReportProduct[];
+  });
+
 export const deleteBlockedSlot = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     if (!input || typeof input !== "object") throw new Error("Invalid payload");
