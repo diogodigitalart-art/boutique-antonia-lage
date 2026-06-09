@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getAdminReportProducts } from "@/server-fns/admin";
 import { Button } from "@/components/ui/button";
 import {
   Select,
