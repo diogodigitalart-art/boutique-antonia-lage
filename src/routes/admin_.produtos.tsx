@@ -53,6 +53,20 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "arquivo", label: "Arquivo" },
 ];
 
+// Categoria (subcategory) — distinct from Secção. Stored in `subcategory` column.
+export const SUBCATEGORIES: string[] = [
+  "Vestidos",
+  "Tops e Blusas",
+  "Casacos e Blazers",
+  "Calças e Saias",
+  "Malhas",
+  "Acessórios",
+  "Malas",
+  "Sapatos",
+  "Bijuteria",
+  "Outros",
+];
+
 const SIZE_PRESETS: Array<{ label: string; sizes: string[] }> = [
   { label: "XS S M L XL", sizes: ["XS", "S", "M", "L", "XL"] },
   { label: "XXS XS S M L XL XXL", sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL"] },
