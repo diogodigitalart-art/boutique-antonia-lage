@@ -1711,7 +1711,15 @@ function ImportProductsModal({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
   const [existingByRef, setExistingByRef] = useState<
-    Map<string, { id: string; name: string | null; images: string[] | null }>
+    Map<string, {
+      id: string;
+      name: string | null;
+      images: string[] | null;
+      description: string | null;
+      color: string | null;
+      composition: string | null;
+      care_instructions: string | null;
+    }>
   >(new Map());
   const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
@@ -1731,12 +1739,37 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, name, images")
+        .select("id, reference, name, images, description, color, composition, care_instructions")
         .in("reference", refs);
       if (!error && data) {
-        const map = new Map<string, { id: string; name: string | null; images: string[] | null }>();
-        for (const row of data as Array<{ id: string; reference: string; name: string | null; images: string[] | null }>) {
-          map.set(row.reference, { id: row.id, name: row.name, images: row.images });
+        const map = new Map<string, {
+          id: string;
+          name: string | null;
+          images: string[] | null;
+          description: string | null;
+          color: string | null;
+          composition: string | null;
+          care_instructions: string | null;
+        }>();
+        for (const row of data as Array<{
+          id: string;
+          reference: string;
+          name: string | null;
+          images: string[] | null;
+          description: string | null;
+          color: string | null;
+          composition: string | null;
+          care_instructions: string | null;
+        }>) {
+          map.set(row.reference, {
+            id: row.id,
+            name: row.name,
+            images: row.images,
+            description: row.description,
+            color: row.color,
+            composition: row.composition,
+            care_instructions: row.care_instructions,
+          });
         }
         setExistingByRef(map);
       } else {
