@@ -1813,15 +1813,23 @@ function ImportProductsModal({
         const r = valid[i];
         try {
           const existing = existingByRef.get(r.reference);
-          // In sync mode, preserve existing name and images if already set.
+          // Always preserve existing content fields when the product already
+          // exists — CSV import only updates stock, price, season and active state.
           const preservedName =
-            syncMode && existing && existing.name && existing.name.trim().length > 0
+            existing && existing.name && existing.name.trim().length > 0
               ? existing.name
               : r.name;
           const preservedImages =
-            syncMode && existing && existing.images && existing.images.length > 0
+            existing && existing.images && existing.images.length > 0
               ? existing.images
               : [];
+          const preservedDescription =
+            existing && existing.description && existing.description.trim().length > 0
+              ? existing.description
+              : r.description;
+          const preservedColor = existing?.color ?? null;
+          const preservedComposition = existing?.composition ?? null;
+          const preservedCare = existing?.care_instructions ?? null;
           await upsertFn({
             data: {
               token,
@@ -1831,7 +1839,7 @@ function ImportProductsModal({
                 name: preservedName,
                 reference: r.reference,
                 external_id: r.external_id || null,
-                description: r.description,
+                description: preservedDescription,
                 price: r.price,
                 original_price: r.original_price,
                 discount_percent: null,
@@ -1841,6 +1849,9 @@ function ImportProductsModal({
                 sizes: r.sizes,
                 is_active: true,
                 barcode: r.barcodes[0] || null,
+                color: preservedColor,
+                composition: preservedComposition,
+                care_instructions: preservedCare,
               },
             },
           });
