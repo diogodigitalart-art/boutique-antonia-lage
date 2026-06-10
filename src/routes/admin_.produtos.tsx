@@ -60,6 +60,7 @@ export const SUBCATEGORIES: string[] = [
   "Casacos e Blazers",
   "Calças e Saias",
   "Malhas",
+  "Sweaters e Hoodies",
   "Acessórios",
   "Malas",
   "Sapatos",
