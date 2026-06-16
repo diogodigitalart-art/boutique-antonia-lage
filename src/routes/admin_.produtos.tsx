@@ -1583,6 +1583,109 @@ function brandKey(brand: string, ref: string): string {
   return `${brand.trim().toUpperCase()}::${ref.trim().toUpperCase()}`;
 }
 
+type ExistingProductInfo = {
+  id: string;
+  brand: string | null;
+  name: string | null;
+  images: string[] | null;
+  description: string | null;
+  color: string | null;
+  composition: string | null;
+  care_instructions: string | null;
+  cost_price: number | null;
+  discount_percent: number | null;
+  sizes: Array<{ size: string; stock: number; reserved?: number; barcode?: string | null }> | null;
+  external_id: string | null;
+};
+
+function hasVal(v: unknown): boolean {
+  if (v == null) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "number") return Number.isFinite(v) && v > 0;
+  return true;
+}
+
+/** Compute which manual fields will be preserved for an existing product. */
+function preservedFields(existing: ExistingProductInfo | undefined): string[] {
+  if (!existing) return [];
+  const out: string[] = [];
+  if (hasVal(existing.name)) out.push("Nome");
+  if (hasVal(existing.description)) out.push("Descrição");
+  if (hasVal(existing.color)) out.push("Cor");
+  if (hasVal(existing.composition)) out.push("Composição");
+  if (hasVal(existing.care_instructions)) out.push("Cuidados");
+  if (hasVal(existing.images)) out.push("Imagens");
+  if (hasVal(existing.cost_price)) out.push("Custo");
+  if (hasVal(existing.discount_percent)) out.push("Desconto");
+  return out;
+}
+
+/** Build the upsert payload merging CSV row with existing DB row per field rules. */
+function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined) {
+  const name = existing && hasVal(existing.name) ? existing.name! : r.name;
+  const images = existing && hasVal(existing.images) ? existing.images! : [];
+  const description =
+    existing && hasVal(existing.description) ? existing.description! : r.description;
+  const color = existing && hasVal(existing.color) ? existing.color! : r.color || null;
+  const composition = existing?.composition ?? null;
+  const care = existing?.care_instructions ?? null;
+  const cost_price = existing?.cost_price ?? null;
+  const discount_percent = existing?.discount_percent ?? null;
+
+  // Merge sizes: keep existing sizes (and their reserved + barcode), update
+  // stock from CSV. Preserve existing per-size barcodes; fill from CSV only
+  // when empty. Add CSV-only sizes.
+  const prevSizes = existing?.sizes ?? [];
+  const bySize = new Map<string, { size: string; stock: number; reserved: number; barcode: string | null }>();
+  for (const s of prevSizes) {
+    bySize.set(s.size.toUpperCase(), {
+      size: s.size,
+      stock: Math.max(0, Number(s.stock) || 0),
+      reserved: Math.max(0, Number(s.reserved) || 0),
+      barcode: (s.barcode ?? null) || null,
+    });
+  }
+  for (const cs of r.sizes) {
+    const k = cs.size.toUpperCase();
+    const prev = bySize.get(k);
+    if (prev) {
+      prev.stock = Math.max(0, Number(cs.stock) || 0);
+      if (!prev.barcode && cs.barcode) prev.barcode = cs.barcode;
+    } else {
+      bySize.set(k, {
+        size: cs.size,
+        stock: Math.max(0, Number(cs.stock) || 0),
+        reserved: 0,
+        barcode: cs.barcode || null,
+      });
+    }
+  }
+  const sizes = Array.from(bySize.values());
+
+  return {
+    id: existing?.id,
+    brand: r.brand,
+    name,
+    reference: r.reference,
+    external_id: r.external_id || existing?.external_id || null,
+    description,
+    price: r.price,
+    original_price: r.original_price,
+    discount_percent,
+    category: r.category,
+    season: r.season,
+    images,
+    sizes,
+    is_active: true,
+    barcode: null,
+    cost_price,
+    color,
+    composition,
+    care_instructions: care,
+  };
+}
+
 // Farfetch-style export: semicolon-separated, one row per SKU (size).
 // Multiple sizes of the same product share the same "Brand product ID".
 const CSV_TEMPLATE =
