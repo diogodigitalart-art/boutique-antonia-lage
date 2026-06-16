@@ -2013,7 +2013,7 @@ function ImportProductsModal({
           </div>
 
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
-            Esta importação apenas actualiza stock, preço e estado. Descrições, cores, composições e fotos existentes são preservadas.
+            Esta importação apenas actualiza stock, preço, época e estado (e ID externo). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. A coluna “Campos preservados” mostra exactamente o que será mantido para cada produto.
           </div>
           <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
             <input
