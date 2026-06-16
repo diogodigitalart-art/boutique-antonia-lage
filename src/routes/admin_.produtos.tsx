@@ -53,12 +53,12 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "arquivo", label: "Arquivo" },
 ];
 
-// Categoria (subcategory) — distinct from Secção. Stored in `subcategory` column.
+// Categoria (subcategory) — distinct from Grupo. Stored in `subcategory` column.
 export const SUBCATEGORIES: string[] = [
   "Vestidos",
   "Tops e Blusas",
   "Casacos e Blazers",
-  "Calças e Saias",
+  "Calças, Saias e Calções",
   "Malhas",
   "Sweaters e Hoodies",
   "Acessórios",
@@ -322,7 +322,7 @@ function Content() {
         <FilterSelect
           value={filterCat}
           onChange={setFilterCat}
-          options={[{ value: "all", label: "Todas categorias" }, ...CATEGORIES]}
+          options={[{ value: "all", label: "Todos grupos" }, ...CATEGORIES]}
         />
         <FilterSelect
           value={filterBrand}
@@ -399,7 +399,7 @@ function Content() {
                   <th className="px-3 py-2.5">Nome</th>
                   <th className="px-3 py-2.5">Ref.</th>
                   <th className="px-3 py-2.5">Season</th>
-                  <th className="px-3 py-2.5">Categoria</th>
+                  <th className="px-3 py-2.5">Grupo</th>
                   <th className="px-3 py-2.5 text-right">Preço</th>
                   <th className="px-3 py-2.5">Tamanhos / Stock</th>
                   <th className="px-3 py-2.5">Estado</th>
@@ -1010,7 +1010,7 @@ function ProductForm({
                   )}
                 </select>
               </Field>
-              <Field label="Secção">
+              <Field label="Grupo">
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -2075,7 +2075,7 @@ function ImportProductsModal({
                         <th className="px-3 py-2">Época</th>
                         <th className="px-3 py-2 text-right">Preço</th>
                         <th className="px-3 py-2">Tamanhos</th>
-                        <th className="px-3 py-2">Categoria</th>
+                        <th className="px-3 py-2">Grupo</th>
                         <th className="px-3 py-2">Campos preservados</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
