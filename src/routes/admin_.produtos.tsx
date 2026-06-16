@@ -1553,10 +1553,138 @@ type ParsedRow = {
   category: string;
   season: string | null;
   description: string;
-  sizes: ProductSize[];
-  barcodes: string[];
+  color: string;
+  sizes: Array<{ size: string; stock: number; reserved: number; barcode: string }>;
   _error?: string;
 };
+
+// Map uppercase CSV brand → preferred display brand. Lookups are
+// case-insensitive; unmapped brands fall through unchanged.
+const BRAND_DISPLAY_MAP: Record<string, string> = {
+  "SELF-PORTRAIT": "Self-Portrait",
+  "BA&SH": "BA&SH",
+  "ZADIG&VOLTAIRE": "Zadig&Voltaire",
+  "ANINE BING": "Anine Bing",
+  "RIXO": "Rixo",
+  "DVF": "DVF",
+  "MOMONI": "Momoni",
+  "ALBERTA FERRETTI": "Alberta Ferretti",
+  "PHILOSOPHY DI LORENZO SERAFINI": "Philosophy di Lorenzo Serafini",
+  "EDWARD ACHOUR PARIS": "Edward Achour Paris",
+  "NEEDLE & THREAD": "Needle & Thread",
+  "MOSCHINO JEANS": "Moschino Jeans",
+  "ERMANNO FIRENZE": "Ermanno Firenze",
+};
+function mapBrandDisplay(brand: string): string {
+  const k = brand.trim().toUpperCase();
+  return BRAND_DISPLAY_MAP[k] ?? brand.trim();
+}
+function brandKey(brand: string, ref: string): string {
+  return `${brand.trim().toUpperCase()}::${ref.trim().toUpperCase()}`;
+}
+
+type ExistingProductInfo = {
+  id: string;
+  brand: string | null;
+  name: string | null;
+  images: string[] | null;
+  description: string | null;
+  color: string | null;
+  composition: string | null;
+  care_instructions: string | null;
+  cost_price: number | null;
+  discount_percent: number | null;
+  sizes: Array<{ size: string; stock: number; reserved?: number; barcode?: string | null }> | null;
+  external_id: string | null;
+};
+
+function hasVal(v: unknown): boolean {
+  if (v == null) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "number") return Number.isFinite(v) && v > 0;
+  return true;
+}
+
+/** Compute which manual fields will be preserved for an existing product. */
+function preservedFields(existing: ExistingProductInfo | undefined): string[] {
+  if (!existing) return [];
+  const out: string[] = [];
+  if (hasVal(existing.name)) out.push("Nome");
+  if (hasVal(existing.description)) out.push("Descrição");
+  if (hasVal(existing.color)) out.push("Cor");
+  if (hasVal(existing.composition)) out.push("Composição");
+  if (hasVal(existing.care_instructions)) out.push("Cuidados");
+  if (hasVal(existing.images)) out.push("Imagens");
+  if (hasVal(existing.cost_price)) out.push("Custo");
+  if (hasVal(existing.discount_percent)) out.push("Desconto");
+  return out;
+}
+
+/** Build the upsert payload merging CSV row with existing DB row per field rules. */
+function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined) {
+  const name = existing && hasVal(existing.name) ? existing.name! : r.name;
+  const images = existing && hasVal(existing.images) ? existing.images! : [];
+  const description =
+    existing && hasVal(existing.description) ? existing.description! : r.description;
+  const color = existing && hasVal(existing.color) ? existing.color! : r.color || null;
+  const composition = existing?.composition ?? null;
+  const care = existing?.care_instructions ?? null;
+  const cost_price = existing?.cost_price ?? null;
+  const discount_percent = existing?.discount_percent ?? null;
+
+  // Merge sizes: keep existing sizes (and their reserved + barcode), update
+  // stock from CSV. Preserve existing per-size barcodes; fill from CSV only
+  // when empty. Add CSV-only sizes.
+  const prevSizes = existing?.sizes ?? [];
+  const bySize = new Map<string, { size: string; stock: number; reserved: number; barcode: string | null }>();
+  for (const s of prevSizes) {
+    bySize.set(s.size.toUpperCase(), {
+      size: s.size,
+      stock: Math.max(0, Number(s.stock) || 0),
+      reserved: Math.max(0, Number(s.reserved) || 0),
+      barcode: (s.barcode ?? null) || null,
+    });
+  }
+  for (const cs of r.sizes) {
+    const k = cs.size.toUpperCase();
+    const prev = bySize.get(k);
+    if (prev) {
+      prev.stock = Math.max(0, Number(cs.stock) || 0);
+      if (!prev.barcode && cs.barcode) prev.barcode = cs.barcode;
+    } else {
+      bySize.set(k, {
+        size: cs.size,
+        stock: Math.max(0, Number(cs.stock) || 0),
+        reserved: 0,
+        barcode: cs.barcode || null,
+      });
+    }
+  }
+  const sizes = Array.from(bySize.values());
+
+  return {
+    id: existing?.id,
+    brand: r.brand,
+    name,
+    reference: r.reference,
+    external_id: r.external_id || existing?.external_id || null,
+    description,
+    price: r.price,
+    original_price: r.original_price,
+    discount_percent,
+    category: r.category,
+    season: r.season,
+    images,
+    sizes,
+    is_active: true,
+    barcode: null,
+    cost_price,
+    color,
+    composition,
+    care_instructions: care,
+  };
+}
 
 // Farfetch-style export: semicolon-separated, one row per SKU (size).
 // Multiple sizes of the same product share the same "Brand product ID".
@@ -1636,23 +1764,26 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
   const iSize = findIdx("size");
   const iCat = findIdx("category");
   const iBarcode = findIdx("partner barcode", "barcode");
+  const iColor = findIdx("brand colour id", "brand color id", "colour", "color");
 
   const grouped = new Map<string, ParsedRow>();
   for (let i = 1; i < matrix.length; i++) {
     const r = matrix[i];
     const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
-    const brand = cell(iBrand);
+    const brandRaw = cell(iBrand);
+    const brand = mapBrandDisplay(brandRaw);
     const reference = cell(iRef);
     const external_id = cell(iExt);
-    if (!brand && !reference) continue;
+    if (!brandRaw && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
     const size = cell(iSize).toUpperCase();
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
     const barcode = normalizeBarcode(cell(iBarcode));
+    const color = cell(iColor);
 
-    const key = reference || `${brand}::${i}`;
+    const key = reference ? brandKey(brandRaw, reference) : `${brandRaw}::${i}`;
     let row = grouped.get(key);
     if (!row) {
       row = {
@@ -1665,17 +1796,26 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         category: "colecção",
         season: season || null,
         description: catLabel,
+        color,
         sizes: [],
-        barcodes: [],
       };
       grouped.set(key, row);
+    } else {
+      // Refresh fields that should always reflect latest CSV row
+      if (!row.color && color) row.color = color;
+      if (external_id) row.external_id = external_id;
+      if (season) row.season = season;
+      if (Number(priceStr)) row.price = Number(priceStr);
     }
-    if (size && stock > 0) {
+    if (size) {
       const existing = row.sizes.find((s) => s.size === size);
-      if (existing) existing.stock += stock;
-      else row.sizes.push({ size, stock, reserved: 0 });
+      if (existing) {
+        existing.stock += stock;
+        if (!existing.barcode && barcode) existing.barcode = barcode;
+      } else {
+        row.sizes.push({ size, stock, reserved: 0, barcode: barcode || "" });
+      }
     }
-    if (barcode && !row.barcodes.includes(barcode)) row.barcodes.push(barcode);
   }
 
   const out: ParsedRow[] = [];
@@ -1704,15 +1844,7 @@ function ImportProductsModal({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
   const [existingByRef, setExistingByRef] = useState<
-    Map<string, {
-      id: string;
-      name: string | null;
-      images: string[] | null;
-      description: string | null;
-      color: string | null;
-      composition: string | null;
-      care_instructions: string | null;
-    }>
+    Map<string, ExistingProductInfo>
   >(new Map());
   const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
@@ -1732,36 +1864,24 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, name, images, description, color, composition, care_instructions")
+        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id")
         .in("reference", refs);
       if (!error && data) {
-        const map = new Map<string, {
-          id: string;
-          name: string | null;
-          images: string[] | null;
-          description: string | null;
-          color: string | null;
-          composition: string | null;
-          care_instructions: string | null;
-        }>();
-        for (const row of data as Array<{
-          id: string;
-          reference: string;
-          name: string | null;
-          images: string[] | null;
-          description: string | null;
-          color: string | null;
-          composition: string | null;
-          care_instructions: string | null;
-        }>) {
-          map.set(row.reference, {
+        const map = new Map<string, ExistingProductInfo>();
+        for (const row of data as Array<ExistingProductInfo & { reference: string }>) {
+          map.set(brandKey(row.brand ?? "", row.reference ?? ""), {
             id: row.id,
+            brand: row.brand,
             name: row.name,
             images: row.images,
             description: row.description,
             color: row.color,
             composition: row.composition,
             care_instructions: row.care_instructions,
+            cost_price: row.cost_price ?? null,
+            discount_percent: row.discount_percent ?? null,
+            sizes: row.sizes ?? null,
+            external_id: row.external_id ?? null,
           });
         }
         setExistingByRef(map);
@@ -1791,7 +1911,9 @@ function ImportProductsModal({
 
   const valid = rows.filter((r) => !r._error);
   const invalid = rows.length - valid.length;
-  const updateCount = valid.filter((r) => existingByRef.has(r.reference)).length;
+  const lookupExisting = (r: ParsedRow) =>
+    existingByRef.get(brandKey(r.brand, r.reference));
+  const updateCount = valid.filter((r) => !!lookupExisting(r)).length;
   const createCount = valid.length - updateCount;
   const deactivateCount = syncMode ? refsInDbWithRef : 0;
 
@@ -1805,47 +1927,12 @@ function ImportProductsModal({
       for (let i = 0; i < valid.length; i++) {
         const r = valid[i];
         try {
-          const existing = existingByRef.get(r.reference);
-          // Always preserve existing content fields when the product already
-          // exists — CSV import only updates stock, price, season and active state.
-          const preservedName =
-            existing && existing.name && existing.name.trim().length > 0
-              ? existing.name
-              : r.name;
-          const preservedImages =
-            existing && existing.images && existing.images.length > 0
-              ? existing.images
-              : [];
-          const preservedDescription =
-            existing && existing.description && existing.description.trim().length > 0
-              ? existing.description
-              : r.description;
-          const preservedColor = existing?.color ?? null;
-          const preservedComposition = existing?.composition ?? null;
-          const preservedCare = existing?.care_instructions ?? null;
+          const existing = lookupExisting(r);
+          const merged = mergeForImport(r, existing);
           await upsertFn({
             data: {
               token,
-              product: {
-                id: existing?.id,
-                brand: r.brand,
-                name: preservedName,
-                reference: r.reference,
-                external_id: r.external_id || null,
-                description: preservedDescription,
-                price: r.price,
-                original_price: r.original_price,
-                discount_percent: null,
-                category: r.category,
-                season: r.season,
-                images: preservedImages,
-                sizes: r.sizes,
-                is_active: true,
-                barcode: r.barcodes[0] || null,
-                color: preservedColor,
-                composition: preservedComposition,
-                care_instructions: preservedCare,
-              },
+              product: merged,
             },
           });
           ok++;
@@ -1926,7 +2013,7 @@ function ImportProductsModal({
           </div>
 
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
-            Esta importação apenas actualiza stock, preço e estado. Descrições, cores, composições e fotos existentes são preservadas.
+            Esta importação apenas actualiza stock, preço, época e estado (e ID externo). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. A coluna “Campos preservados” mostra exactamente o que será mantido para cada produto.
           </div>
           <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
             <input
@@ -1989,11 +2076,15 @@ function ImportProductsModal({
                         <th className="px-3 py-2 text-right">Preço</th>
                         <th className="px-3 py-2">Tamanhos</th>
                         <th className="px-3 py-2">Categoria</th>
+                        <th className="px-3 py-2">Campos preservados</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r, i) => (
+                      {rows.map((r, i) => {
+                        const ex = existingByRef.get(brandKey(r.brand, r.reference));
+                        const preserved = preservedFields(ex);
+                        return (
                         <tr key={i} className="border-t border-border">
                           <td className="px-3 py-1.5 font-mono">{r.reference}</td>
                           <td className="px-3 py-1.5">{r.brand}</td>
@@ -2004,16 +2095,24 @@ function ImportProductsModal({
                           </td>
                           <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
+                            {ex && preserved.length > 0 ? (
+                              <span className="text-emerald-700">{preserved.join(", ")}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-1.5">
                             {r._error ? (
                               <span className="text-red-600">{r._error}</span>
-                            ) : existingByRef.has(r.reference) ? (
+                            ) : ex ? (
                               <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-700">ACTUALIZAR</span>
                             ) : (
                               <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700">NOVO</span>
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
