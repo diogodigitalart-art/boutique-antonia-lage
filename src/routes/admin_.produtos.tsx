@@ -2075,7 +2075,7 @@ function ImportProductsModal({
                         <th className="px-3 py-2">Época</th>
                         <th className="px-3 py-2 text-right">Preço</th>
                         <th className="px-3 py-2">Tamanhos</th>
-                        <th className="px-3 py-2">Grupo</th>
+                        <th className="px-3 py-2">Descrição</th>
                         <th className="px-3 py-2">Campos preservados</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
