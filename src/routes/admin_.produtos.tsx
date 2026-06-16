@@ -2076,11 +2076,15 @@ function ImportProductsModal({
                         <th className="px-3 py-2 text-right">Preço</th>
                         <th className="px-3 py-2">Tamanhos</th>
                         <th className="px-3 py-2">Categoria</th>
+                        <th className="px-3 py-2">Campos preservados</th>
                         <th className="px-3 py-2">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((r, i) => (
+                      {rows.map((r, i) => {
+                        const ex = existingByRef.get(brandKey(r.brand, r.reference));
+                        const preserved = preservedFields(ex);
+                        return (
                         <tr key={i} className="border-t border-border">
                           <td className="px-3 py-1.5 font-mono">{r.reference}</td>
                           <td className="px-3 py-1.5">{r.brand}</td>
@@ -2091,16 +2095,24 @@ function ImportProductsModal({
                           </td>
                           <td className="px-3 py-1.5 text-muted-foreground">{r.description || "—"}</td>
                           <td className="px-3 py-1.5">
+                            {ex && preserved.length > 0 ? (
+                              <span className="text-emerald-700">{preserved.join(", ")}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-1.5">
                             {r._error ? (
                               <span className="text-red-600">{r._error}</span>
-                            ) : existingByRef.has(r.reference) ? (
+                            ) : ex ? (
                               <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-700">ACTUALIZAR</span>
                             ) : (
                               <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700">NOVO</span>
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
