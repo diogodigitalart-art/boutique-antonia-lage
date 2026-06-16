@@ -1761,36 +1761,24 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, name, images, description, color, composition, care_instructions")
+        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id")
         .in("reference", refs);
       if (!error && data) {
-        const map = new Map<string, {
-          id: string;
-          name: string | null;
-          images: string[] | null;
-          description: string | null;
-          color: string | null;
-          composition: string | null;
-          care_instructions: string | null;
-        }>();
-        for (const row of data as Array<{
-          id: string;
-          reference: string;
-          name: string | null;
-          images: string[] | null;
-          description: string | null;
-          color: string | null;
-          composition: string | null;
-          care_instructions: string | null;
-        }>) {
-          map.set(row.reference, {
+        const map = new Map<string, ExistingProductInfo>();
+        for (const row of data as Array<ExistingProductInfo & { reference: string }>) {
+          map.set(brandKey(row.brand ?? "", row.reference ?? ""), {
             id: row.id,
+            brand: row.brand,
             name: row.name,
             images: row.images,
             description: row.description,
             color: row.color,
             composition: row.composition,
             care_instructions: row.care_instructions,
+            cost_price: row.cost_price ?? null,
+            discount_percent: row.discount_percent ?? null,
+            sizes: row.sizes ?? null,
+            external_id: row.external_id ?? null,
           });
         }
         setExistingByRef(map);
@@ -1820,7 +1808,9 @@ function ImportProductsModal({
 
   const valid = rows.filter((r) => !r._error);
   const invalid = rows.length - valid.length;
-  const updateCount = valid.filter((r) => existingByRef.has(r.reference)).length;
+  const lookupExisting = (r: ParsedRow) =>
+    existingByRef.get(brandKey(r.brand, r.reference));
+  const updateCount = valid.filter((r) => !!lookupExisting(r)).length;
   const createCount = valid.length - updateCount;
   const deactivateCount = syncMode ? refsInDbWithRef : 0;
 
@@ -1834,47 +1824,12 @@ function ImportProductsModal({
       for (let i = 0; i < valid.length; i++) {
         const r = valid[i];
         try {
-          const existing = existingByRef.get(r.reference);
-          // Always preserve existing content fields when the product already
-          // exists — CSV import only updates stock, price, season and active state.
-          const preservedName =
-            existing && existing.name && existing.name.trim().length > 0
-              ? existing.name
-              : r.name;
-          const preservedImages =
-            existing && existing.images && existing.images.length > 0
-              ? existing.images
-              : [];
-          const preservedDescription =
-            existing && existing.description && existing.description.trim().length > 0
-              ? existing.description
-              : r.description;
-          const preservedColor = existing?.color ?? null;
-          const preservedComposition = existing?.composition ?? null;
-          const preservedCare = existing?.care_instructions ?? null;
+          const existing = lookupExisting(r);
+          const merged = mergeForImport(r, existing);
           await upsertFn({
             data: {
               token,
-              product: {
-                id: existing?.id,
-                brand: r.brand,
-                name: preservedName,
-                reference: r.reference,
-                external_id: r.external_id || null,
-                description: preservedDescription,
-                price: r.price,
-                original_price: r.original_price,
-                discount_percent: null,
-                category: r.category,
-                season: r.season,
-                images: preservedImages,
-                sizes: r.sizes,
-                is_active: true,
-                barcode: r.barcodes[0] || null,
-                color: preservedColor,
-                composition: preservedComposition,
-                care_instructions: preservedCare,
-              },
+              product: merged,
             },
           });
           ok++;
