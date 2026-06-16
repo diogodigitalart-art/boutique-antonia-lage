@@ -1553,10 +1553,35 @@ type ParsedRow = {
   category: string;
   season: string | null;
   description: string;
-  sizes: ProductSize[];
-  barcodes: string[];
+  color: string;
+  sizes: Array<{ size: string; stock: number; reserved: number; barcode: string }>;
   _error?: string;
 };
+
+// Map uppercase CSV brand → preferred display brand. Lookups are
+// case-insensitive; unmapped brands fall through unchanged.
+const BRAND_DISPLAY_MAP: Record<string, string> = {
+  "SELF-PORTRAIT": "Self-Portrait",
+  "BA&SH": "BA&SH",
+  "ZADIG&VOLTAIRE": "Zadig&Voltaire",
+  "ANINE BING": "Anine Bing",
+  "RIXO": "Rixo",
+  "DVF": "DVF",
+  "MOMONI": "Momoni",
+  "ALBERTA FERRETTI": "Alberta Ferretti",
+  "PHILOSOPHY DI LORENZO SERAFINI": "Philosophy di Lorenzo Serafini",
+  "EDWARD ACHOUR PARIS": "Edward Achour Paris",
+  "NEEDLE & THREAD": "Needle & Thread",
+  "MOSCHINO JEANS": "Moschino Jeans",
+  "ERMANNO FIRENZE": "Ermanno Firenze",
+};
+function mapBrandDisplay(brand: string): string {
+  const k = brand.trim().toUpperCase();
+  return BRAND_DISPLAY_MAP[k] ?? brand.trim();
+}
+function brandKey(brand: string, ref: string): string {
+  return `${brand.trim().toUpperCase()}::${ref.trim().toUpperCase()}`;
+}
 
 // Farfetch-style export: semicolon-separated, one row per SKU (size).
 // Multiple sizes of the same product share the same "Brand product ID".
@@ -1636,23 +1661,26 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
   const iSize = findIdx("size");
   const iCat = findIdx("category");
   const iBarcode = findIdx("partner barcode", "barcode");
+  const iColor = findIdx("brand colour id", "brand color id", "colour", "color");
 
   const grouped = new Map<string, ParsedRow>();
   for (let i = 1; i < matrix.length; i++) {
     const r = matrix[i];
     const cell = (j: number) => (j >= 0 ? (r[j] ?? "").trim() : "");
-    const brand = cell(iBrand);
+    const brandRaw = cell(iBrand);
+    const brand = mapBrandDisplay(brandRaw);
     const reference = cell(iRef);
     const external_id = cell(iExt);
-    if (!brand && !reference) continue;
+    if (!brandRaw && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
     const size = cell(iSize).toUpperCase();
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
     const barcode = normalizeBarcode(cell(iBarcode));
+    const color = cell(iColor);
 
-    const key = reference || `${brand}::${i}`;
+    const key = reference ? brandKey(brandRaw, reference) : `${brandRaw}::${i}`;
     let row = grouped.get(key);
     if (!row) {
       row = {
@@ -1665,17 +1693,26 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         category: "colecção",
         season: season || null,
         description: catLabel,
+        color,
         sizes: [],
-        barcodes: [],
       };
       grouped.set(key, row);
+    } else {
+      // Refresh fields that should always reflect latest CSV row
+      if (!row.color && color) row.color = color;
+      if (external_id) row.external_id = external_id;
+      if (season) row.season = season;
+      if (Number(priceStr)) row.price = Number(priceStr);
     }
-    if (size && stock > 0) {
+    if (size) {
       const existing = row.sizes.find((s) => s.size === size);
-      if (existing) existing.stock += stock;
-      else row.sizes.push({ size, stock, reserved: 0 });
+      if (existing) {
+        existing.stock += stock;
+        if (!existing.barcode && barcode) existing.barcode = barcode;
+      } else {
+        row.sizes.push({ size, stock, reserved: 0, barcode: barcode || "" });
+      }
     }
-    if (barcode && !row.barcodes.includes(barcode)) row.barcodes.push(barcode);
   }
 
   const out: ParsedRow[] = [];
