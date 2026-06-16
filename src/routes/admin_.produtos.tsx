@@ -1741,15 +1741,7 @@ function ImportProductsModal({
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, ok: 0, err: 0 });
   const [existingByRef, setExistingByRef] = useState<
-    Map<string, {
-      id: string;
-      name: string | null;
-      images: string[] | null;
-      description: string | null;
-      color: string | null;
-      composition: string | null;
-      care_instructions: string | null;
-    }>
+    Map<string, ExistingProductInfo>
   >(new Map());
   const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
