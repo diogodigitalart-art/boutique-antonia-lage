@@ -24,7 +24,7 @@ const SUBCATEGORIES = [
   "Vestidos",
   "Tops e Blusas",
   "Casacos e Blazers",
-  "Calças e Saias",
+  "Calças, Saias e Calções",
   "Malhas",
   "Sweaters e Hoodies",
   "Acessórios",
