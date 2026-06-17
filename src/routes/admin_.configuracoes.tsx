@@ -33,10 +33,15 @@ export const Route = createFileRoute("/admin_/configuracoes")({
 type Row = { id: string; name: string };
 
 async function getToken(): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Sessão expirada");
-  return token;
+  // Poll briefly: Supabase may emit INITIAL_SESSION before storage hydration
+  // completes, so the very first getSession() right after mount can return null.
+  for (let i = 0; i < 10; i++) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) return token;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  throw new Error("Sessão expirada");
 }
 
 function Content() {
