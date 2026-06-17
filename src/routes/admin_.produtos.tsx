@@ -155,6 +155,8 @@ function Content() {
   const [filterBrand, setFilterBrand] = useState<string>("all");
   const [filterSeason, setFilterSeason] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterSubcategory, setFilterSubcategory] = useState<string>("all");
+
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
