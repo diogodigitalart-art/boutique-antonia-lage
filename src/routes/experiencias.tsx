@@ -146,7 +146,7 @@ function ExperiencesPage() {
           {t("tab_experiences")}
         </p>
         <div className="space-y-6">
-          {EXPERIENCES.filter((e) => e.title !== "Arranjos e Costura").map((e) => (
+          {experiences.filter((e) => e.title !== "Arranjos e Costura").map((e) => (
             <article
               key={e.id}
               className="overflow-hidden rounded-3xl bg-card md:grid md:grid-cols-2"
@@ -191,7 +191,7 @@ function ExperiencesPage() {
       </section>
 
       {/* Services section — Tailoring */}
-      {EXPERIENCES.filter((e) => e.title === "Arranjos e Costura").map((e) => (
+      {experiences.filter((e) => e.title === "Arranjos e Costura").map((e) => (
         <section key={e.id} className="mx-auto mt-16 max-w-7xl px-4 md:px-8">
           <div className="mb-6 border-t border-border pt-10">
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#9b7e6b]">Serviços</p>
