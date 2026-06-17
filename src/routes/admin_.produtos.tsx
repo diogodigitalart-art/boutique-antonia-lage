@@ -197,6 +197,7 @@ function Content() {
       if (filterSeason !== "all" && (r.season || "") !== filterSeason) return false;
       if (filterStatus === "active" && !r.is_active) return false;
       if (filterStatus === "inactive" && r.is_active) return false;
+      if (filterSubcategory !== "all" && r.subcategory !== filterSubcategory) return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -204,7 +205,7 @@ function Content() {
         (r.reference || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus]);
+  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus, filterSubcategory]);
 
   const toggleActive = async (r: ProductRow) => {
     try {
