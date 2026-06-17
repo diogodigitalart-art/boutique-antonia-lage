@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/data";
 import { normalizeSize } from "@/lib/utils";
+import { listPublicProducts } from "./products.functions";
 
 export type ProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 
@@ -73,7 +73,7 @@ export function rowToProduct(row: ProductRow): Product {
     availableUnits,
     reference: row.reference,
     description: row.description,
-    category: (row.category || "").toLowerCase().startsWith("arquiv") ? "archive" : "new",
+    category: (row.category || "").toLowerCase().trim() === "arquivo" ? "archive" : "new",
     season: row.season || undefined,
     discountPercent: hasDiscount ? (pct as number) : undefined,
     color: row.color || undefined,
@@ -106,16 +106,14 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("products" as never)
-      .select(
-        "id, name, brand, description, price, original_price, category, subcategory, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
-      )
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      setRows(data as unknown as ProductRow[]);
+    try {
+      const { rows } = await listPublicProducts();
+      setRows(rows as unknown as ProductRow[]);
+    } catch (err) {
+      console.error("Failed to load products", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
