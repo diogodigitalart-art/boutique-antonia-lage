@@ -209,23 +209,35 @@ export type Database = {
       experience_capacity: {
         Row: {
           created_at: string
+          description: string
+          duration: string
           experience_name: string
           id: string
+          image_url: string | null
           max_capacity_per_slot: number
+          price: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          description?: string
+          duration?: string
           experience_name: string
           id?: string
+          image_url?: string | null
           max_capacity_per_slot?: number
+          price?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          description?: string
+          duration?: string
           experience_name?: string
           id?: string
+          image_url?: string | null
           max_capacity_per_slot?: number
+          price?: number
           updated_at?: string
         }
         Relationships: []
