@@ -106,16 +106,14 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("products" as never)
-      .select(
-        "id, name, brand, description, price, original_price, category, subcategory, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
-      )
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      setRows(data as unknown as ProductRow[]);
+    try {
+      const { rows } = await listPublicProducts();
+      setRows(rows as unknown as ProductRow[]);
+    } catch (err) {
+      console.error("Failed to load products", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
