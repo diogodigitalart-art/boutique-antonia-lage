@@ -174,6 +174,10 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
+import boutiquePrivadaImg from "@/assets/Boutique_Privada.webp.asset.json";
+import personalStylingImg from "@/assets/Personal_Styling.webp.asset.json";
+import arranjosCosturaImg from "@/assets/Arranjos_e_Costura.webp.asset.json";
+
 export const EXPERIENCES: Experience[] = [
   {
     id: "exp1",
@@ -184,7 +188,7 @@ export const EXPERIENCES: Experience[] = [
     capacity: "Até 3 pessoas",
     location: "Braga",
     price: 150,
-    image: img("1490481651871-ab68de25d43d", 1200, 800),
+    image: boutiquePrivadaImg.url,
     tag: "Experiência exclusiva",
   },
   {
@@ -196,7 +200,7 @@ export const EXPERIENCES: Experience[] = [
     capacity: "Individual",
     location: "Braga",
     price: 80,
-    image: img("1515886657613-9f3515b0c78f", 1200, 800),
+    image: personalStylingImg.url,
     tag: "Curadoria pessoal",
   },
   {
@@ -208,7 +212,7 @@ export const EXPERIENCES: Experience[] = [
     capacity: "Por peça",
     location: "Braga",
     price: 15,
-    image: img("1583744946564-b52ac1c389c8", 1200, 800),
+    image: arranjosCosturaImg.url,
     tag: "Serviço de atelier",
   },
 ];
