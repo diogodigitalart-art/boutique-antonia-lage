@@ -12,6 +12,7 @@ import {
   adminListSeasons,
   adminAddSeason,
   adminDeleteSeason,
+  adminUploadProductImage,
 } from "@/server-fns/products";
 import {
   listExperienceCapacity,
