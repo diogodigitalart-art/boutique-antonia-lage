@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/data";
 import { normalizeSize } from "@/lib/utils";
+import { listPublicProducts } from "./products.functions";
 
 export type ProductSize = { size: string; stock: number; reserved: number; barcode?: string | null };
 
