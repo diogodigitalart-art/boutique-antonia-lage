@@ -401,6 +401,25 @@ function ExperienceCapacitySection() {
   const [loading, setLoading] = useState(true);
   const [busyName, setBusyName] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, ExperienceCapacityRow>>({});
+  const [sessionReady, setSessionReady] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setHasSession(!!data.session?.access_token);
+      setSessionReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(!!session?.access_token);
+      setSessionReady(true);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -437,6 +456,10 @@ function ExperienceCapacitySection() {
 
   const handleImageUpload = async (name: string, file: File | null) => {
     if (!file) return;
+    if (!sessionReady || !hasSession) {
+      toast.error("Sessão ainda a carregar — tenta novamente em segundos.");
+      return;
+    }
     setBusyName(name);
     try {
       const token = await getToken();
@@ -456,6 +479,10 @@ function ExperienceCapacitySection() {
   const handleSave = async (name: string) => {
     const draft = drafts[name];
     if (!draft) return;
+    if (!sessionReady || !hasSession) {
+      toast.error("Sessão ainda a carregar — tenta novamente em segundos.");
+      return;
+    }
     setBusyName(name);
     try {
       const token = await getToken();
@@ -486,7 +513,7 @@ function ExperienceCapacitySection() {
         Edita imagem, preço, duração, descrição e capacidade de cada experiência.
         Estes valores aparecem na página pública /experiencias.
       </p>
-      {loading ? (
+      {loading || !sessionReady ? (
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : rows.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sem experiências configuradas.</p>
