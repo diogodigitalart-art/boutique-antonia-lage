@@ -155,6 +155,8 @@ function Content() {
   const [filterBrand, setFilterBrand] = useState<string>("all");
   const [filterSeason, setFilterSeason] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterSubcategory, setFilterSubcategory] = useState<string>("all");
+
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [showBrands, setShowBrands] = useState(false);
@@ -195,6 +197,7 @@ function Content() {
       if (filterSeason !== "all" && (r.season || "") !== filterSeason) return false;
       if (filterStatus === "active" && !r.is_active) return false;
       if (filterStatus === "inactive" && r.is_active) return false;
+      if (filterSubcategory !== "all" && r.subcategory !== filterSubcategory) return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -202,7 +205,7 @@ function Content() {
         (r.reference || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus]);
+  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus, filterSubcategory]);
 
   const toggleActive = async (r: ProductRow) => {
     try {
@@ -323,6 +326,14 @@ function Content() {
           value={filterCat}
           onChange={setFilterCat}
           options={[{ value: "all", label: "Todos grupos" }, ...CATEGORIES]}
+        />
+        <FilterSelect
+          value={filterSubcategory}
+          onChange={setFilterSubcategory}
+          options={[
+            { value: "all", label: "Todas as categorias" },
+            ...SUBCATEGORIES.map((s) => ({ value: s, label: s })),
+          ]}
         />
         <FilterSelect
           value={filterBrand}
