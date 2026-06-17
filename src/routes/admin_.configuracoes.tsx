@@ -391,14 +391,19 @@ function WhatsAppSettingSection() {
 function ExperienceCapacitySection() {
   const list = useServerFn(listExperienceCapacity);
   const set = useServerFn(adminSetExperienceCapacity);
+  const uploadFn = useServerFn(adminUploadProductImage);
   const [rows, setRows] = useState<ExperienceCapacityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyName, setBusyName] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, ExperienceCapacityRow>>({});
 
   const refresh = useCallback(async () => {
     try {
       const r = await list();
       setRows(r.rows);
+      const d: Record<string, ExperienceCapacityRow> = {};
+      r.rows.forEach((row) => { d[row.experience_name] = { ...row }; });
+      setDrafts(d);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar");
     } finally {
@@ -410,13 +415,57 @@ function ExperienceCapacitySection() {
     refresh();
   }, [refresh]);
 
-  const handleChange = async (experienceName: string, value: number) => {
-    if (!Number.isFinite(value) || value < 1) return;
-    setBusyName(experienceName);
+  const updateDraft = (name: string, patch: Partial<ExperienceCapacityRow>) => {
+    setDrafts((d) => ({ ...d, [name]: { ...d[name], ...patch } }));
+  };
+
+  const fileToBase64 = (file: File): Promise<{ base64: string; type: string }> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve({ base64: result.split(",")[1] || "", type: file.type || "image/jpeg" });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageUpload = async (name: string, file: File | null) => {
+    if (!file) return;
+    setBusyName(name);
     try {
       const token = await getToken();
-      await set({ data: { token, experienceName, maxCapacity: value } });
-      toast.success("Capacidade actualizada");
+      const { base64, type } = await fileToBase64(file);
+      const res = await uploadFn({
+        data: { token, filename: file.name, contentType: type, dataBase64: base64 },
+      });
+      updateDraft(name, { image_url: (res as { url: string }).url });
+      toast.success("Imagem carregada — clica em Guardar para confirmar");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro a carregar imagem");
+    } finally {
+      setBusyName(null);
+    }
+  };
+
+  const handleSave = async (name: string) => {
+    const draft = drafts[name];
+    if (!draft) return;
+    setBusyName(name);
+    try {
+      const token = await getToken();
+      await set({
+        data: {
+          token,
+          experienceName: name,
+          maxCapacity: draft.max_capacity_per_slot,
+          price: draft.price,
+          duration: draft.duration,
+          description: draft.description,
+          imageUrl: draft.image_url,
+        },
+      });
+      toast.success("Experiência actualizada");
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
@@ -427,47 +476,131 @@ function ExperienceCapacitySection() {
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="font-display text-xl italic mb-1">Capacidade por experiência</h2>
+      <h2 className="font-display text-xl italic mb-1">Experiências</h2>
       <p className="mb-4 text-xs text-muted-foreground">
-        Número máximo de reservas aceites por horário para cada experiência.
-        As reservas de produtos (provas) não têm limite a este nível — controlam-se
-        por peça e tamanho automaticamente.
+        Edita imagem, preço, duração, descrição e capacidade de cada experiência.
+        Estes valores aparecem na página pública /experiencias.
       </p>
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : rows.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sem experiências configuradas.</p>
       ) : (
-        <div className="space-y-3">
-          {rows.map((r) => (
-            <div
-              key={r.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">{r.experience_name}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Reservas máximas por slot
-                </p>
+        <div className="space-y-6">
+          {rows.map((r) => {
+            const d = drafts[r.experience_name] ?? r;
+            const busy = busyName === r.experience_name;
+            return (
+              <div
+                key={r.id}
+                className="rounded-xl border border-border bg-background p-4 md:p-5"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-display text-lg italic">{r.experience_name}</h3>
+                  {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+                  <div className="space-y-2">
+                    <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Imagem de capa
+                    </label>
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted">
+                      {d.image_url ? (
+                        <img src={d.image_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                          Sem imagem
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <label className="flex-1 cursor-pointer rounded-md border border-border bg-card px-3 py-2 text-center text-xs hover:bg-accent">
+                        Carregar
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={busy}
+                          onChange={(e) => void handleImageUpload(r.experience_name, e.target.files?.[0] ?? null)}
+                        />
+                      </label>
+                      {d.image_url && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => updateDraft(r.experience_name, { image_url: null })}
+                          className="rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-destructive/10"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Preço (€)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={d.price}
+                          disabled={busy}
+                          onChange={(e) => updateDraft(r.experience_name, { price: Number(e.target.value) })}
+                          className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Duração</label>
+                        <input
+                          type="text"
+                          value={d.duration}
+                          disabled={busy}
+                          placeholder="ex: 2 horas"
+                          onChange={(e) => updateDraft(r.experience_name, { duration: e.target.value })}
+                          className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Cap./slot</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={d.max_capacity_per_slot}
+                          disabled={busy}
+                          onChange={(e) => updateDraft(r.experience_name, { max_capacity_per_slot: Number(e.target.value) })}
+                          className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Descrição</label>
+                      <textarea
+                        rows={3}
+                        value={d.description}
+                        disabled={busy}
+                        onChange={(e) => updateDraft(r.experience_name, { description: e.target.value })}
+                        className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleSave(r.experience_name)}
+                        className="h-10 rounded-full bg-primary px-5 text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  defaultValue={r.max_capacity_per_slot}
-                  disabled={busyName === r.experience_name}
-                  onBlur={(e) => {
-                    const n = Number(e.target.value);
-                    if (n !== r.max_capacity_per_slot) {
-                      void handleChange(r.experience_name, n);
-                    }
-                  }}
-                  className="h-10 w-20 rounded-md border border-border bg-card px-3 text-center text-sm"
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
