@@ -29,6 +29,10 @@ export type ExperienceCapacityRow = {
   id: string;
   experience_name: string;
   max_capacity_per_slot: number;
+  image_url: string | null;
+  price: number;
+  duration: string;
+  description: string;
 };
 
 /**
@@ -72,10 +76,22 @@ export const listExperienceCapacity = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ rows: ExperienceCapacityRow[] }> => {
     const { data, error } = await supabaseAdmin
       .from("experience_capacity")
-      .select("id, experience_name, max_capacity_per_slot")
+      .select("id, experience_name, max_capacity_per_slot, image_url, price, duration, description")
       .order("experience_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return { rows: (data ?? []) as ExperienceCapacityRow[] };
+    const rows = ((data ?? []) as unknown[]).map((r) => {
+      const o = r as Record<string, unknown>;
+      return {
+        id: String(o.id),
+        experience_name: String(o.experience_name),
+        max_capacity_per_slot: Number(o.max_capacity_per_slot ?? 1),
+        image_url: (o.image_url as string | null) ?? null,
+        price: Number(o.price ?? 0),
+        duration: String(o.duration ?? ""),
+        description: String(o.description ?? ""),
+      };
+    });
+    return { rows };
   },
 );
 
@@ -88,10 +104,21 @@ export const adminSetExperienceCapacity = createServerFn({ method: "POST" })
     if (!isStr(i.experienceName)) throw new Error("Missing experienceName");
     const cap = Number(i.maxCapacity);
     if (!Number.isFinite(cap) || cap < 1 || cap > 50) throw new Error("Invalid capacity");
+    const price = Number(i.price ?? 0);
+    if (!Number.isFinite(price) || price < 0 || price > 100000) throw new Error("Invalid price");
+    const duration = typeof i.duration === "string" ? (i.duration as string).slice(0, 100) : "";
+    const description = typeof i.description === "string" ? (i.description as string).slice(0, 2000) : "";
+    const imageUrl = i.imageUrl === null || i.imageUrl === undefined
+      ? null
+      : (typeof i.imageUrl === "string" ? (i.imageUrl as string).slice(0, 1000) : null);
     return {
       token: i.token as string,
       experienceName: (i.experienceName as string).slice(0, 200),
       maxCapacity: Math.round(cap),
+      price,
+      duration,
+      description,
+      imageUrl,
     };
   })
   .handler(async ({ data }) => {
@@ -102,6 +129,10 @@ export const adminSetExperienceCapacity = createServerFn({ method: "POST" })
         {
           experience_name: data.experienceName,
           max_capacity_per_slot: data.maxCapacity,
+          price: data.price,
+          duration: data.duration,
+          description: data.description,
+          image_url: data.imageUrl,
         },
         { onConflict: "experience_name" },
       );

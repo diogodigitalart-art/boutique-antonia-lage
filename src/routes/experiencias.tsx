@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Clock, Users, MapPin, Sparkles, CalendarCheck, Heart, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { EXPERIENCES, type Experience } from "@/lib/data";
@@ -7,6 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { ReservationModal } from "@/components/ReservationModal";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { listExperienceCapacity } from "@/server-fns/slots";
 import {
   Accordion,
   AccordionItem,
@@ -78,6 +80,44 @@ function ExperiencesPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Experience | null>(null);
+  const list = useServerFn(listExperienceCapacity);
+  const [overrides, setOverrides] = useState<Record<string, { price: number; duration: string; description: string; image_url: string | null }>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    list()
+      .then((r) => {
+        if (cancelled) return;
+        const m: typeof overrides = {};
+        r.rows.forEach((row) => {
+          m[row.experience_name] = {
+            price: row.price,
+            duration: row.duration,
+            description: row.description,
+            image_url: row.image_url,
+          };
+        });
+        setOverrides(m);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [list]);
+
+  const experiences = useMemo<Experience[]>(
+    () =>
+      EXPERIENCES.map((e) => {
+        const o = overrides[e.title];
+        if (!o) return e;
+        return {
+          ...e,
+          price: Number.isFinite(o.price) ? o.price : e.price,
+          duration: o.duration || e.duration,
+          description: o.description || e.description,
+          image: o.image_url || e.image,
+        };
+      }),
+    [overrides],
+  );
 
   const handleBook = (e: Experience) => {
     if (!session) {
@@ -106,7 +146,7 @@ function ExperiencesPage() {
           {t("tab_experiences")}
         </p>
         <div className="space-y-6">
-          {EXPERIENCES.filter((e) => e.title !== "Arranjos e Costura").map((e) => (
+          {experiences.filter((e) => e.title !== "Arranjos e Costura").map((e) => (
             <article
               key={e.id}
               className="overflow-hidden rounded-3xl bg-card md:grid md:grid-cols-2"
@@ -151,7 +191,7 @@ function ExperiencesPage() {
       </section>
 
       {/* Services section — Tailoring */}
-      {EXPERIENCES.filter((e) => e.title === "Arranjos e Costura").map((e) => (
+      {experiences.filter((e) => e.title === "Arranjos e Costura").map((e) => (
         <section key={e.id} className="mx-auto mt-16 max-w-7xl px-4 md:px-8">
           <div className="mb-6 border-t border-border pt-10">
             <p className="text-[10px] uppercase tracking-[0.3em] text-[#9b7e6b]">Serviços</p>
