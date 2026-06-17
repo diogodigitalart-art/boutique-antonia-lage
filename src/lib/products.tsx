@@ -73,7 +73,7 @@ export function rowToProduct(row: ProductRow): Product {
     availableUnits,
     reference: row.reference,
     description: row.description,
-    category: row.category === "arquivo" ? "archive" : "new",
+    category: (row.category || "").toLowerCase().startsWith("arquiv") ? "archive" : "new",
     season: row.season || undefined,
     discountPercent: hasDiscount ? (pct as number) : undefined,
     color: row.color || undefined,
