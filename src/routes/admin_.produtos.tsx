@@ -328,6 +328,14 @@ function Content() {
           options={[{ value: "all", label: "Todos grupos" }, ...CATEGORIES]}
         />
         <FilterSelect
+          value={filterSubcategory}
+          onChange={setFilterSubcategory}
+          options={[
+            { value: "all", label: "Todas as categorias" },
+            ...SUBCATEGORIES.map((s) => ({ value: s, label: s })),
+          ]}
+        />
+        <FilterSelect
           value={filterBrand}
           onChange={setFilterBrand}
           options={[
