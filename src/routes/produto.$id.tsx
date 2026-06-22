@@ -326,9 +326,13 @@ function ProductPage() {
 
         <div className="md:col-span-2 md:py-4">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+            <Link
+              to="/coleccao_/marca/$slug"
+              params={{ slug: slugify(product.brand) }}
+              className="text-xs uppercase tracking-[0.25em] text-muted-foreground transition hover:text-foreground"
+            >
               {product.brand}
-            </p>
+            </Link>
             {product.season && (
               <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 {product.season}
