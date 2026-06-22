@@ -1771,6 +1771,9 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
     color,
     composition,
     care_instructions: care,
+    // Product is present in the current CSV → clear any prior
+    // "Fora de catálogo" tag.
+    catalog_status: null,
   };
 }
 
