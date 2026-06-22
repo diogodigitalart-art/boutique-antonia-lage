@@ -20,6 +20,7 @@ import {
   type ExperienceCapacityRow,
 } from "@/server-fns/slots";
 import { getSetting, adminSetSetting } from "@/server-fns/newsletter";
+import { listPublicProducts } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),
@@ -70,6 +71,7 @@ function Content() {
         <ExperienceCapacitySection />
         <WhatsAppSettingSection />
         <HomepageFeaturedBrandsSection />
+        <HomepageFeaturedProductsSection />
         <SimpleSettingSection
           settingKey="experience_tailoring_price"
           title="Preço base — Arranjos e Costura"
@@ -486,6 +488,232 @@ function HomepageFeaturedBrandsSection() {
             <span className="text-[11px] text-muted-foreground">
               {selected.length}/8 seleccionadas
             </span>
+            <button
+              onClick={save}
+              disabled={busy}
+              className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              Guardar
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+type PickerProduct = { uuid: string; name: string; brand: string; image?: string };
+
+function HomepageFeaturedProductsSection() {
+  const fetchSetting = useServerFn(getSetting);
+  const setSetting = useServerFn(adminSetSetting);
+  const listProducts = useServerFn(listPublicProducts);
+  const [all, setAll] = useState<PickerProduct[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [pRes, sRes] = await Promise.all([
+          listProducts(),
+          fetchSetting({ data: { key: "homepage_featured_products" } }),
+        ]);
+        const rows = (pRes.rows ?? []) as Array<{
+          id: string;
+          name: string;
+          brand: string;
+          images?: string[] | null;
+          is_active?: boolean;
+        }>;
+        setAll(
+          rows
+            .filter((r) => r.is_active !== false)
+            .map((r) => ({
+              uuid: r.id,
+              name: r.name,
+              brand: r.brand,
+              image: Array.isArray(r.images) ? r.images[0] : undefined,
+            })),
+        );
+        const raw = (sRes.value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+        setSelected(raw.slice(0, 8));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro a carregar");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [listProducts, fetchSetting]);
+
+  const byId = new Map(all.map((p) => [p.uuid, p]));
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? all.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) || (p.brand ?? "").toLowerCase().includes(q),
+      )
+    : all;
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 8) {
+        toast.error("Máximo 8 produtos");
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const move = (idx: number, dir: -1 | 1) => {
+    setSelected((prev) => {
+      const next = [...prev];
+      const target = idx + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const token = await getToken();
+      await setSetting({
+        data: { token, key: "homepage_featured_products", value: selected.join(",") },
+      });
+      toast.success("Novas chegadas actualizadas");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <p className="mb-1 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Homepage</p>
+      <h2 className="font-display text-xl italic mb-1">Novas Chegadas</h2>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Selecciona até 8 produtos para destacar na secção &ldquo;Novas Chegadas&rdquo;.
+        Se nenhum for seleccionado, são mostrados automaticamente os 8 produtos
+        activos com stock mais recentes.
+      </p>
+
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <>
+          {selected.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Seleccionados ({selected.length}/8)
+              </p>
+              <ul className="space-y-1.5">
+                {selected.map((id, i) => {
+                  const p = byId.get(id);
+                  return (
+                    <li
+                      key={id}
+                      className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+                    >
+                      <span className="w-5 text-center text-[11px] text-muted-foreground">
+                        {i + 1}
+                      </span>
+                      {p?.image ? (
+                        <img
+                          src={p.image}
+                          alt=""
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded bg-muted" />
+                      )}
+                      <div className="flex-1 truncate text-sm">
+                        <span className="font-medium">{p?.brand ?? "—"}</span>{" "}
+                        <span className="text-muted-foreground">{p?.name ?? id}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => move(i, -1)}
+                        disabled={i === 0}
+                        className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        aria-label="Subir"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => move(i, 1)}
+                        disabled={i === selected.length - 1}
+                        className="rounded border border-border px-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        aria-label="Descer"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggle(id)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Remover"
+                      >
+                        <X size={14} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Pesquisar por nome ou marca…"
+            className="mb-3 w-full rounded-full border border-border bg-background px-4 py-2 text-sm"
+          />
+          <div className="max-h-72 overflow-y-auto rounded-md border border-border">
+            {filtered.length === 0 ? (
+              <p className="p-4 text-xs text-muted-foreground">Sem resultados.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {filtered.slice(0, 100).map((p) => {
+                  const active = selected.includes(p.uuid);
+                  return (
+                    <li key={p.uuid}>
+                      <button
+                        type="button"
+                        onClick={() => toggle(p.uuid)}
+                        className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm transition ${
+                          active ? "bg-primary-soft" : "hover:bg-muted"
+                        }`}
+                      >
+                        {p.image ? (
+                          <img src={p.image} alt="" className="h-8 w-8 rounded object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted" />
+                        )}
+                        <div className="flex-1 truncate">
+                          <span className="font-medium">{p.brand}</span>{" "}
+                          <span className="text-muted-foreground">{p.name}</span>
+                        </div>
+                        {active && (
+                          <span className="text-[10px] uppercase tracking-wider text-primary">
+                            Seleccionado
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="mt-4 flex justify-end">
             <button
               onClick={save}
               disabled={busy}

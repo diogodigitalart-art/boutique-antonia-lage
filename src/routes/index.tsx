@@ -43,11 +43,15 @@ function HomePage() {
   const [activeBrand, setActiveBrand] = useState("Todas");
   const fetchSetting = useServerFn(getSetting);
   const [featuredRaw, setFeaturedRaw] = useState<string | null>(null);
+  const [featuredProductsRaw, setFeaturedProductsRaw] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSetting({ data: { key: "homepage_featured_brands" } })
       .then((r) => setFeaturedRaw(r.value ?? ""))
       .catch(() => setFeaturedRaw(""));
+    fetchSetting({ data: { key: "homepage_featured_products" } })
+      .then((r) => setFeaturedProductsRaw(r.value ?? ""))
+      .catch(() => setFeaturedProductsRaw(""));
   }, [fetchSetting]);
 
   // Brand bar: "Todas" + up to 8 brands. Manual selection from admin settings
@@ -75,10 +79,30 @@ function HomePage() {
     return ["Todas", ...list];
   }, [products, featuredRaw]);
 
-  const newArrivalsAll = products.filter((p) => p.category === "new").filter(
-    (p) => activeBrand === "Todas" || p.brand === activeBrand,
+  // "Novas Chegadas": manual admin selection takes priority (ignores brand
+  // filter — admin picked exactly these). Fallback = 8 most recently added
+  // active in-stock products, filtered by selected brand.
+  const manualProductIds = useMemo(
+    () =>
+      (featuredProductsRaw ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    [featuredProductsRaw],
   );
-  const newArrivals = newArrivalsAll.slice(0, 8);
+  const newArrivals = useMemo(() => {
+    if (manualProductIds.length > 0) {
+      const byId = new Map(products.map((p) => [p.uuid ?? p.id, p]));
+      return manualProductIds
+        .map((id) => byId.get(id))
+        .filter((p): p is NonNullable<typeof p> => !!p)
+        .slice(0, 8);
+    }
+    return products
+      .filter((p) => p.category === "new")
+      .filter((p) => activeBrand === "Todas" || p.brand === activeBrand)
+      .slice(0, 8);
+  }, [products, manualProductIds, activeBrand]);
   const archive = products.filter((p) => p.category === "archive");
 
   return (
