@@ -6,7 +6,7 @@ import { useProducts } from "@/lib/products";
 import type { Product } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useI18n } from "@/lib/i18n";
-import { displaySize } from "@/lib/utils";
+import { displaySize, slugify } from "@/lib/utils";
 import { ProductCard } from "@/components/ProductCard";
 import { ReservationModal } from "@/components/ReservationModal";
 import { WaitlistModal } from "@/components/WaitlistModal";
