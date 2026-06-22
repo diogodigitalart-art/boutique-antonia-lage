@@ -877,6 +877,9 @@ function ProductForm({
     if (!form.name.trim()) return toast.error("Indica o nome.");
     if (!form.reference.trim()) return toast.error("Indica a referência.");
     if (!form.price || isNaN(Number(form.price))) return toast.error("Preço inválido.");
+    if (form.is_active && form.images.length === 0) {
+      return toast.error("Este produto não tem fotos e não pode ser activado.");
+    }
 
     let sizesPayload: ProductSize[];
     if (form.oneSize) {
