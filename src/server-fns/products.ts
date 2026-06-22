@@ -144,6 +144,7 @@ export type AdminProductPayload = {
   external_id?: string | null;
   subcategory?: string | null;
   catalog_status?: string | null;
+  complete_the_look_ids?: string[];
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -161,6 +162,12 @@ function parsePayload(input: unknown): AdminProductPayload {
       })
     : [];
   const images = Array.isArray(i.images) ? (i.images as unknown[]).map(String).slice(0, 10) : [];
+  const completeLook = Array.isArray(i.complete_the_look_ids)
+    ? (i.complete_the_look_ids as unknown[])
+        .map((v) => String(v))
+        .filter((v) => /^[0-9a-f-]{36}$/i.test(v))
+        .slice(0, 4)
+    : [];
   return {
     id: s(i.id) ? (i.id as string) : undefined,
     name: String(i.name || "").trim(),
@@ -203,6 +210,7 @@ function parsePayload(input: unknown): AdminProductPayload {
         : s(i.catalog_status) && (i.catalog_status as string).trim()
           ? (i.catalog_status as string).trim()
           : undefined,
+    complete_the_look_ids: completeLook,
   };
 }
 
@@ -274,6 +282,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       composition: p.composition ?? null,
       care_instructions: p.care_instructions ?? null,
       external_id: p.external_id ?? null,
+      complete_the_look_ids: p.complete_the_look_ids ?? [],
     };
     // Only touch catalog_status when the caller explicitly set it
     // (CSV import passes `null` to clear the flag). Normal admin edits

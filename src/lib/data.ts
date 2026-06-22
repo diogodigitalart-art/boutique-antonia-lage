@@ -35,6 +35,8 @@ export type Product = {
   createdAt?: string;
   /** Per-size availability with stock counts (for filtering by available sizes). */
   sizeAvailability?: { size: string; available: number }[];
+  /** UUIDs of products manually curated as "Completa o look" suggestions. */
+  completeTheLookIds?: string[];
 };
 
 export type Experience = {

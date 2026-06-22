@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS complete_the_look_ids uuid[] NOT NULL DEFAULT '{}'::uuid[];

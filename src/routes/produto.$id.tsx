@@ -25,7 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getPublicProductById } from "@/lib/products.functions";
+import { getPublicProductById, getEditorialByProductUuid } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produto/$id")({
   loader: async ({ params }) => {
@@ -144,6 +144,13 @@ function ProductPage() {
   const [copied, setCopied] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
+  const [editorial, setEditorial] = useState<{
+    id: string;
+    title: string | null;
+    cover_image: string | null;
+    video_url: string | null;
+    teaser_text: string | null;
+  } | null>(null);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
@@ -156,6 +163,26 @@ function ProductPage() {
   useEffect(() => {
     if (product?.id) pushRecentlyViewed(product.id);
   }, [product?.id]);
+
+  // Fetch linked editorial post (if any)
+  useEffect(() => {
+    let cancelled = false;
+    const uuid = product?.uuid;
+    if (!uuid) {
+      setEditorial(null);
+      return;
+    }
+    getEditorialByProductUuid({ data: { uuid } })
+      .then((res) => {
+        if (!cancelled) setEditorial(res?.post ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setEditorial(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.uuid]);
 
   // Auto-select "U" when product loads as one-size.
   useEffect(() => {
@@ -242,12 +269,11 @@ function ProductPage() {
     0,
     4,
   );
-  const relatedIds = new Set(related.map((p) => p.id));
   const youMayLike = (() => {
     const pool = products.filter(
       (p) =>
         p.id !== product.id &&
-        !relatedIds.has(p.id) &&
+        p.brand !== product.brand &&
         p.category === product.category,
     );
     // shuffle
@@ -257,6 +283,19 @@ function ProductPage() {
     }
     return pool.slice(0, 4);
   })();
+  // Completa o look — manual curation (up to 4)
+  const completeLook = (() => {
+    const ids = product.completeTheLookIds ?? [];
+    if (ids.length === 0) return [] as typeof products;
+    const byUuid = new Map(products.map((p) => [p.uuid, p]));
+    return ids
+      .map((id) => byUuid.get(id))
+      .filter((p): p is NonNullable<typeof p> => !!p && p.id !== product.id)
+      .slice(0, 4);
+  })();
+
+  // Linked editorial (if any)
+  const productUuid = product.uuid;
   const hasDetails = !!(product.composition || product.color || product.careInstructions);
 
   const handleBack = () => {
@@ -550,15 +589,67 @@ function ProductPage() {
         </div>
       </div>
 
-      <RecentlyViewed excludeId={product.id} />
-
-      {related.length > 0 && (
-        <section className="mt-16">
+      {/* 1. Completa o look — manual curation, hidden when empty */}
+      {completeLook.length > 0 && (
+        <section className="mt-20 border-t border-border pt-12">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <h2 className="mb-5 font-display text-2xl italic text-foreground md:text-3xl">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-primary">Curadoria</p>
+            <h2 className="mt-2 font-display text-2xl italic text-foreground md:text-3xl">
+              Completa o look
+            </h2>
+            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+              {completeLook.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 2. Editorial block — linked editorial / looks video, hidden when none */}
+      {editorial && (
+        <section className="mt-20">
+          <Link
+            to="/editorial/$id"
+            params={{ id: editorial.id }}
+            className="group block w-full"
+          >
+            <div className="relative aspect-[16/9] w-full overflow-hidden bg-photo-bg md:aspect-[21/9]">
+              {editorial.cover_image ? (
+                <img
+                  src={editorial.cover_image}
+                  alt={editorial.title ?? "Editorial"}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-muted to-card" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-12">
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/80">
+                  Editorial
+                </p>
+                <h2 className="mt-2 font-display text-3xl italic md:text-5xl">
+                  {editorial.title}
+                </h2>
+                <span className="mt-5 inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-xs uppercase tracking-[0.18em] text-foreground transition group-hover:bg-white/90">
+                  Ver o look completo
+                </span>
+              </div>
+            </div>
+          </Link>
+        </section>
+      )}
+
+      {/* 3. Mais de [BRAND] — other products from the same brand */}
+      {related.length > 0 && (
+        <section className="mt-20 border-t border-border pt-12">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-primary">Marca</p>
+            <h2 className="mt-2 font-display text-2xl italic text-foreground md:text-3xl">
               Mais de {product.brand}
             </h2>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
               {related.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
@@ -567,13 +658,39 @@ function ProductPage() {
         </section>
       )}
 
+      {/* 4. Trust block */}
+      <section className="mt-20">
+        <div className="bg-primary-soft px-6 py-14 md:px-12 md:py-20">
+          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-primary">
+              Aconselhamento humano
+            </p>
+            <p className="mt-4 font-display text-2xl italic leading-snug text-foreground md:text-3xl">
+              Tens dúvidas sobre o tamanho ou o caimento? A nossa equipa conhece
+              cada peça pessoalmente.
+            </p>
+            <WhatsAppLink
+              message={`Olá, tenho uma dúvida sobre ${product.name}`}
+              className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:opacity-90"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.79.372-.27.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.134 1.585 5.94L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              Falar no WhatsApp
+            </WhatsAppLink>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Pode também gostar — same category, different brand, random */}
       {youMayLike.length > 0 && (
-        <section className="mt-16">
+        <section className="mt-20 border-t border-border pt-12">
           <div className="mx-auto max-w-7xl px-4 md:px-8">
-            <h2 className="mb-5 font-display text-2xl italic text-foreground md:text-3xl">
+            <p className="text-[11px] uppercase tracking-[0.25em] text-primary">Descobrir</p>
+            <h2 className="mt-2 font-display text-2xl italic text-foreground md:text-3xl">
               Pode também gostar
             </h2>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+            <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
               {youMayLike.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
@@ -581,6 +698,11 @@ function ProductPage() {
           </div>
         </section>
       )}
+
+      {/* 6. Visto recentemente — moved to bottom */}
+      <div className="mt-20 border-t border-border pt-12">
+        <RecentlyViewed excludeId={product.id} />
+      </div>
 
       <ReservationModal
         open={reserveOpen}
