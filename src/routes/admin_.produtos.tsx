@@ -1900,8 +1900,19 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         (s) => s.size.trim().toUpperCase() === size,
       );
       if (existing) {
+        // Consolidate duplicate-size rows for the same product:
+        // sum the stock and merge unique barcodes as a comma-separated list.
         existing.stock += stock;
-        if (!existing.barcode && barcode) existing.barcode = barcode;
+        if (barcode) {
+          const have = (existing.barcode || "")
+            .split(",")
+            .map((b) => b.trim())
+            .filter(Boolean);
+          if (!have.some((b) => b.toLowerCase() === barcode.toLowerCase())) {
+            have.push(barcode);
+          }
+          existing.barcode = have.join(",");
+        }
       } else {
         row.sizes.push({ size, stock, reserved: 0, barcode: barcode || "" });
       }
