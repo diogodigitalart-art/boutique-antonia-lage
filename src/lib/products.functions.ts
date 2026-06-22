@@ -12,3 +12,30 @@ export const listPublicProducts = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { rows: data ?? [] };
   });
+
+export const getPublicProductById = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => {
+    const i = (input || {}) as Record<string, unknown>;
+    const id = typeof i.id === "string" ? i.id : "";
+    if (!id) throw new Error("Missing id");
+    return { id };
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cols =
+      "id, name, brand, description, price, original_price, images, legacy_id, sizes, is_active, is_manually_reserved, season, discount_percent";
+    let { data: row } = await supabaseAdmin
+      .from("products")
+      .select(cols)
+      .eq("legacy_id", data.id)
+      .maybeSingle();
+    if (!row && /^[0-9a-f-]{36}$/i.test(data.id)) {
+      const res = await supabaseAdmin
+        .from("products")
+        .select(cols)
+        .eq("id", data.id)
+        .maybeSingle();
+      row = res.data ?? null;
+    }
+    return { row: row ?? null };
+  });

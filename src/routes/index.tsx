@@ -15,13 +15,13 @@ import { getSetting } from "@/server-fns/newsletter";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
+      { title: "Boutique Antónia Lage | Moda Premium em Braga desde 1984" },
       {
         name: "description",
         content:
           "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
       },
-      { property: "og:title", content: "Boutique Antónia Lage | Moda Feminina Premium em Braga" },
+      { property: "og:title", content: "Boutique Antónia Lage | Moda Premium em Braga desde 1984" },
       {
         property: "og:description",
         content: "Descobre as melhores marcas de moda feminina na Boutique Antónia Lage em Braga. Self-Portrait, BA&SH, Rixo, Zadig&Voltaire e muito mais.",
