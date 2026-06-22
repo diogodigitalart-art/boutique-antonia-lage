@@ -880,6 +880,9 @@ function ProductForm({
           composition: row.composition ?? "",
           care_instructions: row.care_instructions ?? "",
           is_manually_reserved: !!row.is_manually_reserved,
+          complete_the_look_ids: Array.isArray((row as unknown as { complete_the_look_ids?: string[] }).complete_the_look_ids)
+            ? ((row as unknown as { complete_the_look_ids?: string[] }).complete_the_look_ids as string[])
+            : [],
         }
       : emptyForm(brandOptions),
   );
