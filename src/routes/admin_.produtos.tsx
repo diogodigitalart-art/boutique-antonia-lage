@@ -120,6 +120,7 @@ type ProductRow = {
   images: string[];
   sizes: ProductSize[];
   is_active: boolean;
+  is_manually_reserved?: boolean;
   created_at: string;
   barcode?: string | null;
   cost_price?: number | null;
