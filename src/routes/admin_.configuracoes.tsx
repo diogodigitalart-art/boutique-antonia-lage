@@ -585,7 +585,7 @@ function HomepageFeaturedProductsSection() {
   const byId = new Map(all.map((p) => [p.uuid, p]));
 
   // Brands that have ≥1 active product with stock > 0, sorted alphabetically.
-  const brandTabs = useMemo(() => {
+  const brandTabs = useMemo<string[]>(() => {
     const set = new Set<string>();
     for (const p of all) {
       if (p.brand && (stockMap[p.uuid] ?? 0) > 0) set.add(p.brand);
@@ -599,7 +599,7 @@ function HomepageFeaturedProductsSection() {
   };
 
   // Tab-scoped product pool: "__all__" shows everything, brand tabs only that brand.
-  const pool = useMemo(() => {
+  const pool = useMemo<PickerProduct[]>(() => {
     if (activeTab === "__all__") return all;
     return all.filter((p) => p.brand === activeTab);
   }, [all, activeTab]);
