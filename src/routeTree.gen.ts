@@ -48,7 +48,7 @@ import { Route as AdminClientesRouteImport } from './routes/admin_.clientes'
 import { Route as AdminCartoesOfertaRouteImport } from './routes/admin_.cartoes-oferta'
 import { Route as AdminEncomendasIndexRouteImport } from './routes/admin_.encomendas.index'
 import { Route as WishlistShareTokenRouteImport } from './routes/wishlist_.share.$token'
-import { Route as ColeccaoMarcaSlugRouteImport } from './routes/coleccao.marca.$slug'
+import { Route as ColeccaoMarcaSlugRouteImport } from './routes/coleccao_.marca.$slug'
 import { Route as AdminEncomendasHistoricoRouteImport } from './routes/admin_.encomendas.historico'
 import { Route as AdminEncomendasCanceladasRouteImport } from './routes/admin_.encomendas.canceladas'
 import { Route as ApiPublicHooksSendFollowupsRouteImport } from './routes/api/public/hooks/send-followups'
@@ -250,9 +250,9 @@ const WishlistShareTokenRoute = WishlistShareTokenRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ColeccaoMarcaSlugRoute = ColeccaoMarcaSlugRouteImport.update({
-  id: '/marca/$slug',
-  path: '/marca/$slug',
-  getParentRoute: () => ColeccaoRoute,
+  id: '/coleccao_/marca/$slug',
+  path: '/coleccao/marca/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEncomendasHistoricoRoute =
   AdminEncomendasHistoricoRouteImport.update({
@@ -280,7 +280,7 @@ export interface FileRoutesByFullPath {
   '/carrinho': typeof CarrinhoRoute
   '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
-  '/coleccao': typeof ColeccaoRouteWithChildren
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
@@ -325,7 +325,7 @@ export interface FileRoutesByTo {
   '/carrinho': typeof CarrinhoRoute
   '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
-  '/coleccao': typeof ColeccaoRouteWithChildren
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
@@ -370,7 +370,7 @@ export interface FileRoutesById {
   '/carrinho': typeof CarrinhoRoute
   '/cartao-oferta': typeof CartaoOfertaRoute
   '/checkout': typeof CheckoutRoute
-  '/coleccao': typeof ColeccaoRouteWithChildren
+  '/coleccao': typeof ColeccaoRoute
   '/contactos': typeof ContactosRoute
   '/devolucoes-info': typeof DevolucoesInfoRoute
   '/editorial': typeof EditorialRoute
@@ -403,7 +403,7 @@ export interface FileRoutesById {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin_/encomendas/canceladas': typeof AdminEncomendasCanceladasRoute
   '/admin_/encomendas/historico': typeof AdminEncomendasHistoricoRoute
-  '/coleccao/marca/$slug': typeof ColeccaoMarcaSlugRoute
+  '/coleccao_/marca/$slug': typeof ColeccaoMarcaSlugRoute
   '/wishlist_/share/$token': typeof WishlistShareTokenRoute
   '/admin_/encomendas/': typeof AdminEncomendasIndexRoute
   '/api/public/hooks/send-followups': typeof ApiPublicHooksSendFollowupsRoute
@@ -539,7 +539,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin_/encomendas/canceladas'
     | '/admin_/encomendas/historico'
-    | '/coleccao/marca/$slug'
+    | '/coleccao_/marca/$slug'
     | '/wishlist_/share/$token'
     | '/admin_/encomendas/'
     | '/api/public/hooks/send-followups'
@@ -552,7 +552,7 @@ export interface RootRouteChildren {
   CarrinhoRoute: typeof CarrinhoRoute
   CartaoOfertaRoute: typeof CartaoOfertaRoute
   CheckoutRoute: typeof CheckoutRoute
-  ColeccaoRoute: typeof ColeccaoRouteWithChildren
+  ColeccaoRoute: typeof ColeccaoRoute
   ContactosRoute: typeof ContactosRoute
   DevolucoesInfoRoute: typeof DevolucoesInfoRoute
   EditorialRoute: typeof EditorialRoute
@@ -583,6 +583,7 @@ export interface RootRouteChildren {
   EncomendaConfirmadaOrderIdRoute: typeof EncomendaConfirmadaOrderIdRoute
   FeedbackIdRoute: typeof FeedbackIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ColeccaoMarcaSlugRoute: typeof ColeccaoMarcaSlugRoute
   WishlistShareTokenRoute: typeof WishlistShareTokenRoute
   ApiPublicHooksSendFollowupsRoute: typeof ApiPublicHooksSendFollowupsRoute
 }
@@ -862,12 +863,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WishlistShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/coleccao/marca/$slug': {
-      id: '/coleccao/marca/$slug'
-      path: '/marca/$slug'
+    '/coleccao_/marca/$slug': {
+      id: '/coleccao_/marca/$slug'
+      path: '/coleccao/marca/$slug'
       fullPath: '/coleccao/marca/$slug'
       preLoaderRoute: typeof ColeccaoMarcaSlugRouteImport
-      parentRoute: typeof ColeccaoRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin_/encomendas/historico': {
       id: '/admin_/encomendas/historico'
@@ -893,18 +894,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ColeccaoRouteChildren {
-  ColeccaoMarcaSlugRoute: typeof ColeccaoMarcaSlugRoute
-}
-
-const ColeccaoRouteChildren: ColeccaoRouteChildren = {
-  ColeccaoMarcaSlugRoute: ColeccaoMarcaSlugRoute,
-}
-
-const ColeccaoRouteWithChildren = ColeccaoRoute._addFileChildren(
-  ColeccaoRouteChildren,
-)
-
 interface AdminEncomendasRouteChildren {
   AdminEncomendasCanceladasRoute: typeof AdminEncomendasCanceladasRoute
   AdminEncomendasHistoricoRoute: typeof AdminEncomendasHistoricoRoute
@@ -928,7 +917,7 @@ const rootRouteChildren: RootRouteChildren = {
   CarrinhoRoute: CarrinhoRoute,
   CartaoOfertaRoute: CartaoOfertaRoute,
   CheckoutRoute: CheckoutRoute,
-  ColeccaoRoute: ColeccaoRouteWithChildren,
+  ColeccaoRoute: ColeccaoRoute,
   ContactosRoute: ContactosRoute,
   DevolucoesInfoRoute: DevolucoesInfoRoute,
   EditorialRoute: EditorialRoute,
@@ -959,6 +948,7 @@ const rootRouteChildren: RootRouteChildren = {
   EncomendaConfirmadaOrderIdRoute: EncomendaConfirmadaOrderIdRoute,
   FeedbackIdRoute: FeedbackIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ColeccaoMarcaSlugRoute: ColeccaoMarcaSlugRoute,
   WishlistShareTokenRoute: WishlistShareTokenRoute,
   ApiPublicHooksSendFollowupsRoute: ApiPublicHooksSendFollowupsRoute,
 }
