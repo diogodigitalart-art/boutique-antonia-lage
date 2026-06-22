@@ -9,6 +9,7 @@ const PUBLIC_SETTING_KEYS = new Set<string>([
   "whatsapp_number",
   "google_review_url",
   "experience_tailoring_price",
+  "homepage_featured_brands",
 ]);
 
 function isStr(v: unknown, max = 4096): v is string {
