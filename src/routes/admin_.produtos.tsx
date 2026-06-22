@@ -1633,12 +1633,26 @@ const BRAND_DISPLAY_MAP: Record<string, string> = {
   "MOSCHINO JEANS": "Moschino Jeans",
   "ERMANNO FIRENZE": "Ermanno Firenze",
 };
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function normalizeBrandKey(s: string): string {
+  return stripAccents((s ?? "").trim()).toUpperCase();
+}
+function normalizeCsvSize(raw: string): string {
+  const s = (raw ?? "").trim().toUpperCase();
+  return s === "OS" ? "U" : s;
+}
 function mapBrandDisplay(brand: string): string {
-  const k = brand.trim().toUpperCase();
-  return BRAND_DISPLAY_MAP[k] ?? brand.trim();
+  const k = normalizeBrandKey(brand);
+  // Match BRAND_DISPLAY_MAP entries accent-insensitively too.
+  for (const [mk, mv] of Object.entries(BRAND_DISPLAY_MAP)) {
+    if (normalizeBrandKey(mk) === k) return mv;
+  }
+  return brand.trim();
 }
 function brandKey(brand: string, ref: string): string {
-  return `${brand.trim().toUpperCase()}::${ref.trim().toUpperCase()}`;
+  return `${normalizeBrandKey(brand)}::${ref.trim().toUpperCase()}`;
 }
 
 type ExistingProductInfo = {
