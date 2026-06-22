@@ -135,6 +135,7 @@ export type AdminProductPayload = {
   images: string[];
   sizes: AdminProductSize[];
   is_active: boolean;
+  is_manually_reserved?: boolean;
   barcode?: string | null;
   cost_price?: number | null;
   color?: string | null;
