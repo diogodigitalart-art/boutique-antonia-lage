@@ -1633,12 +1633,26 @@ const BRAND_DISPLAY_MAP: Record<string, string> = {
   "MOSCHINO JEANS": "Moschino Jeans",
   "ERMANNO FIRENZE": "Ermanno Firenze",
 };
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function normalizeBrandKey(s: string): string {
+  return stripAccents((s ?? "").trim()).toUpperCase();
+}
+function normalizeCsvSize(raw: string): string {
+  const s = (raw ?? "").trim().toUpperCase();
+  return s === "OS" ? "U" : s;
+}
 function mapBrandDisplay(brand: string): string {
-  const k = brand.trim().toUpperCase();
-  return BRAND_DISPLAY_MAP[k] ?? brand.trim();
+  const k = normalizeBrandKey(brand);
+  // Match BRAND_DISPLAY_MAP entries accent-insensitively too.
+  for (const [mk, mv] of Object.entries(BRAND_DISPLAY_MAP)) {
+    if (normalizeBrandKey(mk) === k) return mv;
+  }
+  return brand.trim();
 }
 function brandKey(brand: string, ref: string): string {
-  return `${brand.trim().toUpperCase()}::${ref.trim().toUpperCase()}`;
+  return `${normalizeBrandKey(brand)}::${ref.trim().toUpperCase()}`;
 }
 
 type ExistingProductInfo = {
@@ -1842,7 +1856,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     if (!brandRaw && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
-    const size = cell(iSize).trim().toUpperCase();
+    const size = normalizeCsvSize(cell(iSize));
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
     const barcode = normalizeBarcode(cell(iBarcode));
@@ -1897,6 +1911,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
 }
 
 function ImportProductsModal({
+  brandOptions,
   onClose,
   onDone,
 }: {
@@ -1921,7 +1936,19 @@ function ImportProductsModal({
     const text = await file.text();
     const delim = detectDelimiter(text);
     const matrix = parseCsv(text, delim);
-    const parsed = rowsToProducts(matrix);
+    const parsedRaw = rowsToProducts(matrix);
+    // Canonicalize brand names against existing DB brands, case- and
+    // accent-insensitively. Use the existing DB brand string verbatim so we
+    // never overwrite the canonical display name with a CSV variant.
+    const brandByKey = new Map<string, string>();
+    for (const b of brandOptions) {
+      const k = normalizeBrandKey(b);
+      if (k && !brandByKey.has(k)) brandByKey.set(k, b);
+    }
+    const parsed = parsedRaw.map((r) => {
+      const existing = brandByKey.get(normalizeBrandKey(r.brand));
+      return existing ? { ...r, brand: existing } : r;
+    });
     setRows(parsed);
     setProgress({ done: 0, ok: 0, err: 0 });
     // Fetch existing products by reference to determine create vs update
