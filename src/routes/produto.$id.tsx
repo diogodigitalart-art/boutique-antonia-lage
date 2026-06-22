@@ -25,11 +25,91 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { getPublicProductById } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produto/$id")({
-  head: () => ({
-    meta: [{ title: "Peça | Boutique Antónia Lage" }],
-  }),
+  loader: async ({ params }) => {
+    try {
+      const res = await getPublicProductById({ data: { id: params.id } });
+      return { product: res.row };
+    } catch {
+      return { product: null };
+    }
+  },
+  head: ({ loaderData, params }) => {
+    const p = loaderData?.product as
+      | {
+          name: string;
+          brand: string;
+          description: string | null;
+          price: number;
+          images: string[] | null;
+          is_active: boolean;
+          is_manually_reserved: boolean | null;
+          sizes: Array<{ stock: number; reserved: number }> | null;
+          discount_percent: number | null;
+          legacy_id: string | null;
+          id: string;
+        }
+      | null
+      | undefined;
+    if (!p) {
+      return { meta: [{ title: "Peça | Boutique Antónia Lage" }] };
+    }
+    const title = `${p.name} — ${p.brand} | Boutique Antónia Lage`;
+    const desc = (p.description || `${p.name} de ${p.brand} disponível na Boutique Antónia Lage.`)
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 158);
+    const image = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : undefined;
+    const url = `https://boutique-antonia-lage.lovable.app/produto/${params.id}`;
+    const totalAvail = Array.isArray(p.sizes)
+      ? p.sizes.reduce(
+          (s, x) => s + Math.max(0, Number(x.stock || 0) - Number(x.reserved || 0)),
+          0,
+        )
+      : 0;
+    const inStock = p.is_active && !p.is_manually_reserved && totalAvail > 0;
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: desc },
+      { property: "og:title", content: title },
+      { property: "og:description", content: desc },
+      { property: "og:type", content: "product" },
+      { property: "og:url", content: url },
+    ];
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+    }
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.name,
+      description: p.description || undefined,
+      image: image ? [image] : undefined,
+      brand: { "@type": "Brand", name: p.brand },
+      offers: {
+        "@type": "Offer",
+        url,
+        priceCurrency: "EUR",
+        price: Number(p.price).toFixed(2),
+        availability: inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      },
+    };
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(jsonLd),
+        },
+      ],
+    };
+  },
   component: ProductPage,
   notFoundComponent: () => (
     <Layout>
