@@ -292,7 +292,10 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       const prevSizes = Array.isArray(prev?.sizes)
         ? (prev!.sizes as Array<{ size: string; stock: number; reserved: number }>)
         : [];
-      const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
+      const { error } = await supabaseAdmin
+        .from("products")
+        .update(row as never)
+        .eq("id", p.id);
       if (error) throw new Error(error.message);
       const newDiscount = Number(p.discount_percent ?? 0) || 0;
       if (newDiscount > 0 && newDiscount > prevDiscount) {
@@ -312,7 +315,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     }
     const { data: inserted, error } = await supabaseAdmin
       .from("products")
-      .insert(row)
+      .insert(row as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
