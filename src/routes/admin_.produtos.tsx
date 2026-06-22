@@ -2129,20 +2129,12 @@ function ImportProductsModal({
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
             Esta importação actualiza stock, preço, época e ID externo dos produtos existentes (estado activo/inactivo é preservado). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. <strong>Novos produtos são criados como inactivos</strong> — o admin tem de os activar manualmente depois de rever e adicionar fotos.
           </div>
-          <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={syncMode}
-              onChange={(e) => setSyncMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-            <span>
-              <span className="font-medium text-foreground">Sincronização completa</span>
-              <span className="block text-muted-foreground">
-                Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
-              </span>
+          <div className="mb-4 rounded-md border border-border bg-muted/30 p-3 text-[12px]">
+            <span className="font-medium text-foreground">Sincronização automática</span>
+            <span className="block text-muted-foreground">
+              Produtos com referência ausente do CSV são automaticamente desactivados e marcados como <strong>“Fora de catálogo”</strong> para revisão manual. Produtos sem referência nunca são tocados.
             </span>
-          </label>
+          </div>
 
           <div className="mb-4 space-y-2 text-[12px] text-muted-foreground">
             <p>
@@ -2168,9 +2160,9 @@ function ImportProductsModal({
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">
                   {updateCount} actualizado(s)
                 </span>
-                {syncMode && (
+                {deactivateCount > 0 && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">
-                    {deactivateCount} serão desactivados
+                    {deactivateCount} → Fora de catálogo
                   </span>
                 )}
                 {invalid > 0 && (
