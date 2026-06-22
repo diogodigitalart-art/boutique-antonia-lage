@@ -1607,6 +1607,7 @@ type ExistingProductInfo = {
   discount_percent: number | null;
   sizes: Array<{ size: string; stock: number; reserved?: number; barcode?: string | null }> | null;
   external_id: string | null;
+  is_active: boolean | null;
 };
 
 function hasVal(v: unknown): boolean {
