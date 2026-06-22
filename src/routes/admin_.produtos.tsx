@@ -1951,7 +1951,6 @@ function ImportProductsModal({
   const [existingByRef, setExistingByRef] = useState<
     Map<string, ExistingProductInfo>
   >(new Map());
-  const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
 
   const onFile = async (file: File) => {
@@ -2013,10 +2012,9 @@ function ImportProductsModal({
     const csvRefs = new Set(refs);
     const { data: allRefRows } = await supabase
       .from("products" as never)
-      .select("reference, is_active")
+      .select("reference")
       .not("reference", "is", null)
-      .neq("reference", "")
-      .eq("is_active", true);
+      .neq("reference", "");
     if (allRefRows) {
       const willDeactivate = (allRefRows as Array<{ reference: string }>).filter(
         (r) => r.reference && !csvRefs.has(r.reference),
@@ -2033,7 +2031,7 @@ function ImportProductsModal({
     existingByRef.get(brandKey(r.brand, r.reference));
   const updateCount = valid.filter((r) => !!lookupExisting(r)).length;
   const createCount = valid.length - updateCount;
-  const deactivateCount = syncMode ? refsInDbWithRef : 0;
+  const deactivateCount = refsInDbWithRef;
 
   const start = async () => {
     if (valid.length === 0) return;
@@ -2061,19 +2059,17 @@ function ImportProductsModal({
         setProgress({ done: i + 1, ok, err });
       }
       let deactivated = 0;
-      if (syncMode) {
-        try {
-          const keepRefs = Array.from(
-            new Set(valid.map((r) => r.reference).filter((x) => !!x)),
-          );
-          const res = await bulkDeactivateFn({ data: { token, keepRefs } });
-          deactivated = res.deactivated;
-        } catch (e) {
-          console.error("bulk deactivate failed", e);
-        }
+      try {
+        const keepRefs = Array.from(
+          new Set(valid.map((r) => r.reference).filter((x) => !!x)),
+        );
+        const res = await bulkDeactivateFn({ data: { token, keepRefs } });
+        deactivated = res.deactivated;
+      } catch (e) {
+        console.error("bulk deactivate failed", e);
       }
       toast.success(
-        `Importação: ${ok} ok (${createCount} novo(s), ${updateCount} actualizado(s))${syncMode ? `, ${deactivated} desactivado(s)` : ""}, ${err} erro(s)`,
+        `Importação: ${ok} ok (${createCount} novo(s), ${updateCount} actualizado(s)), ${deactivated} marcado(s) como "Fora de catálogo", ${err} erro(s)`,
       );
       if (ok > 0) onDone();
     } finally {
