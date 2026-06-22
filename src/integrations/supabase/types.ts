@@ -446,6 +446,7 @@ export type Database = {
           id: string
           images: string[]
           is_active: boolean
+          is_manually_reserved: boolean
           legacy_id: string | null
           name: string
           original_price: number | null
@@ -471,6 +472,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_active?: boolean
+          is_manually_reserved?: boolean
           legacy_id?: string | null
           name: string
           original_price?: number | null
@@ -496,6 +498,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_active?: boolean
+          is_manually_reserved?: boolean
           legacy_id?: string | null
           name?: string
           original_price?: number | null
