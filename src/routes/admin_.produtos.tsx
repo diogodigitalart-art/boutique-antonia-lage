@@ -1664,6 +1664,16 @@ function brandKey(brand: string, ref: string): string {
   return `${normalizeBrandKey(brand)}::${ref.trim().toUpperCase()}`;
 }
 
+// Match existing DB products by reference alone (the CSV "Brand product ID").
+// Brand strings vary in spacing/punctuation across the DB ("Zadig & Voltaire"
+// vs "ZADIG&VOLTAIRE"), so a brand+reference composite key produced false
+// "new" rows for products that already existed. Reference is unique enough
+// in practice (and the CSV's "Brand product ID" is meant to be the
+// canonical SKU identifier).
+function refKey(ref: string): string {
+  return (ref ?? "").trim().toUpperCase();
+}
+
 type ExistingProductInfo = {
   id: string;
   brand: string | null;
@@ -1874,7 +1884,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     const barcode = normalizeBarcode(cell(iBarcode));
     const color = cell(iColor);
 
-    const key = reference ? brandKey(brandRaw, reference) : `${brandRaw}::${i}`;
+    const key = reference ? refKey(reference) : `__row_${i}`;
     let row = grouped.get(key);
     if (!row) {
       row = {
@@ -1985,7 +1995,7 @@ function ImportProductsModal({
       if (!error && data) {
         const map = new Map<string, ExistingProductInfo>();
         for (const row of data as Array<ExistingProductInfo & { reference: string }>) {
-          map.set(brandKey(row.brand ?? "", row.reference ?? ""), {
+          map.set(refKey(row.reference ?? ""), {
             id: row.id,
             brand: row.brand,
             name: row.name,
@@ -2028,7 +2038,7 @@ function ImportProductsModal({
   const valid = rows.filter((r) => !r._error);
   const invalid = rows.length - valid.length;
   const lookupExisting = (r: ParsedRow) =>
-    existingByRef.get(brandKey(r.brand, r.reference));
+    existingByRef.get(refKey(r.reference));
   const updateCount = valid.filter((r) => !!lookupExisting(r)).length;
   const createCount = valid.length - updateCount;
   const deactivateCount = refsInDbWithRef;
@@ -2188,7 +2198,7 @@ function ImportProductsModal({
                     </thead>
                     <tbody>
                       {rows.map((r, i) => {
-                        const ex = existingByRef.get(brandKey(r.brand, r.reference));
+                        const ex = existingByRef.get(refKey(r.reference));
                         const preserved = preservedFields(ex);
                         return (
                         <tr key={i} className="border-t border-border">
