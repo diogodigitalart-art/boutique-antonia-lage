@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useProducts } from "@/lib/products";
 import { ProductCard } from "./ProductCard";
 import { getRecentlyViewed } from "@/lib/recentlyViewed";
@@ -19,7 +19,6 @@ export function RecentlyViewed({ excludeId }: { excludeId?: string }) {
     .filter((id) => id !== excludeId)
     .map((id) => visibleById.get(id))
     .filter((p): p is NonNullable<typeof p> => !!p);
-  void useMemo; // keep import tree-shake-friendly; no-op
 
   if (items.length < 2) return null;
 
