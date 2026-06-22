@@ -143,6 +143,7 @@ export type AdminProductPayload = {
   care_instructions?: string | null;
   external_id?: string | null;
   subcategory?: string | null;
+  catalog_status?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -196,6 +197,12 @@ function parsePayload(input: unknown): AdminProductPayload {
       s(i.subcategory) && (i.subcategory as string).trim()
         ? (i.subcategory as string).trim()
         : null,
+    catalog_status:
+      i.catalog_status === null
+        ? null
+        : s(i.catalog_status) && (i.catalog_status as string).trim()
+          ? (i.catalog_status as string).trim()
+          : undefined,
   };
 }
 
