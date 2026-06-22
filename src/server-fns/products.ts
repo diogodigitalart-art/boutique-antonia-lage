@@ -373,8 +373,9 @@ export const adminToggleProductActive = createServerFn({ method: "POST" })
   });
 
 // Bulk deactivation for full inventory sync: deactivates all products whose
-// reference is non-empty and NOT included in `keepRefs`. Products without a
-// reference are never touched. Returns ids that were deactivated.
+// reference is non-empty and NOT included in `keepRefs`, and tags them with
+// catalog_status='out_of_catalog' so the admin can review them. Products
+// without a reference are never touched. Returns ids that were tagged.
 export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
@@ -387,13 +388,14 @@ export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
-    // Fetch all active products with a non-empty reference
+    // Fetch all products with a non-empty reference (active or inactive) so
+    // we can also tag already-inactive products that are no longer in the
+    // current CSV catalogue.
     const { data: rows, error } = await supabaseAdmin
       .from("products")
-      .select("id, reference, is_active")
+      .select("id, reference")
       .not("reference", "is", null)
-      .neq("reference", "")
-      .eq("is_active", true);
+      .neq("reference", "");
     if (error) throw new Error(error.message);
     const keep = new Set(data.keepRefs);
     const toDeactivate = (rows ?? [])
@@ -402,7 +404,7 @@ export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
     if (toDeactivate.length === 0) return { deactivated: 0, ids: [] as string[] };
     const { error: upErr } = await supabaseAdmin
       .from("products")
-      .update({ is_active: false })
+      .update({ is_active: false, catalog_status: "out_of_catalog" } as never)
       .in("id", toDeactivate);
     if (upErr) throw new Error(upErr.message);
     return { deactivated: toDeactivate.length, ids: toDeactivate };
