@@ -128,6 +128,7 @@ type ProductRow = {
   composition?: string | null;
   care_instructions?: string | null;
   subcategory?: string | null;
+  catalog_status?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
@@ -509,6 +510,14 @@ function Content() {
                         >
                           {r.is_active ? "Activo" : "Inactivo"}
                         </button>
+                        {r.catalog_status === "out_of_catalog" && (
+                          <span
+                            title="Não consta no último CSV importado"
+                            className="ml-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[9px] uppercase tracking-wider text-amber-800"
+                          >
+                            Fora de catálogo
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -1762,6 +1771,9 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
     color,
     composition,
     care_instructions: care,
+    // Product is present in the current CSV → clear any prior
+    // "Fora de catálogo" tag.
+    catalog_status: null,
   };
 }
 
@@ -1891,8 +1903,19 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
         (s) => s.size.trim().toUpperCase() === size,
       );
       if (existing) {
+        // Consolidate duplicate-size rows for the same product:
+        // sum the stock and merge unique barcodes as a comma-separated list.
         existing.stock += stock;
-        if (!existing.barcode && barcode) existing.barcode = barcode;
+        if (barcode) {
+          const have = (existing.barcode || "")
+            .split(",")
+            .map((b) => b.trim())
+            .filter(Boolean);
+          if (!have.some((b) => b.toLowerCase() === barcode.toLowerCase())) {
+            have.push(barcode);
+          }
+          existing.barcode = have.join(",");
+        }
       } else {
         row.sizes.push({ size, stock, reserved: 0, barcode: barcode || "" });
       }
@@ -1928,7 +1951,6 @@ function ImportProductsModal({
   const [existingByRef, setExistingByRef] = useState<
     Map<string, ExistingProductInfo>
   >(new Map());
-  const [syncMode, setSyncMode] = useState(false);
   const [refsInDbWithRef, setRefsInDbWithRef] = useState<number>(0);
 
   const onFile = async (file: File) => {
@@ -1990,10 +2012,9 @@ function ImportProductsModal({
     const csvRefs = new Set(refs);
     const { data: allRefRows } = await supabase
       .from("products" as never)
-      .select("reference, is_active")
+      .select("reference")
       .not("reference", "is", null)
-      .neq("reference", "")
-      .eq("is_active", true);
+      .neq("reference", "");
     if (allRefRows) {
       const willDeactivate = (allRefRows as Array<{ reference: string }>).filter(
         (r) => r.reference && !csvRefs.has(r.reference),
@@ -2010,7 +2031,7 @@ function ImportProductsModal({
     existingByRef.get(brandKey(r.brand, r.reference));
   const updateCount = valid.filter((r) => !!lookupExisting(r)).length;
   const createCount = valid.length - updateCount;
-  const deactivateCount = syncMode ? refsInDbWithRef : 0;
+  const deactivateCount = refsInDbWithRef;
 
   const start = async () => {
     if (valid.length === 0) return;
@@ -2038,19 +2059,17 @@ function ImportProductsModal({
         setProgress({ done: i + 1, ok, err });
       }
       let deactivated = 0;
-      if (syncMode) {
-        try {
-          const keepRefs = Array.from(
-            new Set(valid.map((r) => r.reference).filter((x) => !!x)),
-          );
-          const res = await bulkDeactivateFn({ data: { token, keepRefs } });
-          deactivated = res.deactivated;
-        } catch (e) {
-          console.error("bulk deactivate failed", e);
-        }
+      try {
+        const keepRefs = Array.from(
+          new Set(valid.map((r) => r.reference).filter((x) => !!x)),
+        );
+        const res = await bulkDeactivateFn({ data: { token, keepRefs } });
+        deactivated = res.deactivated;
+      } catch (e) {
+        console.error("bulk deactivate failed", e);
       }
       toast.success(
-        `Importação: ${ok} ok (${createCount} novo(s), ${updateCount} actualizado(s))${syncMode ? `, ${deactivated} desactivado(s)` : ""}, ${err} erro(s)`,
+        `Importação: ${ok} ok (${createCount} novo(s), ${updateCount} actualizado(s)), ${deactivated} marcado(s) como "Fora de catálogo", ${err} erro(s)`,
       );
       if (ok > 0) onDone();
     } finally {
@@ -2110,20 +2129,12 @@ function ImportProductsModal({
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
             Esta importação actualiza stock, preço, época e ID externo dos produtos existentes (estado activo/inactivo é preservado). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. <strong>Novos produtos são criados como inactivos</strong> — o admin tem de os activar manualmente depois de rever e adicionar fotos.
           </div>
-          <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={syncMode}
-              onChange={(e) => setSyncMode(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-            <span>
-              <span className="font-medium text-foreground">Sincronização completa</span>
-              <span className="block text-muted-foreground">
-                Produtos com referência ausente do CSV são marcados como inactivos. Produtos sem referência nunca são tocados.
-              </span>
+          <div className="mb-4 rounded-md border border-border bg-muted/30 p-3 text-[12px]">
+            <span className="font-medium text-foreground">Sincronização automática</span>
+            <span className="block text-muted-foreground">
+              Produtos com referência ausente do CSV são automaticamente desactivados e marcados como <strong>“Fora de catálogo”</strong> para revisão manual. Produtos sem referência nunca são tocados.
             </span>
-          </label>
+          </div>
 
           <div className="mb-4 space-y-2 text-[12px] text-muted-foreground">
             <p>
@@ -2149,9 +2160,9 @@ function ImportProductsModal({
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">
                   {updateCount} actualizado(s)
                 </span>
-                {syncMode && (
+                {deactivateCount > 0 && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">
-                    {deactivateCount} serão desactivados
+                    {deactivateCount} → Fora de catálogo
                   </span>
                 )}
                 {invalid > 0 && (

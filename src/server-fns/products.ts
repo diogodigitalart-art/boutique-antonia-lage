@@ -143,6 +143,7 @@ export type AdminProductPayload = {
   care_instructions?: string | null;
   external_id?: string | null;
   subcategory?: string | null;
+  catalog_status?: string | null;
 };
 
 function parsePayload(input: unknown): AdminProductPayload {
@@ -196,6 +197,12 @@ function parsePayload(input: unknown): AdminProductPayload {
       s(i.subcategory) && (i.subcategory as string).trim()
         ? (i.subcategory as string).trim()
         : null,
+    catalog_status:
+      i.catalog_status === null
+        ? null
+        : s(i.catalog_status) && (i.catalog_status as string).trim()
+          ? (i.catalog_status as string).trim()
+          : undefined,
   };
 }
 
@@ -246,7 +253,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     if (p.is_active && (!Array.isArray(p.images) || p.images.length === 0)) {
       throw new Error("Este produto não tem fotos e não pode ser activado.");
     }
-    const row = {
+    const row: Record<string, unknown> = {
       name: p.name,
       brand: p.brand,
       description: p.description,
@@ -268,6 +275,12 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       care_instructions: p.care_instructions ?? null,
       external_id: p.external_id ?? null,
     };
+    // Only touch catalog_status when the caller explicitly set it
+    // (CSV import passes `null` to clear the flag). Normal admin edits
+    // leave the existing tag untouched.
+    if (p.catalog_status !== undefined) {
+      row.catalog_status = p.catalog_status;
+    }
     if (p.id) {
       // Read previous discount to detect increase
       const { data: prev } = await supabaseAdmin
@@ -279,7 +292,10 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       const prevSizes = Array.isArray(prev?.sizes)
         ? (prev!.sizes as Array<{ size: string; stock: number; reserved: number }>)
         : [];
-      const { error } = await supabaseAdmin.from("products").update(row).eq("id", p.id);
+      const { error } = await supabaseAdmin
+        .from("products")
+        .update(row as never)
+        .eq("id", p.id);
       if (error) throw new Error(error.message);
       const newDiscount = Number(p.discount_percent ?? 0) || 0;
       if (newDiscount > 0 && newDiscount > prevDiscount) {
@@ -299,7 +315,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     }
     const { data: inserted, error } = await supabaseAdmin
       .from("products")
-      .insert(row)
+      .insert(row as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -357,8 +373,9 @@ export const adminToggleProductActive = createServerFn({ method: "POST" })
   });
 
 // Bulk deactivation for full inventory sync: deactivates all products whose
-// reference is non-empty and NOT included in `keepRefs`. Products without a
-// reference are never touched. Returns ids that were deactivated.
+// reference is non-empty and NOT included in `keepRefs`, and tags them with
+// catalog_status='out_of_catalog' so the admin can review them. Products
+// without a reference are never touched. Returns ids that were tagged.
 export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const i = (input || {}) as Record<string, unknown>;
@@ -371,13 +388,14 @@ export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
-    // Fetch all active products with a non-empty reference
+    // Fetch all products with a non-empty reference (active or inactive) so
+    // we can also tag already-inactive products that are no longer in the
+    // current CSV catalogue.
     const { data: rows, error } = await supabaseAdmin
       .from("products")
-      .select("id, reference, is_active")
+      .select("id, reference")
       .not("reference", "is", null)
-      .neq("reference", "")
-      .eq("is_active", true);
+      .neq("reference", "");
     if (error) throw new Error(error.message);
     const keep = new Set(data.keepRefs);
     const toDeactivate = (rows ?? [])
@@ -386,7 +404,7 @@ export const adminBulkDeactivateByRefs = createServerFn({ method: "POST" })
     if (toDeactivate.length === 0) return { deactivated: 0, ids: [] as string[] };
     const { error: upErr } = await supabaseAdmin
       .from("products")
-      .update({ is_active: false })
+      .update({ is_active: false, catalog_status: "out_of_catalog" } as never)
       .in("id", toDeactivate);
     if (upErr) throw new Error(upErr.message);
     return { deactivated: toDeactivate.length, ids: toDeactivate };
