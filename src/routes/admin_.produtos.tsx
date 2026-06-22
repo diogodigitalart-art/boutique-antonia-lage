@@ -1229,6 +1229,23 @@ function ProductForm({
               <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
                 <input
                   type="checkbox"
+                  checked={form.is_manually_reserved}
+                  onChange={(e) =>
+                    setForm({ ...form, is_manually_reserved: e.target.checked })
+                  }
+                />
+                Marcar como “Reservado” (mantém visível mesmo sem stock)
+              </label>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Quando o stock chega a 0, o produto fica oculto no site. Activa
+                esta opção para o manter visível com o selo “Reservado”.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-border bg-card p-4">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
                   checked={form.oneSize}
                   onChange={(e) => setForm({ ...form, oneSize: e.target.checked })}
                 />
