@@ -989,6 +989,7 @@ function ProductForm({
             color: form.color.trim() || null,
             composition: form.composition.trim() || null,
             care_instructions: form.care_instructions.trim() || null,
+            complete_the_look_ids: form.complete_the_look_ids,
           },
         },
       });
