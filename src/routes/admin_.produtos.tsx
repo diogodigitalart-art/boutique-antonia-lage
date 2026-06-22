@@ -372,6 +372,15 @@ function Content() {
             { value: "inactive", label: "Inactivo" },
           ]}
         />
+        <FilterSelect
+          value={filterCatalog}
+          onChange={(v) => setFilterCatalog(v as "all" | "in" | "out")}
+          options={[
+            { value: "all", label: "Todos catálogos" },
+            { value: "in", label: "No catálogo" },
+            { value: "out", label: "Fora de catálogo" },
+          ]}
+        />
       </div>
 
       {/* Bulk actions */}
