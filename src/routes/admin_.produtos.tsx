@@ -1664,6 +1664,16 @@ function brandKey(brand: string, ref: string): string {
   return `${normalizeBrandKey(brand)}::${ref.trim().toUpperCase()}`;
 }
 
+// Match existing DB products by reference alone (the CSV "Brand product ID").
+// Brand strings vary in spacing/punctuation across the DB ("Zadig & Voltaire"
+// vs "ZADIG&VOLTAIRE"), so a brand+reference composite key produced false
+// "new" rows for products that already existed. Reference is unique enough
+// in practice (and the CSV's "Brand product ID" is meant to be the
+// canonical SKU identifier).
+function refKey(ref: string): string {
+  return (ref ?? "").trim().toUpperCase();
+}
+
 type ExistingProductInfo = {
   id: string;
   brand: string | null;
