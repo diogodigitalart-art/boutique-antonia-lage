@@ -745,6 +745,7 @@ type FormState = {
   color: string;
   composition: string;
   care_instructions: string;
+  is_manually_reserved: boolean;
 };
 
 function emptyForm(brandOptions: string[]): FormState {
