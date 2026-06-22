@@ -128,6 +128,7 @@ type ProductRow = {
   composition?: string | null;
   care_instructions?: string | null;
   subcategory?: string | null;
+  catalog_status?: string | null;
 };
 type BrandRow = { id: string; name: string };
 
