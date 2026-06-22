@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegistoRouteImport } from './routes/registo'
 import { Route as QuizRouteImport } from './routes/quiz'
@@ -65,6 +66,11 @@ const TermosRoute = TermosRouteImport.update({
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -285,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/quiz': typeof QuizRoute
   '/registo': typeof RegistoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/wishlist': typeof WishlistRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/wishlist'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/wishlist'
@@ -506,6 +517,7 @@ export interface FileRouteTypes {
     | '/quiz'
     | '/registo'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/wishlist'
@@ -551,6 +563,7 @@ export interface RootRouteChildren {
   QuizRoute: typeof QuizRoute
   RegistoRoute: typeof RegistoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
   WishlistRoute: typeof WishlistRoute
@@ -595,6 +608,13 @@ declare module '@tanstack/react-router' {
       path: '/sobre'
       fullPath: '/sobre'
       preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -919,6 +939,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuizRoute: QuizRoute,
   RegistoRoute: RegistoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
   WishlistRoute: WishlistRoute,
