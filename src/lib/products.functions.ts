@@ -22,12 +22,20 @@ export const getPublicProductById = createServerFn({ method: "GET" })
   })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
+    const cols =
+      "id, name, brand, description, price, original_price, images, legacy_id, sizes, is_active, is_manually_reserved, season, discount_percent";
+    let { data: row } = await supabaseAdmin
       .from("products")
-      .select(
-        "id, name, brand, description, price, original_price, images, legacy_id, sizes, is_active, is_manually_reserved, season, discount_percent",
-      )
-      .or(`legacy_id.eq.${data.id},id.eq.${data.id}`)
+      .select(cols)
+      .eq("legacy_id", data.id)
       .maybeSingle();
+    if (!row && /^[0-9a-f-]{36}$/i.test(data.id)) {
+      const res = await supabaseAdmin
+        .from("products")
+        .select(cols)
+        .eq("id", data.id)
+        .maybeSingle();
+      row = res.data ?? null;
+    }
     return { row: row ?? null };
   });
