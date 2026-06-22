@@ -1983,56 +1983,60 @@ function ImportProductsModal({
     });
     setRows(parsed);
     setProgress({ done: 0, ok: 0, err: 0 });
-    // Fetch existing products by reference to determine create vs update
-    const refs = Array.from(
-      new Set(parsed.map((r) => r.reference).filter((r) => !!r)),
+    // Fetch ALL existing products with a non-empty reference, then match by
+    // a NORMALIZED key (trim + uppercase). This avoids the case-sensitive
+    // exact match of PostgREST `.in()` — e.g. a CSV ref "abc123 " or
+    // "ABC123" must still match a DB reference "abc123".
+    const csvKeys = new Set(
+      parsed.map((r) => refKey(r.reference)).filter((k) => !!k),
     );
-    if (refs.length > 0) {
-      const { data, error } = await supabase
-        .from("products" as never)
-        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id, is_active")
-        .in("reference", refs);
-      if (!error && data) {
-        const map = new Map<string, ExistingProductInfo>();
-        for (const row of data as Array<ExistingProductInfo & { reference: string }>) {
-          map.set(refKey(row.reference ?? ""), {
-            id: row.id,
-            brand: row.brand,
-            name: row.name,
-            images: row.images,
-            description: row.description,
-            color: row.color,
-            composition: row.composition,
-            care_instructions: row.care_instructions,
-            cost_price: row.cost_price ?? null,
-            discount_percent: row.discount_percent ?? null,
-            sizes: row.sizes ?? null,
-            external_id: row.external_id ?? null,
-            is_active: row.is_active ?? null,
-          });
-        }
-        setExistingByRef(map);
-      } else {
-        setExistingByRef(new Map());
-      }
-    } else {
-      setExistingByRef(new Map());
-    }
-    // Count active products with a reference (for sync deactivation preview)
-    const csvRefs = new Set(refs);
-    const { data: allRefRows } = await supabase
+    const { data: allRows, error: allErr } = await supabase
       .from("products" as never)
-      .select("reference")
+      .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id, is_active")
       .not("reference", "is", null)
       .neq("reference", "");
-    if (allRefRows) {
-      const willDeactivate = (allRefRows as Array<{ reference: string }>).filter(
-        (r) => r.reference && !csvRefs.has(r.reference),
-      ).length;
-      setRefsInDbWithRef(willDeactivate);
-    } else {
+    if (allErr) {
+      console.error("[csv-import] failed to fetch existing products", allErr);
+      setExistingByRef(new Map());
       setRefsInDbWithRef(0);
+      return;
     }
+    const rowsAll = (allRows ?? []) as Array<
+      ExistingProductInfo & { reference: string }
+    >;
+    const map = new Map<string, ExistingProductInfo>();
+    let willDeactivate = 0;
+    for (const row of rowsAll) {
+      const k = refKey(row.reference ?? "");
+      if (!k) continue;
+      if (csvKeys.has(k)) {
+        map.set(k, {
+          id: row.id,
+          brand: row.brand,
+          name: row.name,
+          images: row.images,
+          description: row.description,
+          color: row.color,
+          composition: row.composition,
+          care_instructions: row.care_instructions,
+          cost_price: row.cost_price ?? null,
+          discount_percent: row.discount_percent ?? null,
+          sizes: row.sizes ?? null,
+          external_id: row.external_id ?? null,
+          is_active: row.is_active ?? null,
+        });
+      } else {
+        willDeactivate++;
+      }
+    }
+    setExistingByRef(map);
+    setRefsInDbWithRef(willDeactivate);
+    const sampleCsv = Array.from(csvKeys).slice(0, 5);
+    const sampleDb = rowsAll.slice(0, 5).map((r) => r.reference);
+    console.log(
+      `[csv-import] CSV rows: ${parsed.length} | unique CSV refs: ${csvKeys.size} | DB products w/ ref: ${rowsAll.length} | matched (update): ${map.size} | unmatched in CSV (new): ${csvKeys.size - map.size} | DB refs not in CSV (deactivate): ${willDeactivate}`,
+      { sampleCsvRefs: sampleCsv, sampleDbRefs: sampleDb },
+    );
   };
 
   const valid = rows.filter((r) => !r._error);
