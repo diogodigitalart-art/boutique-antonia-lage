@@ -69,6 +69,7 @@ function Content() {
         />
         <ExperienceCapacitySection />
         <WhatsAppSettingSection />
+        <HomepageFeaturedBrandsSection />
         <SimpleSettingSection
           settingKey="experience_tailoring_price"
           title="Preço base — Arranjos e Costura"
