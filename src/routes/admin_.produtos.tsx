@@ -1856,7 +1856,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     if (!brandRaw && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
-    const size = cell(iSize).trim().toUpperCase();
+    const size = normalizeCsvSize(cell(iSize));
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
     const barcode = normalizeBarcode(cell(iBarcode));
