@@ -394,6 +394,112 @@ function WhatsAppSettingSection() {
   );
 }
 
+function HomepageFeaturedBrandsSection() {
+  const listBrandsFn = useServerFn(adminListBrands);
+  const fetchSetting = useServerFn(getSetting);
+  const setSetting = useServerFn(adminSetSetting);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const [b, s] = await Promise.all([
+          listBrandsFn({ data: { token } }),
+          fetchSetting({ data: { key: "homepage_featured_brands" } }),
+        ]);
+        setBrands(((b.rows ?? []) as Row[]).map((r) => r.name));
+        const raw = (s.value ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+        setSelected(raw.slice(0, 8));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro a carregar");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [listBrandsFn, fetchSetting]);
+
+  const toggle = (name: string) => {
+    setSelected((prev) => {
+      if (prev.includes(name)) return prev.filter((b) => b !== name);
+      if (prev.length >= 8) {
+        toast.error("Máximo 8 marcas");
+        return prev;
+      }
+      return [...prev, name];
+    });
+  };
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const token = await getToken();
+      await setSetting({
+        data: { token, key: "homepage_featured_brands", value: selected.join(",") },
+      });
+      toast.success("Marcas em destaque actualizadas");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <p className="mb-1 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Homepage</p>
+      <h2 className="font-display text-xl italic mb-1">Marcas em destaque</h2>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Selecciona até 8 marcas para mostrar na barra da homepage. Se nenhuma for
+        seleccionada, são mostradas automaticamente as 8 marcas com mais produtos
+        activos em stock.
+      </p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : brands.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sem marcas registadas.</p>
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {brands.map((b) => {
+              const active = selected.includes(b);
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => toggle(b)}
+                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-foreground/40"
+                  }`}
+                >
+                  {b}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground">
+              {selected.length}/8 seleccionadas
+            </span>
+            <button
+              onClick={save}
+              disabled={busy}
+              className="rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              Guardar
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function ExperienceCapacitySection() {
   const list = useServerFn(listExperienceCapacity);
   const set = useServerFn(adminSetExperienceCapacity);
