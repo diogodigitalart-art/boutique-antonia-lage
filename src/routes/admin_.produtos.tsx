@@ -934,6 +934,7 @@ function ProductForm({
             images: form.images,
             sizes: sizesPayload,
             is_active: form.is_active,
+            is_manually_reserved: form.is_manually_reserved,
             color: form.color.trim() || null,
             composition: form.composition.trim() || null,
             care_instructions: form.care_instructions.trim() || null,
