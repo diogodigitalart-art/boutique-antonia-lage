@@ -243,6 +243,9 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     if (!p.name) throw new Error("Nome em falta");
     if (!p.brand) throw new Error("Marca em falta");
     if (!p.reference) throw new Error("Referência em falta");
+    if (p.is_active && (!Array.isArray(p.images) || p.images.length === 0)) {
+      throw new Error("Este produto não tem fotos e não pode ser activado.");
+    }
     const row = {
       name: p.name,
       brand: p.brand,
