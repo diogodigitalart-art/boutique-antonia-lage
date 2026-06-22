@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Layout } from "@/components/Layout";
@@ -43,10 +43,12 @@ function BrandPage() {
     [products, slug],
   );
 
-  const brandName = brandItems[0]?.brand ?? slug
-    .split("-")
-    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-    .join(" ");
+  const brandName =
+    brandItems[0]?.brand ??
+    slug
+      .split("-")
+      .map((w: string) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+      .join(" ");
 
   const totalPages = Math.max(1, Math.ceil(brandItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
