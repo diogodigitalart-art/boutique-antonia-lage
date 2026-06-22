@@ -586,6 +586,7 @@ function Content() {
           row={editing}
           brandOptions={allBrandNames}
           seasonOptions={seasonNames}
+          allProducts={rows}
           onClose={() => {
             setEditing(null);
             setCreating(false);
