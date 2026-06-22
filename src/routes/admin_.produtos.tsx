@@ -1651,22 +1651,25 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
   const prevSizes = existing?.sizes ?? [];
   const bySize = new Map<string, { size: string; stock: number; reserved: number; barcode: string | null }>();
   for (const s of prevSizes) {
-    bySize.set(s.size.toUpperCase(), {
-      size: s.size,
+    const key = String(s.size ?? "").trim().toUpperCase();
+    if (!key) continue;
+    bySize.set(key, {
+      size: String(s.size ?? "").trim(),
       stock: Math.max(0, Number(s.stock) || 0),
       reserved: Math.max(0, Number(s.reserved) || 0),
       barcode: (s.barcode ?? null) || null,
     });
   }
   for (const cs of r.sizes) {
-    const k = cs.size.toUpperCase();
+    const k = String(cs.size ?? "").trim().toUpperCase();
+    if (!k) continue;
     const prev = bySize.get(k);
     if (prev) {
       prev.stock = Math.max(0, Number(cs.stock) || 0);
       if (!prev.barcode && cs.barcode) prev.barcode = cs.barcode;
     } else {
       bySize.set(k, {
-        size: cs.size,
+        size: String(cs.size).trim(),
         stock: Math.max(0, Number(cs.stock) || 0),
         reserved: 0,
         barcode: cs.barcode || null,
@@ -1689,7 +1692,10 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
     season: r.season,
     images,
     sizes,
-    is_active: true,
+    // New products imported via CSV are created as inactive — the admin must
+    // manually activate them after reviewing details and adding images.
+    // Existing products keep their current active state.
+    is_active: existing ? !!existing.is_active : false,
     barcode: null,
     cost_price,
     color,
