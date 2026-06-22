@@ -257,6 +257,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       images: p.images,
       sizes: p.sizes,
       is_active: p.is_active,
+      is_manually_reserved: !!p.is_manually_reserved,
       barcode: p.barcode ?? null,
       cost_price: p.cost_price ?? null,
       color: p.color ?? null,
