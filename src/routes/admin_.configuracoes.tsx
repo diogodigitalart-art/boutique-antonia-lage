@@ -20,6 +20,7 @@ import {
   type ExperienceCapacityRow,
 } from "@/server-fns/slots";
 import { getSetting, adminSetSetting } from "@/server-fns/newsletter";
+import { listPublicProducts } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/admin_/configuracoes")({
   head: () => ({ meta: [{ title: "Configurações | Admin" }] }),
@@ -70,6 +71,7 @@ function Content() {
         <ExperienceCapacitySection />
         <WhatsAppSettingSection />
         <HomepageFeaturedBrandsSection />
+        <HomepageFeaturedProductsSection />
         <SimpleSettingSection
           settingKey="experience_tailoring_price"
           title="Preço base — Arranjos e Costura"
