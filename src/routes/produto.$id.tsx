@@ -144,6 +144,13 @@ function ProductPage() {
   const [copied, setCopied] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef<number>(0);
+  const [editorial, setEditorial] = useState<{
+    id: string;
+    title: string | null;
+    cover_image: string | null;
+    video_url: string | null;
+    teaser_text: string | null;
+  } | null>(null);
 
   // Refresh products on mount so admin reservation changes are reflected.
   useEffect(() => {
