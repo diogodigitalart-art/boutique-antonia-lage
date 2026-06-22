@@ -14,7 +14,7 @@ export const Route = createFileRoute("/coleccao/marca/$slug")({
   head: ({ params }) => {
     const display = params.slug
       .split("-")
-      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+      .map((w: string) => (w ? w[0].toUpperCase() + w.slice(1) : w))
       .join(" ");
     const title = `${display} em Portugal | Boutique Antónia Lage Braga`;
     const desc = `Descobre toda a colecção ${display} disponível na Boutique Antónia Lage em Braga. Peças seleccionadas com stock disponível.`;
