@@ -1911,6 +1911,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
 }
 
 function ImportProductsModal({
+  brandOptions,
   onClose,
   onDone,
 }: {
@@ -1935,7 +1936,19 @@ function ImportProductsModal({
     const text = await file.text();
     const delim = detectDelimiter(text);
     const matrix = parseCsv(text, delim);
-    const parsed = rowsToProducts(matrix);
+    const parsedRaw = rowsToProducts(matrix);
+    // Canonicalize brand names against existing DB brands, case- and
+    // accent-insensitively. Use the existing DB brand string verbatim so we
+    // never overwrite the canonical display name with a CSV variant.
+    const brandByKey = new Map<string, string>();
+    for (const b of brandOptions) {
+      const k = normalizeBrandKey(b);
+      if (k && !brandByKey.has(k)) brandByKey.set(k, b);
+    }
+    const parsed = parsedRaw.map((r) => {
+      const existing = brandByKey.get(normalizeBrandKey(r.brand));
+      return existing ? { ...r, brand: existing } : r;
+    });
     setRows(parsed);
     setProgress({ done: 0, ok: 0, err: 0 });
     // Fetch existing products by reference to determine create vs update
