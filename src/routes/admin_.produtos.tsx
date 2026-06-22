@@ -435,6 +435,7 @@ function Content() {
                   <th className="px-3 py-2.5 text-right">Preço</th>
                   <th className="px-3 py-2.5">Tamanhos / Stock</th>
                   <th className="px-3 py-2.5">Estado</th>
+                  <th className="px-3 py-2.5">Catálogo</th>
                   <th className="w-12 px-3 py-2.5"></th>
                 </tr>
               </thead>
