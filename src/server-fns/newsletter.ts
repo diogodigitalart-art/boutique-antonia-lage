@@ -10,6 +10,7 @@ const PUBLIC_SETTING_KEYS = new Set<string>([
   "google_review_url",
   "experience_tailoring_price",
   "homepage_featured_brands",
+  "homepage_featured_products",
 ]);
 
 function isStr(v: unknown, max = 4096): v is string {
