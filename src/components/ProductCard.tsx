@@ -4,6 +4,7 @@ import { useWishlist } from "@/lib/wishlist";
 import type { Product } from "@/lib/data";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product; width?: string }) {
@@ -66,17 +67,23 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
           strokeWidth={1.5}
         />
       </button>
-      <Link to="/produto/$id" params={{ id: product.id }} className="mt-4 block">
+      <div className="mt-4">
         <div className="flex items-center gap-2">
-          <p className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground">
+          <Link
+            to="/coleccao_/marca/$slug"
+            params={{ slug: slugify(product.brand) }}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground"
+          >
             {product.brand}
-          </p>
+          </Link>
           {product.season && (
             <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.15em] text-muted-foreground">
               {product.season}
             </span>
           )}
         </div>
+        <Link to="/produto/$id" params={{ id: product.id }} className="block">
         <h3 className="mt-1.5 font-display text-lg font-light italic leading-tight text-foreground md:text-xl">
           {product.name}
         </h3>
@@ -101,7 +108,8 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
             Última peça
           </p>
         )}
-      </Link>
+        </Link>
+      </div>
     </div>
   );
 }

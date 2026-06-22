@@ -10,7 +10,7 @@ import { slugify } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
-export const Route = createFileRoute("/coleccao/marca/$slug")({
+export const Route = createFileRoute("/coleccao_/marca/$slug")({
   head: ({ params }) => {
     const display = params.slug
       .split("-")
