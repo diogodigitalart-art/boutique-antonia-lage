@@ -24,6 +24,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -158,6 +164,7 @@ function Content() {
   const [filterSeason, setFilterSeason] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [filterSubcategory, setFilterSubcategory] = useState<string>("all");
+  const [filterCatalog, setFilterCatalog] = useState<"all" | "in" | "out">("all");
 
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -200,6 +207,9 @@ function Content() {
       if (filterStatus === "active" && !r.is_active) return false;
       if (filterStatus === "inactive" && r.is_active) return false;
       if (filterSubcategory !== "all" && r.subcategory !== filterSubcategory) return false;
+      const isOut = r.catalog_status === "out_of_catalog";
+      if (filterCatalog === "in" && isOut) return false;
+      if (filterCatalog === "out" && !isOut) return false;
       if (!q) return true;
       return (
         r.name.toLowerCase().includes(q) ||
@@ -207,7 +217,7 @@ function Content() {
         (r.reference || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus, filterSubcategory]);
+  }, [rows, search, filterCat, filterBrand, filterSeason, filterStatus, filterSubcategory, filterCatalog]);
 
   const toggleActive = async (r: ProductRow) => {
     try {
@@ -362,6 +372,15 @@ function Content() {
             { value: "inactive", label: "Inactivo" },
           ]}
         />
+        <FilterSelect
+          value={filterCatalog}
+          onChange={(v) => setFilterCatalog(v as "all" | "in" | "out")}
+          options={[
+            { value: "all", label: "Todos catálogos" },
+            { value: "in", label: "No catálogo" },
+            { value: "out", label: "Fora de catálogo" },
+          ]}
+        />
       </div>
 
       {/* Bulk actions */}
@@ -416,6 +435,7 @@ function Content() {
                   <th className="px-3 py-2.5 text-right">Preço</th>
                   <th className="px-3 py-2.5">Tamanhos / Stock</th>
                   <th className="px-3 py-2.5">Estado</th>
+                  <th className="px-3 py-2.5">Catálogo</th>
                   <th className="w-12 px-3 py-2.5"></th>
                 </tr>
               </thead>
@@ -510,14 +530,28 @@ function Content() {
                         >
                           {r.is_active ? "Activo" : "Inactivo"}
                         </button>
-                        {r.catalog_status === "out_of_catalog" && (
-                          <span
-                            title="Não consta no último CSV importado"
-                            className="ml-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[9px] uppercase tracking-wider text-amber-800"
-                          >
-                            Fora de catálogo
-                          </span>
-                        )}
+                      </td>
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={`inline-block h-2.5 w-2.5 rounded-full ${
+                                  r.catalog_status === "out_of_catalog"
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                }`}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {r.catalog_status === "out_of_catalog"
+                                  ? "Fora de catálogo"
+                                  : "No catálogo"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </td>
                       <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -534,7 +568,7 @@ function Content() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="px-4 py-12 text-center text-xs text-muted-foreground"
                     >
                       Sem produtos.
