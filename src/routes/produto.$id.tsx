@@ -164,6 +164,26 @@ function ProductPage() {
     if (product?.id) pushRecentlyViewed(product.id);
   }, [product?.id]);
 
+  // Fetch linked editorial post (if any)
+  useEffect(() => {
+    let cancelled = false;
+    const uuid = product?.uuid;
+    if (!uuid) {
+      setEditorial(null);
+      return;
+    }
+    getEditorialByProductUuid({ data: { uuid } })
+      .then((res) => {
+        if (!cancelled) setEditorial(res?.post ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setEditorial(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.uuid]);
+
   // Auto-select "U" when product loads as one-size.
   useEffect(() => {
     if (isOneSize && size !== "U") setSize("U");
