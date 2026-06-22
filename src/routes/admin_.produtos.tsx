@@ -790,6 +790,7 @@ type FormState = {
   composition: string;
   care_instructions: string;
   is_manually_reserved: boolean;
+  complete_the_look_ids: string[];
 };
 
 function emptyForm(brandOptions: string[]): FormState {
@@ -817,6 +818,7 @@ function emptyForm(brandOptions: string[]): FormState {
     composition: "",
     care_instructions: "",
     is_manually_reserved: false,
+    complete_the_look_ids: [],
   };
 }
 
