@@ -1227,6 +1227,14 @@ function ProductForm({
                   className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px]"
                 />
               </Field>
+              <Field label="Completa o look (máx. 4)" className="sm:col-span-2">
+                <CompleteLookPicker
+                  allProducts={allProducts}
+                  excludeId={row?.id}
+                  selectedIds={form.complete_the_look_ids}
+                  onChange={(ids) => setForm({ ...form, complete_the_look_ids: ids })}
+                />
+              </Field>
             </div>
           </div>
 
