@@ -1192,14 +1192,32 @@ function ProductForm({
             </div>
 
             <div className="rounded-md border border-border bg-card p-4">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+              <label
+                className={`inline-flex items-center gap-2 text-[13px] ${
+                  form.images.length === 0 && !form.is_active
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer"
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                  disabled={form.images.length === 0 && !form.is_active}
+                  onChange={(e) => {
+                    if (e.target.checked && form.images.length === 0) {
+                      toast.error("Este produto não tem fotos e não pode ser activado.");
+                      return;
+                    }
+                    setForm({ ...form, is_active: e.target.checked });
+                  }}
                 />
                 Produto activo (visível no site)
               </label>
+              {form.images.length === 0 && (
+                <p className="mt-2 text-[12px] text-amber-700">
+                  Este produto não tem fotos e não pode ser activado.
+                </p>
+              )}
             </div>
 
             <div className="rounded-md border border-border bg-card p-4">
