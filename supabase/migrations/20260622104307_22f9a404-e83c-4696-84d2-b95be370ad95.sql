@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_manually_reserved BOOLEAN NOT NULL DEFAULT false;

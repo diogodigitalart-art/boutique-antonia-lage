@@ -18,6 +18,7 @@ export type ProductRow = {
   legacy_id: string | null;
   sizes: ProductSize[];
   is_active: boolean;
+  is_manually_reserved?: boolean;
   season: string | null;
   discount_percent: number | null;
   created_at: string;
@@ -42,7 +43,7 @@ export function rowToProduct(row: ProductRow): Product {
     size: s.size,
     available: Math.max(0, Number(s.stock) - Number(s.reserved)),
   }));
-  const fullyReserved = sizesArr.length > 0 && availableSizes.length === 0;
+  const fullyReserved = !!row.is_manually_reserved;
   const availableUnits = sizesArr.reduce(
     (sum, s) => sum + Math.max(0, Number(s.stock) - Number(s.reserved)),
     0,
@@ -120,8 +121,20 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  // Only show active products to general consumers
-  const products = rows.filter((r) => r.is_active).map(rowToProduct);
+  // Only show active products with stock (or those manually marked as Reservado)
+  const products = rows
+    .filter((r) => r.is_active)
+    .filter((r) => {
+      if (r.is_manually_reserved) return true;
+      const total = Array.isArray(r.sizes)
+        ? r.sizes.reduce(
+            (sum, s) => sum + Math.max(0, Number(s.stock) - Number(s.reserved)),
+            0,
+          )
+        : 0;
+      return total > 0;
+    })
+    .map(rowToProduct);
 
   const byId = (id: string) => {
     const row = rows.find((r) => r.legacy_id === id || r.id === id);

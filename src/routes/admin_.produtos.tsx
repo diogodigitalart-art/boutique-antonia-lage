@@ -120,6 +120,7 @@ type ProductRow = {
   images: string[];
   sizes: ProductSize[];
   is_active: boolean;
+  is_manually_reserved?: boolean;
   created_at: string;
   barcode?: string | null;
   cost_price?: number | null;
@@ -745,6 +746,7 @@ type FormState = {
   color: string;
   composition: string;
   care_instructions: string;
+  is_manually_reserved: boolean;
 };
 
 function emptyForm(brandOptions: string[]): FormState {
@@ -771,6 +773,7 @@ function emptyForm(brandOptions: string[]): FormState {
     color: "",
     composition: "",
     care_instructions: "",
+    is_manually_reserved: false,
   };
 }
 
@@ -831,6 +834,7 @@ function ProductForm({
           color: row.color ?? "",
           composition: row.composition ?? "",
           care_instructions: row.care_instructions ?? "",
+          is_manually_reserved: !!row.is_manually_reserved,
         }
       : emptyForm(brandOptions),
   );
@@ -877,6 +881,9 @@ function ProductForm({
     if (!form.name.trim()) return toast.error("Indica o nome.");
     if (!form.reference.trim()) return toast.error("Indica a referência.");
     if (!form.price || isNaN(Number(form.price))) return toast.error("Preço inválido.");
+    if (form.is_active && form.images.length === 0) {
+      return toast.error("Este produto não tem fotos e não pode ser activado.");
+    }
 
     let sizesPayload: ProductSize[];
     if (form.oneSize) {
@@ -927,6 +934,7 @@ function ProductForm({
             images: form.images,
             sizes: sizesPayload,
             is_active: form.is_active,
+            is_manually_reserved: form.is_manually_reserved,
             color: form.color.trim() || null,
             composition: form.composition.trim() || null,
             care_instructions: form.care_instructions.trim() || null,
@@ -1189,14 +1197,49 @@ function ProductForm({
             </div>
 
             <div className="rounded-md border border-border bg-card p-4">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+              <label
+                className={`inline-flex items-center gap-2 text-[13px] ${
+                  form.images.length === 0 && !form.is_active
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer"
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                  disabled={form.images.length === 0 && !form.is_active}
+                  onChange={(e) => {
+                    if (e.target.checked && form.images.length === 0) {
+                      toast.error("Este produto não tem fotos e não pode ser activado.");
+                      return;
+                    }
+                    setForm({ ...form, is_active: e.target.checked });
+                  }}
                 />
                 Produto activo (visível no site)
               </label>
+              {form.images.length === 0 && (
+                <p className="mt-2 text-[12px] text-amber-700">
+                  Este produto não tem fotos e não pode ser activado.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-md border border-border bg-card p-4">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={form.is_manually_reserved}
+                  onChange={(e) =>
+                    setForm({ ...form, is_manually_reserved: e.target.checked })
+                  }
+                />
+                Marcar como “Reservado” (mantém visível mesmo sem stock)
+              </label>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Quando o stock chega a 0, o produto fica oculto no site. Activa
+                esta opção para o manter visível com o selo “Reservado”.
+              </p>
             </div>
 
             <div className="rounded-md border border-border bg-card p-4">
@@ -1271,9 +1314,13 @@ function ProductForm({
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button
                       onClick={() =>
-                        setForm({
-                          ...form,
-                          images: form.images.filter((_, idx) => idx !== i),
+                        setForm((prev) => {
+                          const nextImages = prev.images.filter((_, idx) => idx !== i);
+                          return {
+                            ...prev,
+                            images: nextImages,
+                            is_active: nextImages.length === 0 ? false : prev.is_active,
+                          };
                         })
                       }
                       className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
@@ -1607,6 +1654,7 @@ type ExistingProductInfo = {
   discount_percent: number | null;
   sizes: Array<{ size: string; stock: number; reserved?: number; barcode?: string | null }> | null;
   external_id: string | null;
+  is_active: boolean | null;
 };
 
 function hasVal(v: unknown): boolean {
@@ -1650,22 +1698,25 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
   const prevSizes = existing?.sizes ?? [];
   const bySize = new Map<string, { size: string; stock: number; reserved: number; barcode: string | null }>();
   for (const s of prevSizes) {
-    bySize.set(s.size.toUpperCase(), {
-      size: s.size,
+    const key = String(s.size ?? "").trim().toUpperCase();
+    if (!key) continue;
+    bySize.set(key, {
+      size: String(s.size ?? "").trim(),
       stock: Math.max(0, Number(s.stock) || 0),
       reserved: Math.max(0, Number(s.reserved) || 0),
       barcode: (s.barcode ?? null) || null,
     });
   }
   for (const cs of r.sizes) {
-    const k = cs.size.toUpperCase();
+    const k = String(cs.size ?? "").trim().toUpperCase();
+    if (!k) continue;
     const prev = bySize.get(k);
     if (prev) {
       prev.stock = Math.max(0, Number(cs.stock) || 0);
       if (!prev.barcode && cs.barcode) prev.barcode = cs.barcode;
     } else {
       bySize.set(k, {
-        size: cs.size,
+        size: String(cs.size).trim(),
         stock: Math.max(0, Number(cs.stock) || 0),
         reserved: 0,
         barcode: cs.barcode || null,
@@ -1688,7 +1739,10 @@ function mergeForImport(r: ParsedRow, existing: ExistingProductInfo | undefined)
     season: r.season,
     images,
     sizes,
-    is_active: true,
+    // New products imported via CSV are created as inactive — the admin must
+    // manually activate them after reviewing details and adding images.
+    // Existing products keep their current active state.
+    is_active: existing ? !!existing.is_active : false,
     barcode: null,
     cost_price,
     color,
@@ -1788,7 +1842,7 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
     if (!brandRaw && !reference) continue;
     const priceStr = cell(iPrice).replace(",", ".");
     const stock = Math.max(0, Math.floor(Number(cell(iStock)) || 0));
-    const size = cell(iSize).toUpperCase();
+    const size = cell(iSize).trim().toUpperCase();
     const season = cell(iSeason);
     const catLabel = categoryLabel(cell(iCat));
     const barcode = normalizeBarcode(cell(iBarcode));
@@ -1819,7 +1873,9 @@ function rowsToProducts(matrix: string[][]): ParsedRow[] {
       if (Number(priceStr)) row.price = Number(priceStr);
     }
     if (size) {
-      const existing = row.sizes.find((s) => s.size === size);
+      const existing = row.sizes.find(
+        (s) => s.size.trim().toUpperCase() === size,
+      );
       if (existing) {
         existing.stock += stock;
         if (!existing.barcode && barcode) existing.barcode = barcode;
@@ -1875,7 +1931,7 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id")
+        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id, is_active")
         .in("reference", refs);
       if (!error && data) {
         const map = new Map<string, ExistingProductInfo>();
@@ -1893,6 +1949,7 @@ function ImportProductsModal({
             discount_percent: row.discount_percent ?? null,
             sizes: row.sizes ?? null,
             external_id: row.external_id ?? null,
+            is_active: row.is_active ?? null,
           });
         }
         setExistingByRef(map);
@@ -2024,7 +2081,7 @@ function ImportProductsModal({
           </div>
 
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-[12px] text-amber-900">
-            Esta importação apenas actualiza stock, preço, época e estado (e ID externo). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. A coluna “Campos preservados” mostra exactamente o que será mantido para cada produto.
+            Esta importação actualiza stock, preço, época e ID externo dos produtos existentes (estado activo/inactivo é preservado). Nome, descrição, cor, composição, cuidados, fotos, custo, desconto e códigos de barras existentes são <strong>preservados</strong>. <strong>Novos produtos são criados como inactivos</strong> — o admin tem de os activar manualmente depois de rever e adicionar fotos.
           </div>
           <label className="mb-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 text-[12px] cursor-pointer">
             <input

@@ -6,7 +6,7 @@ export const listPublicProducts = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("products")
       .select(
-        "id, name, brand, description, price, original_price, category, subcategory, images, reference, legacy_id, sizes, is_active, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
+        "id, name, brand, description, price, original_price, category, subcategory, images, reference, legacy_id, sizes, is_active, is_manually_reserved, season, discount_percent, color, composition, care_instructions, external_id, created_at, updated_at",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);

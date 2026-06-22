@@ -135,6 +135,7 @@ export type AdminProductPayload = {
   images: string[];
   sizes: AdminProductSize[];
   is_active: boolean;
+  is_manually_reserved?: boolean;
   barcode?: string | null;
   cost_price?: number | null;
   color?: string | null;
@@ -176,6 +177,7 @@ function parsePayload(input: unknown): AdminProductPayload {
     images,
     sizes,
     is_active: Boolean(i.is_active),
+    is_manually_reserved: Boolean(i.is_manually_reserved),
     barcode: normalizeBarcodeServer(i.barcode),
     cost_price:
       i.cost_price == null || i.cost_price === "" ? null : Number(i.cost_price),
@@ -241,6 +243,9 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     if (!p.name) throw new Error("Nome em falta");
     if (!p.brand) throw new Error("Marca em falta");
     if (!p.reference) throw new Error("Referência em falta");
+    if (p.is_active && (!Array.isArray(p.images) || p.images.length === 0)) {
+      throw new Error("Este produto não tem fotos e não pode ser activado.");
+    }
     const row = {
       name: p.name,
       brand: p.brand,
@@ -255,6 +260,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       images: p.images,
       sizes: p.sizes,
       is_active: p.is_active,
+      is_manually_reserved: !!p.is_manually_reserved,
       barcode: p.barcode ?? null,
       cost_price: p.cost_price ?? null,
       color: p.color ?? null,
@@ -331,6 +337,17 @@ export const adminToggleProductActive = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
+    if (data.is_active) {
+      const { data: prod } = await supabaseAdmin
+        .from("products")
+        .select("images")
+        .eq("id", data.id)
+        .maybeSingle();
+      const imgs = Array.isArray(prod?.images) ? (prod!.images as unknown[]) : [];
+      if (imgs.length === 0) {
+        throw new Error("Este produto não tem fotos e não pode ser activado.");
+      }
+    }
     const { error } = await supabaseAdmin
       .from("products")
       .update({ is_active: data.is_active })
