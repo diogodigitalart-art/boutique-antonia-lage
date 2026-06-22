@@ -177,6 +177,7 @@ function parsePayload(input: unknown): AdminProductPayload {
     images,
     sizes,
     is_active: Boolean(i.is_active),
+    is_manually_reserved: Boolean(i.is_manually_reserved),
     barcode: normalizeBarcodeServer(i.barcode),
     cost_price:
       i.cost_price == null || i.cost_price === "" ? null : Number(i.cost_price),
