@@ -834,6 +834,7 @@ function ProductForm({
           color: row.color ?? "",
           composition: row.composition ?? "",
           care_instructions: row.care_instructions ?? "",
+          is_manually_reserved: !!row.is_manually_reserved,
         }
       : emptyForm(brandOptions),
   );
