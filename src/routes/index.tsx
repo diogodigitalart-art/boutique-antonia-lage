@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Search, Clock, Users, MapPin, ChevronRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { EditorialSection } from "@/components/EditorialSection";
-import { BRANDS, EXPERIENCES } from "@/lib/data";
+import { EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 import { openSearch } from "@/components/SearchOverlay";
+import { getSetting } from "@/server-fns/newsletter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,6 +41,40 @@ function HomePage() {
   const { t } = useI18n();
   const { products, loading } = useProducts();
   const [activeBrand, setActiveBrand] = useState("Todas");
+  const fetchSetting = useServerFn(getSetting);
+  const [featuredRaw, setFeaturedRaw] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSetting({ data: { key: "homepage_featured_brands" } })
+      .then((r) => setFeaturedRaw(r.value ?? ""))
+      .catch(() => setFeaturedRaw(""));
+  }, [fetchSetting]);
+
+  // Brand bar: "Todas" + up to 8 brands. Manual selection from admin settings
+  // takes priority; otherwise fall back to the 8 brands with the most active
+  // in-stock products (products from useProducts() is already filtered).
+  const brandBar = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach((p) => {
+      if (!p.brand) return;
+      counts.set(p.brand, (counts.get(p.brand) ?? 0) + 1);
+    });
+    const manual = (featuredRaw ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((b) => counts.has(b))
+      .slice(0, 8);
+    const list =
+      manual.length > 0
+        ? manual
+        : Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([b]) => b);
+    return ["Todas", ...list];
+  }, [products, featuredRaw]);
+
   const newArrivalsAll = products.filter((p) => p.category === "new").filter(
     (p) => activeBrand === "Todas" || p.brand === activeBrand,
   );
@@ -97,7 +133,7 @@ function HomePage() {
       <section className="mt-10 md:mt-20">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:justify-center md:px-0">
-            {BRANDS.map((b) => {
+            {brandBar.map((b) => {
               const active = activeBrand === b;
               return (
                 <button

@@ -7,7 +7,6 @@ import { SimplePagination } from "@/components/SimplePagination";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
-import { BRANDS } from "@/lib/data";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -143,6 +142,17 @@ function ColeccaoPage() {
     return products.filter((p) => p.category === "new").slice(0, 4);
   }, [products]);
 
+  // Dynamic brand list: all brands with at least one active product in stock,
+  // sorted alphabetically. `products` from useProducts() is already filtered to
+  // active items with available stock.
+  const dynamicBrands = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.brand) set.add(p.brand);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt"));
+  }, [products]);
+
   const toggleArr = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
@@ -192,7 +202,7 @@ function ColeccaoPage() {
 
   const filterPanel = (
     <FiltersPanel
-      brands={BRANDS.filter((b) => b !== "Todas")}
+      brands={dynamicBrands}
       categories={SUBCATEGORIES}
       allColors={allColors}
       priceBounds={priceBounds}
