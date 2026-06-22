@@ -79,30 +79,43 @@ function HomePage() {
     return ["Todas", ...list];
   }, [products, featuredRaw]);
 
-  // "Novas Chegadas": manual admin selection takes priority (ignores brand
-  // filter — admin picked exactly these). Fallback = 8 most recently added
-  // active in-stock products, filtered by selected brand.
-  const manualProductIds = useMemo(
-    () =>
-      (featuredProductsRaw ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    [featuredProductsRaw],
-  );
+  // "Destaques": admin selects up to 8 products per brand (plus "Todas").
+  // Storage format is a JSON object { "__all__": [...ids], "<Brand>": [...] }.
+  // Backward compat: a plain CSV string is treated as the "Todas" selection.
+  const featuredMap = useMemo<Record<string, string[]>>(() => {
+    const raw = (featuredProductsRaw ?? "").trim();
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const out: Record<string, string[]> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (Array.isArray(v)) out[k] = v.filter((x): x is string => typeof x === "string");
+        }
+        return out;
+      }
+    } catch {
+      // legacy CSV → Todas
+    }
+    return {
+      __all__: raw.split(",").map((s) => s.trim()).filter(Boolean),
+    };
+  }, [featuredProductsRaw]);
+
   const newArrivals = useMemo(() => {
-    if (manualProductIds.length > 0) {
+    const key = activeBrand === "Todas" ? "__all__" : activeBrand;
+    const manual = (featuredMap[key] ?? []).slice(0, 8);
+    if (manual.length > 0) {
       const byId = new Map(products.map((p) => [p.uuid ?? p.id, p]));
-      return manualProductIds
+      const picks = manual
         .map((id) => byId.get(id))
-        .filter((p): p is NonNullable<typeof p> => !!p)
-        .slice(0, 8);
+        .filter((p): p is NonNullable<typeof p> => !!p);
+      if (picks.length > 0) return picks;
     }
     return products
-      .filter((p) => p.category === "new")
       .filter((p) => activeBrand === "Todas" || p.brand === activeBrand)
       .slice(0, 8);
-  }, [products, manualProductIds, activeBrand]);
+  }, [products, featuredMap, activeBrand]);
   const archive = products.filter((p) => p.category === "archive");
 
   return (
