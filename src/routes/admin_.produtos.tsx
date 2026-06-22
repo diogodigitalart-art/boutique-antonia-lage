@@ -823,6 +823,102 @@ function emptyForm(brandOptions: string[]): FormState {
   };
 }
 
+function CompleteLookPicker({
+  allProducts,
+  excludeId,
+  selectedIds,
+  onChange,
+}: {
+  allProducts: ProductRow[];
+  excludeId?: string;
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const byId = new Map(allProducts.map((p) => [p.id, p]));
+  const selected = selectedIds.map((id) => byId.get(id)).filter(Boolean) as ProductRow[];
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? allProducts
+        .filter(
+          (p) =>
+            p.id !== excludeId &&
+            !selectedIds.includes(p.id) &&
+            (`${p.brand} ${p.name} ${p.reference}`.toLowerCase().includes(q)),
+        )
+        .slice(0, 12)
+    : [];
+  const add = (id: string) => {
+    if (selectedIds.includes(id) || selectedIds.length >= 4) return;
+    onChange([...selectedIds, id]);
+    setQuery("");
+  };
+  const remove = (id: string) =>
+    onChange(selectedIds.filter((x) => x !== id));
+  return (
+    <div className="space-y-2">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selected.map((p) => (
+            <span
+              key={p.id}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-[12px]"
+            >
+              {p.images?.[0] && (
+                <img src={p.images[0]} alt="" className="h-6 w-6 rounded-full object-cover" />
+              )}
+              <span className="truncate max-w-[180px]">
+                {p.brand} — {p.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => remove(p.id)}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label="Remover"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {selectedIds.length < 4 && (
+        <>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Procurar produto por marca, nome ou referência…"
+            className="h-10 w-full rounded-md border border-border bg-card px-3 text-[13px]"
+          />
+          {results.length > 0 && (
+            <div className="max-h-56 overflow-y-auto rounded-md border border-border bg-card">
+              {results.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => add(p.id)}
+                  className="flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left text-[13px] hover:bg-muted"
+                >
+                  {p.images?.[0] && (
+                    <img src={p.images[0]} alt="" className="h-8 w-8 rounded object-cover" />
+                  )}
+                  <span className="flex-1 truncate">
+                    <span className="text-muted-foreground">{p.brand}</span> — {p.name}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">{p.reference}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        {selectedIds.length}/4 seleccionados. Se nenhum for escolhido, a secção fica oculta no produto.
+      </p>
+    </div>
+  );
+}
+
 function ProductForm({
   row,
   brandOptions,
