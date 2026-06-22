@@ -18,15 +18,18 @@ export function normalizeSize(size: string | null | undefined): string | null {
   return trimmed === "OS" ? "U" : size.trim();
 }
 
-/** URL-friendly slug from any string. Lowercase, accents stripped, non-alnum → hyphens. */
+/** URL-friendly slug from any string. Lowercase, accents stripped, all
+ *  special characters removed, spaces collapsed to hyphens. */
 export function slugify(input: string | null | undefined): string {
   if (!input) return "";
   return String(input)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
