@@ -530,14 +530,28 @@ function Content() {
                         >
                           {r.is_active ? "Activo" : "Inactivo"}
                         </button>
-                        {r.catalog_status === "out_of_catalog" && (
-                          <span
-                            title="Não consta no último CSV importado"
-                            className="ml-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[9px] uppercase tracking-wider text-amber-800"
-                          >
-                            Fora de catálogo
-                          </span>
-                        )}
+                      </td>
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={`inline-block h-2.5 w-2.5 rounded-full ${
+                                  r.catalog_status === "out_of_catalog"
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                }`}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {r.catalog_status === "out_of_catalog"
+                                  ? "Fora de catálogo"
+                                  : "No catálogo"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </td>
                       <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
