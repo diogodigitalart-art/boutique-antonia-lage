@@ -70,7 +70,7 @@ export function ProductCard({ product }: { product: Product; width?: string }) {
       <div className="mt-4">
         <div className="flex items-center gap-2">
           <Link
-            to="/coleccao_/marca/$slug"
+            to="/coleccao/marca/$slug"
             params={{ slug: slugify(product.brand) }}
             onClick={(e) => e.stopPropagation()}
             className="text-[10px] font-light uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground"

@@ -327,7 +327,7 @@ function ProductPage() {
         <div className="md:col-span-2 md:py-4">
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              to="/coleccao_/marca/$slug"
+              to="/coleccao/marca/$slug"
               params={{ slug: slugify(product.brand) }}
               className="text-xs uppercase tracking-[0.25em] text-muted-foreground transition hover:text-foreground"
             >
