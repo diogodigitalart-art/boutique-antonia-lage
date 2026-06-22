@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useProducts } from "@/lib/products";
 import { ProductCard } from "./ProductCard";
 import { getRecentlyViewed } from "@/lib/recentlyViewed";
 
 export function RecentlyViewed({ excludeId }: { excludeId?: string }) {
-  const { byId, loading } = useProducts();
+  const { products, loading } = useProducts();
   const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -13,10 +13,13 @@ export function RecentlyViewed({ excludeId }: { excludeId?: string }) {
 
   if (loading) return null;
 
+  // `products` from context is already filtered to active + in-stock (or manually reserved).
+  const visibleById = new Map(products.map((p) => [p.id, p]));
   const items = ids
     .filter((id) => id !== excludeId)
-    .map((id) => byId(id))
-    .filter((p): p is NonNullable<ReturnType<typeof byId>> => !!p);
+    .map((id) => visibleById.get(id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+  void useMemo; // keep import tree-shake-friendly; no-op
 
   if (items.length < 2) return null;
 
