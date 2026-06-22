@@ -1292,9 +1292,13 @@ function ProductForm({
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button
                       onClick={() =>
-                        setForm({
-                          ...form,
-                          images: form.images.filter((_, idx) => idx !== i),
+                        setForm((prev) => {
+                          const nextImages = prev.images.filter((_, idx) => idx !== i);
+                          return {
+                            ...prev,
+                            images: nextImages,
+                            is_active: nextImages.length === 0 ? false : prev.is_active,
+                          };
                         })
                       }
                       className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
