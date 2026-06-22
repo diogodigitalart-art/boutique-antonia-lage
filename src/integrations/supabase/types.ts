@@ -435,6 +435,7 @@ export type Database = {
           barcode: string | null
           brand: string
           care_instructions: string | null
+          catalog_status: string | null
           category: string
           color: string | null
           composition: string | null
@@ -461,6 +462,7 @@ export type Database = {
           barcode?: string | null
           brand: string
           care_instructions?: string | null
+          catalog_status?: string | null
           category?: string
           color?: string | null
           composition?: string | null
@@ -487,6 +489,7 @@ export type Database = {
           barcode?: string | null
           brand?: string
           care_instructions?: string | null
+          catalog_status?: string | null
           category?: string
           color?: string | null
           composition?: string | null
