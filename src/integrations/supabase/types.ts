@@ -438,6 +438,7 @@ export type Database = {
           catalog_status: string | null
           category: string
           color: string | null
+          complete_the_look_ids: string[]
           composition: string | null
           cost_price: number | null
           created_at: string
@@ -465,6 +466,7 @@ export type Database = {
           catalog_status?: string | null
           category?: string
           color?: string | null
+          complete_the_look_ids?: string[]
           composition?: string | null
           cost_price?: number | null
           created_at?: string
@@ -492,6 +494,7 @@ export type Database = {
           catalog_status?: string | null
           category?: string
           color?: string | null
+          complete_the_look_ids?: string[]
           composition?: string | null
           cost_price?: number | null
           created_at?: string
