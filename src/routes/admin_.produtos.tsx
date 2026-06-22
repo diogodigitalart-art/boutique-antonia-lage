@@ -1876,7 +1876,7 @@ function ImportProductsModal({
     if (refs.length > 0) {
       const { data, error } = await supabase
         .from("products" as never)
-        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id")
+        .select("id, reference, brand, name, images, description, color, composition, care_instructions, cost_price, discount_percent, sizes, external_id, is_active")
         .in("reference", refs);
       if (!error && data) {
         const map = new Map<string, ExistingProductInfo>();
@@ -1894,6 +1894,7 @@ function ImportProductsModal({
             discount_percent: row.discount_percent ?? null,
             sizes: row.sizes ?? null,
             external_id: row.external_id ?? null,
+            is_active: row.is_active ?? null,
           });
         }
         setExistingByRef(map);
