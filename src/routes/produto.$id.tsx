@@ -25,7 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getPublicProductById } from "@/lib/products.functions";
+import { getPublicProductById, getEditorialByProductUuid } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produto/$id")({
   loader: async ({ params }) => {
@@ -247,7 +247,7 @@ function ProductPage() {
     const pool = products.filter(
       (p) =>
         p.id !== product.id &&
-        !relatedIds.has(p.id) &&
+        p.brand !== product.brand &&
         p.category === product.category,
     );
     // shuffle
@@ -257,6 +257,19 @@ function ProductPage() {
     }
     return pool.slice(0, 4);
   })();
+  // Completa o look — manual curation (up to 4)
+  const completeLook = (() => {
+    const ids = product.completeTheLookIds ?? [];
+    if (ids.length === 0) return [] as typeof products;
+    const byUuid = new Map(products.map((p) => [p.uuid, p]));
+    return ids
+      .map((id) => byUuid.get(id))
+      .filter((p): p is NonNullable<typeof p> => !!p && p.id !== product.id)
+      .slice(0, 4);
+  })();
+
+  // Linked editorial (if any)
+  const productUuid = product.uuid;
   const hasDetails = !!(product.composition || product.color || product.careInstructions);
 
   const handleBack = () => {
