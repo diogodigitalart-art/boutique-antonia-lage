@@ -827,6 +827,7 @@ function ProductForm({
   row,
   brandOptions,
   seasonOptions,
+  allProducts,
   onClose,
   onSaved,
   onDelete,
@@ -834,6 +835,7 @@ function ProductForm({
   row: ProductRow | null;
   brandOptions: string[];
   seasonOptions: string[];
+  allProducts: ProductRow[];
   onClose: () => void;
   onSaved: (addAnother: boolean) => void;
   onDelete: () => void;
