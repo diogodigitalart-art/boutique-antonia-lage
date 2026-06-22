@@ -27,6 +27,7 @@ export type ProductRow = {
   composition: string | null;
   care_instructions: string | null;
   subcategory?: string | null;
+  complete_the_look_ids?: string[] | null;
 };
 
 export function rowToProduct(row: ProductRow): Product {
@@ -83,6 +84,9 @@ export function rowToProduct(row: ProductRow): Product {
     createdAt: row.created_at,
     sizeAvailability,
     subcategory: row.subcategory || undefined,
+    completeTheLookIds: Array.isArray(row.complete_the_look_ids)
+      ? row.complete_the_look_ids
+      : [],
   };
 }
 
