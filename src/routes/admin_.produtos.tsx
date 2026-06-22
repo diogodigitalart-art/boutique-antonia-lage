@@ -772,6 +772,7 @@ function emptyForm(brandOptions: string[]): FormState {
     color: "",
     composition: "",
     care_instructions: "",
+    is_manually_reserved: false,
   };
 }
 
