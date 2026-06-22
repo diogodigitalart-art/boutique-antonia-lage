@@ -269,7 +269,6 @@ function ProductPage() {
     0,
     4,
   );
-  const relatedIds = new Set(related.map((p) => p.id));
   const youMayLike = (() => {
     const pool = products.filter(
       (p) =>
