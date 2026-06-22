@@ -337,6 +337,17 @@ export const adminToggleProductActive = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await assertAdmin(data.token);
+    if (data.is_active) {
+      const { data: prod } = await supabaseAdmin
+        .from("products")
+        .select("images")
+        .eq("id", data.id)
+        .maybeSingle();
+      const imgs = Array.isArray(prod?.images) ? (prod!.images as unknown[]) : [];
+      if (imgs.length === 0) {
+        throw new Error("Este produto não tem fotos e não pode ser activado.");
+      }
+    }
     const { error } = await supabaseAdmin
       .from("products")
       .update({ is_active: data.is_active })
