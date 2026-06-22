@@ -509,7 +509,9 @@ function HomepageFeaturedProductsSection() {
   const setSetting = useServerFn(adminSetSetting);
   const listProducts = useServerFn(listPublicProducts);
   const [all, setAll] = useState<PickerProduct[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [stockMap, setStockMap] = useState<Record<string, number>>({});
+  const [selectedByTab, setSelectedByTab] = useState<Record<string, string[]>>({});
+  const [activeTab, setActiveTab] = useState<string>("__all__");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -527,19 +529,51 @@ function HomepageFeaturedProductsSection() {
           brand: string;
           images?: string[] | null;
           is_active?: boolean;
+          sizes?: Array<{ stock?: number; reserved?: number }> | null;
         }>;
+        const active = rows.filter((r) => r.is_active !== false);
         setAll(
-          rows
-            .filter((r) => r.is_active !== false)
-            .map((r) => ({
-              uuid: r.id,
-              name: r.name,
-              brand: r.brand,
-              image: Array.isArray(r.images) ? r.images[0] : undefined,
-            })),
+          active.map((r) => ({
+            uuid: r.id,
+            name: r.name,
+            brand: r.brand,
+            image: Array.isArray(r.images) ? r.images[0] : undefined,
+          })),
         );
-        const raw = (sRes.value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-        setSelected(raw.slice(0, 8));
+        const sm: Record<string, number> = {};
+        for (const r of active) {
+          const total = Array.isArray(r.sizes)
+            ? r.sizes.reduce(
+                (s, x) => s + Math.max(0, Number(x.stock ?? 0) - Number(x.reserved ?? 0)),
+                0,
+              )
+            : 0;
+          sm[r.id] = total;
+        }
+        setStockMap(sm);
+        const raw = (sRes.value ?? "").trim();
+        let map: Record<string, string[]> = {};
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+              for (const [k, v] of Object.entries(parsed)) {
+                if (Array.isArray(v)) {
+                  map[k] = (v as unknown[])
+                    .filter((x): x is string => typeof x === "string")
+                    .slice(0, 8);
+                }
+              }
+            } else {
+              throw new Error("not-object");
+            }
+          } catch {
+            map = {
+              __all__: raw.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
+            };
+          }
+        }
+        setSelectedByTab(map);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Erro a carregar");
       } finally {
@@ -549,13 +583,34 @@ function HomepageFeaturedProductsSection() {
   }, [listProducts, fetchSetting]);
 
   const byId = new Map(all.map((p) => [p.uuid, p]));
+
+  // Brands that have ≥1 active product with stock > 0, sorted alphabetically.
+  const brandTabs = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of all) {
+      if (p.brand && (stockMap[p.uuid] ?? 0) > 0) set.add(p.brand);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt"));
+  }, [all, stockMap]);
+
+  const selected = selectedByTab[activeTab] ?? [];
+  const setSelected = (updater: (prev: string[]) => string[]) => {
+    setSelectedByTab((prev) => ({ ...prev, [activeTab]: updater(prev[activeTab] ?? []) }));
+  };
+
+  // Tab-scoped product pool: "__all__" shows everything, brand tabs only that brand.
+  const pool = useMemo(() => {
+    if (activeTab === "__all__") return all;
+    return all.filter((p) => p.brand === activeTab);
+  }, [all, activeTab]);
+
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? all.filter(
+    ? pool.filter(
         (p) =>
           p.name.toLowerCase().includes(q) || (p.brand ?? "").toLowerCase().includes(q),
       )
-    : all;
+    : pool;
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -582,10 +637,18 @@ function HomepageFeaturedProductsSection() {
     setBusy(true);
     try {
       const token = await getToken();
+      // Prune empty tabs and tabs whose brand no longer has stock
+      const validKeys = new Set<string>(["__all__", ...brandTabs]);
+      const clean: Record<string, string[]> = {};
+      for (const [k, v] of Object.entries(selectedByTab)) {
+        if (!validKeys.has(k)) continue;
+        const arr = v.slice(0, 8);
+        if (arr.length > 0) clean[k] = arr;
+      }
       await setSetting({
-        data: { token, key: "homepage_featured_products", value: selected.join(",") },
+        data: { token, key: "homepage_featured_products", value: JSON.stringify(clean) },
       });
-      toast.success("Novas chegadas actualizadas");
+      toast.success("Destaques actualizados");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -596,17 +659,53 @@ function HomepageFeaturedProductsSection() {
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
       <p className="mb-1 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Homepage</p>
-      <h2 className="font-display text-xl italic mb-1">Novas Chegadas</h2>
+      <h2 className="font-display text-xl italic mb-1">Destaques</h2>
       <p className="mb-4 text-xs text-muted-foreground">
-        Selecciona até 8 produtos para destacar na secção &ldquo;Novas Chegadas&rdquo;.
-        Se nenhum for seleccionado, são mostrados automaticamente os 8 produtos
-        activos com stock mais recentes.
+        Selecciona até 8 produtos por separador. &ldquo;Todas&rdquo; é mostrado quando o cliente
+        não filtra por marca; cada separador de marca é mostrado quando o cliente clica nessa
+        marca. Se um separador não tiver selecção, mostram-se automaticamente os 8 produtos
+        activos com stock mais recentes dessa marca.
       </p>
 
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       ) : (
         <>
+          <div className="mb-4 -mx-1 flex gap-1.5 overflow-x-auto pb-1">
+            {[{ key: "__all__", label: "Todas" }, ...brandTabs.map((b) => ({ key: b, label: b }))].map(
+              (tab) => {
+                const active = activeTab === tab.key;
+                const count = (selectedByTab[tab.key] ?? []).length;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      setQuery("");
+                    }}
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span
+                        className={`ml-1.5 rounded-full px-1.5 text-[10px] ${
+                          active ? "bg-primary-foreground/20" : "bg-muted"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              },
+            )}
+          </div>
+
           {selected.length > 0 && (
             <div className="mb-4">
               <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
