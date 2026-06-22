@@ -568,7 +568,7 @@ function Content() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="px-4 py-12 text-center text-xs text-muted-foreground"
                     >
                       Sem produtos.
