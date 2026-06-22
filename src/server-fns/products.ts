@@ -253,7 +253,7 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
     if (p.is_active && (!Array.isArray(p.images) || p.images.length === 0)) {
       throw new Error("Este produto não tem fotos e não pode ser activado.");
     }
-    const row = {
+    const row: Record<string, unknown> = {
       name: p.name,
       brand: p.brand,
       description: p.description,
@@ -275,6 +275,12 @@ export const adminUpsertProduct = createServerFn({ method: "POST" })
       care_instructions: p.care_instructions ?? null,
       external_id: p.external_id ?? null,
     };
+    // Only touch catalog_status when the caller explicitly set it
+    // (CSV import passes `null` to clear the flag). Normal admin edits
+    // leave the existing tag untouched.
+    if (p.catalog_status !== undefined) {
+      row.catalog_status = p.catalog_status;
+    }
     if (p.id) {
       // Read previous discount to detect increase
       const { data: prev } = await supabaseAdmin
