@@ -6,6 +6,7 @@ import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardSkeletonGrid } from "@/components/ProductCardSkeleton";
 import { EditorialSection } from "@/components/EditorialSection";
+import googleReviewQr from "@/assets/google-review-qr.png.asset.json";
 import { EXPERIENCES } from "@/lib/data";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
